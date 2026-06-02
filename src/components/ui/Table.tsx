@@ -21,6 +21,7 @@ export interface TableProps<T> {
   className?: string
   pagination?: {
     pageSize: number
+    pageSizeOptions?: number[]
   }
 }
 
@@ -35,13 +36,22 @@ export function Table<T>({
   pagination,
 }: TableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectedPageSize, setSelectedPageSize] = useState<number | null>(null)
 
-  const pageSize = Math.max(1, pagination?.pageSize ?? data.length)
+  const pageSize = Math.max(1, selectedPageSize ?? pagination?.pageSize ?? data.length)
   const totalPages = Math.max(1, Math.ceil(data.length / pageSize))
+  const pageSizeOptions = pagination?.pageSizeOptions?.length
+    ? pagination.pageSizeOptions
+    : [10, 25, 50]
 
   useEffect(() => {
     setCurrentPage((prev) => Math.min(prev, totalPages))
   }, [totalPages])
+
+  useEffect(() => {
+    if (!pagination) return
+    setSelectedPageSize(pagination.pageSize)
+  }, [pagination])
 
   const visibleData = useMemo(() => {
     if (!pagination) return data
@@ -117,9 +127,24 @@ export function Table<T>({
       {pagination && data.length > 0 && (
         <div className="flex items-center justify-between border-t border-border/70 px-4 py-3">
           <p className="text-xs text-muted">
-            Sayfa {currentPage} / {totalPages} - Toplam {data.length} kayıt
+            Sayfa {currentPage} / {totalPages} - Ilk {visibleData.length} / {data.length} kayit
           </p>
           <div className="flex items-center gap-2">
+            <select
+              aria-label="Sayfadaki kayıt sayısı"
+              className="h-8 rounded-md border border-border bg-surface-elevated px-2 text-xs text-foreground"
+              value={pageSize}
+              onChange={(e) => {
+                setSelectedPageSize(Number(e.target.value))
+                setCurrentPage(1)
+              }}
+            >
+              {pageSizeOptions.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
             <Button
               variant="outline"
               size="sm"

@@ -129,7 +129,7 @@ export function QuestionsTable({
           keyExtractor={(row) => String(row.id)}
           isLoading={isLoading}
           emptyMessage="Henüz soru yok."
-          pagination={{ pageSize: 10 }}
+          pagination={{ pageSize: 25, pageSizeOptions: [10, 25, 50, 100] }}
         />
       )}
     </div>
