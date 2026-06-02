@@ -61,7 +61,7 @@ export const surveysApi = {
 
   delete: (id: string) =>
     withDevFallback(
-      () => apiClient.delete<void>(`/surveys/${id}`),
+      () => apiClient.delete<void>(`/api/AnketBaslik${id}`),
       () => {
         devSurveysStore.delete(id)
       },

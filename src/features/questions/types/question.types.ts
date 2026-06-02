@@ -14,14 +14,15 @@ export interface VisibilityRule {
 }
 
 export interface QuestionDto {
-  id: string
-  isActive: boolean
-  surveyName: string
-  questionNo: number
-  category: string
-  questionText: string
-  answerType: AnswerType
-  linkedCondition?: string | null
+  id: string | number
+  bolumId: number
+  cevapGirdiTipId: number
+  soruMetni: string
+  altSoruMetni: string | null
+  zorunlu: boolean
+  aktif: boolean
+  secenekGrupId: number | null
+  bagliSoru: boolean
 }
 
 export interface CreateQuestionRequest {

@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Inbox } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { Skeleton } from '@/components/feedback/Skeleton'
+import { Button } from './Button'
 
 export interface TableColumn<T> {
   key: string
@@ -18,6 +19,9 @@ export interface TableProps<T> {
   emptyTitle?: string
   emptyMessage?: string
   className?: string
+  pagination?: {
+    pageSize: number
+  }
 }
 
 export function Table<T>({
@@ -28,7 +32,23 @@ export function Table<T>({
   emptyTitle = 'Kayıt bulunamadı',
   emptyMessage,
   className,
+  pagination,
 }: TableProps<T>) {
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const pageSize = Math.max(1, pagination?.pageSize ?? data.length)
+  const totalPages = Math.max(1, Math.ceil(data.length / pageSize))
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages))
+  }, [totalPages])
+
+  const visibleData = useMemo(() => {
+    if (!pagination) return data
+    const start = (currentPage - 1) * pageSize
+    return data.slice(start, start + pageSize)
+  }, [currentPage, data, pageSize, pagination])
+
   if (isLoading) {
     return (
       <div className="glass-card overflow-hidden !p-0 hover:translate-y-0">
@@ -48,11 +68,14 @@ export function Table<T>({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] border-collapse text-left text-sm">
           <thead>
-            <tr className="border-b border-border bg-primary-500/5">
+            <tr className="border-b border-border/80 bg-surface-elevated">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={cn('px-4 py-3 font-semibold text-foreground', col.className)}
+                  className={cn(
+                    'px-4 py-3.5 text-xs font-semibold tracking-wide text-foreground/80 whitespace-nowrap',
+                    col.className,
+                  )}
                 >
                   {col.header}
                 </th>
@@ -60,7 +83,7 @@ export function Table<T>({
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 ? (
+            {visibleData.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="p-0">
                   <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
@@ -75,7 +98,7 @@ export function Table<T>({
                 </td>
               </tr>
             ) : (
-              data.map((row) => (
+              visibleData.map((row) => (
                 <tr
                   key={keyExtractor(row)}
                   className="border-b border-border/60 transition-colors last:border-0 hover:bg-primary-500/5"
@@ -91,6 +114,31 @@ export function Table<T>({
           </tbody>
         </table>
       </div>
+      {pagination && data.length > 0 && (
+        <div className="flex items-center justify-between border-t border-border/70 px-4 py-3">
+          <p className="text-xs text-muted">
+            Sayfa {currentPage} / {totalPages} - Toplam {data.length} kayıt
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              Önceki
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Sonraki
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

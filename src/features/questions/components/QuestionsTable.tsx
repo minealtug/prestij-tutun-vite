@@ -2,7 +2,6 @@ import { RefreshCw, Pencil, Ban } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Table, type TableColumn } from '@/components/ui/Table'
 import { ErrorState } from '@/components/feedback/ErrorState'
-import { getAnswerTypeLabel } from '../utils/labels'
 import type { QuestionDto } from '../types/question.types'
 
 interface QuestionsTableProps {
@@ -28,49 +27,53 @@ export function QuestionsTable({
 }: QuestionsTableProps) {
   const columns: TableColumn<QuestionDto>[] = [
     {
-      key: 'isActive',
+      key: 'aktif',
       header: 'AKTİF',
       className: 'w-20',
       render: (row) => (
-        <span className={row.isActive ? 'font-medium text-primary-600' : 'text-muted'}>
-          {row.isActive ? 'Evet' : 'Hayır'}
+        <span className={row.aktif ? 'font-medium text-primary-600' : 'text-muted'}>
+          {row.aktif ? 'Evet' : 'Hayır'}
         </span>
       ),
     },
     {
-      key: 'surveyName',
-      header: 'ANKET',
-      render: (row) => <span className="font-medium">{row.surveyName}</span>,
-    },
-    {
-      key: 'questionNo',
-      header: 'SORU NO',
+      key: 'bolumId',
+      header: 'BÖLÜM',
       className: 'w-24',
-      render: (row) => row.questionNo,
+      render: (row) => row.bolumId,
     },
     {
-      key: 'category',
-      header: 'KATEGORİ',
-      render: (row) => row.category,
+      key: 'id',
+      header: 'SORU ID',
+      className: 'w-24',
+      render: (row) => row.id,
     },
     {
-      key: 'questionText',
-      header: 'SORU',
+      key: 'soruMetni',
+      header: 'SORU METNİ',
       render: (row) => (
-        <span className="line-clamp-2 max-w-xs" title={row.questionText}>
-          {row.questionText}
+        <span className="line-clamp-2 max-w-xs" title={row.soruMetni}>
+          {row.soruMetni}
         </span>
       ),
     },
     {
-      key: 'answerType',
+      key: 'cevapGirdiTipId',
       header: 'CEVAP TİPİ',
-      render: (row) => getAnswerTypeLabel(row.answerType),
+      className: 'w-28',
+      render: (row) => row.cevapGirdiTipId,
     },
     {
-      key: 'linkedCondition',
-      header: 'BAĞLI KOŞUL',
-      render: (row) => row.linkedCondition ?? '—',
+      key: 'zorunlu',
+      header: 'ZORUNLU',
+      className: 'w-24',
+      render: (row) => (row.zorunlu ? 'Evet' : 'Hayır'),
+    },
+    {
+      key: 'bagliSoru',
+      header: 'BAĞLI',
+      className: 'w-24',
+      render: (row) => (row.bagliSoru ? 'Evet' : 'Hayır'),
     },
     {
       key: 'actions',
@@ -91,9 +94,9 @@ export function QuestionsTable({
             variant="ghost"
             size="sm"
             aria-label="Pasife Al"
-            disabled={isUpdating || !row.isActive}
+            disabled={isUpdating || !row.aktif}
             onClick={() => onSetPassive(row)}
-            title={row.isActive ? 'Pasife al' : 'Zaten pasif'}
+            title={row.aktif ? 'Pasife al' : 'Zaten pasif'}
           >
             <Ban className="h-4 w-4 text-amber-600" />
           </Button>
@@ -123,9 +126,10 @@ export function QuestionsTable({
         <Table
           columns={columns}
           data={data}
-          keyExtractor={(row) => row.id}
+          keyExtractor={(row) => String(row.id)}
           isLoading={isLoading}
           emptyMessage="Henüz soru yok."
+          pagination={{ pageSize: 10 }}
         />
       )}
     </div>

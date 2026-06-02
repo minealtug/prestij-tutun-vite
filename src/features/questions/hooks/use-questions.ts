@@ -25,7 +25,7 @@ export function useUpdateQuestion() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Partial<CreateQuestionRequest> }) =>
+    mutationFn: ({ id, payload }: { id: string | number; payload: Record<string, unknown> }) =>
       questionsApi.update(id, payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.questions.all })
