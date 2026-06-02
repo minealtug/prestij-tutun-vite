@@ -1,0 +1,13 @@
+/**
+ * Kurumsal renk paleti (lacivert / teal / açık mavi)
+ * Değerleri kendi marka rehberinize göre güncelleyin.
+ */
+:root {
+  --brand-navy: #0f2847;
+  --brand-navy-light: #1a3d5c;
+  --brand-teal: #2a8f9e;
+  --brand-teal-dark: #237a87;
+  --brand-cyan: #3dbdd4;
+  --brand-sky: #6ec5e0;
+  --brand-mint: #a8e6d0;
+}

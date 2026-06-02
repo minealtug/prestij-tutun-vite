@@ -1,0 +1,103 @@
+@import 'tailwindcss';
+@import './colors.css';
+
+@theme {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  --color-primary-50: #eef8fa;
+  --color-primary-100: #d6f0f4;
+  --color-primary-200: #a8e6d0;
+  --color-primary-300: #6ec5e0;
+  --color-primary-400: #3dbdd4;
+  --color-primary-500: #2a8f9e;
+  --color-primary-600: #237a87;
+  --color-primary-700: #1a3d5c;
+  --color-primary-800: #0f2847;
+  --color-primary-900: #0a1f35;
+
+  --color-accent-400: #6ec5e0;
+  --color-accent-500: #3dbdd4;
+  --color-accent-600: #2a8f9e;
+
+  --color-surface: #f4f7fa;
+  --color-surface-elevated: #ffffff;
+  --color-border: #d4dde8;
+  --color-muted: #5c6b7a;
+  --color-foreground: #0f1f2e;
+
+  --color-sidebar: #0f2847;
+  --color-sidebar-hover: #132a47;
+  --color-sidebar-active: #2eb8c4;
+
+  --shadow-card:
+    0 1px 2px rgba(15, 40, 71, 0.04), 0 4px 14px rgba(15, 40, 71, 0.07),
+    0 12px 36px rgba(15, 40, 71, 0.05);
+  --shadow-card-hover:
+    0 2px 4px rgba(15, 40, 71, 0.05), 0 8px 24px rgba(15, 40, 71, 0.1),
+    0 20px 48px rgba(15, 40, 71, 0.07);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply min-h-screen font-sans text-foreground;
+    margin: 0;
+    background-color: #eef2f7;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+}
+
+@layer utilities {
+  .app-canvas {
+    background-color: #eef2f7;
+    background-image:
+      radial-gradient(ellipse 90% 55% at 50% -15%, rgba(61, 189, 212, 0.14), transparent 55%),
+      radial-gradient(ellipse 50% 45% at 100% 0%, rgba(42, 143, 158, 0.1), transparent 50%),
+      radial-gradient(ellipse 40% 35% at 0% 100%, rgba(168, 230, 208, 0.12), transparent 45%),
+      linear-gradient(165deg, #f8fafc 0%, #f0f5fa 42%, #e8eef5 100%),
+      url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.65' fill='%230f2847' fill-opacity='0.035'/%3E%3C/svg%3E");
+    background-attachment: fixed;
+  }
+
+  .gradient-brand {
+    background: linear-gradient(
+      135deg,
+      var(--brand-navy) 0%,
+      var(--brand-teal) 45%,
+      var(--brand-cyan) 100%
+    );
+  }
+
+  .glass-card {
+    @apply rounded-xl border border-white/90 bg-surface-elevated/95 backdrop-blur-sm;
+    box-shadow: var(--shadow-card);
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .glass-card:hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /** Sayfa dikey ritmi: 24px → 32px (lg) */
+  .page-stack {
+    @apply flex flex-col gap-6 lg:gap-8;
+  }
+
+  .section-stack {
+    @apply flex flex-col gap-6;
+  }
+}
