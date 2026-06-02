@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ClipboardList,
   HelpCircle,
@@ -10,6 +10,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { useQuestions } from '@/features/questions/hooks/use-questions'
+import { useAuthStore } from '@/stores/auth-store'
 
 function displayCount(value: number | undefined, loading: boolean) {
   if (loading) return '…'
@@ -17,11 +18,34 @@ function displayCount(value: number | undefined, loading: boolean) {
   return value.toLocaleString('tr-TR')
 }
 
+function getGreetingByHour(hour: number) {
+  if (hour < 12) return 'Günaydın'
+  if (hour < 18) return 'İyi günler'
+  return 'İyi akşamlar'
+}
+
 export function DashboardPage() {
   const [activityPage, setActivityPage] = useState(1)
+  const [now, setNow] = useState(() => new Date())
   const activityPageSize = 4
+  const user = useAuthStore((state) => state.user)
   const surveysQuery = useSurveys()
   const questionsQuery = useQuestions()
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const greeting = getGreetingByHour(now.getHours())
+  const displayName = user?.fullName?.trim() || 'Mine'
+  const currentDateTime = new Intl.DateTimeFormat('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    weekday: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(now)
 
   const linkedQuestionCount = questionsQuery.data?.filter((question) => question.bagliSoru).length
   const recentItems = [
@@ -54,9 +78,9 @@ export function DashboardPage() {
           Dashboard Özeti
         </p>
         <h1 className="mt-1 text-xl font-semibold tracking-tight text-white md:text-2xl">
-          Ana Sayfa
+          {greeting}, {displayName}
         </h1>
-       
+        <p className="mt-1 text-sm text-white/80">{currentDateTime}</p>
       </section>
 
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">

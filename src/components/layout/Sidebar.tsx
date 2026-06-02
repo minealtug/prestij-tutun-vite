@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils/cn'
 import { useUiStore } from '@/stores/ui-store'
 import { sidebarSections } from '@/config/navigation'
 
+const APP_NAME = 'AGRIVION'
+
 export function Sidebar() {
   const { sidebarCollapsed, mobileSidebarOpen, toggleSidebar, setMobileSidebarOpen } =
     useUiStore()
@@ -24,10 +26,15 @@ export function Sidebar() {
     <>
       <div
         className={cn(
-          'flex h-10 shrink-0 items-center border-b border-white/10',
+          'relative flex h-10 shrink-0 items-center border-b border-white/10',
           sidebarCollapsed ? 'justify-center px-1' : 'justify-end px-2',
         )}
       >
+        {!sidebarCollapsed && (
+          <span className="pointer-events-none absolute left-[46%] -translate-x-1/2 text-sm font-extrabold tracking-wider text-white/90">
+            {APP_NAME}
+          </span>
+        )}
         <button
           type="button"
           className="rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
