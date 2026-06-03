@@ -40,7 +40,7 @@ export function SurveyResponsesTable({
 
   if (isLoading) {
     return (
-      <div className="glass-card space-y-3 !p-4 hover:translate-y-0">
+      <div className="w-full space-y-3 border-t border-border px-5 py-4">
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-10 w-full" />
         ))}
@@ -50,26 +50,27 @@ export function SurveyResponsesTable({
 
   if (isError) {
     return (
-      <ErrorState
-        error={error}
-        title="Cevaplar yüklenemedi"
-        onRetry={onRefresh}
-        compact
-      />
+      <div className="w-full border-t border-border px-5 py-4">
+        <ErrorState
+          error={error}
+          title="Cevaplar yüklenemedi"
+          onRetry={onRefresh}
+          compact
+        />
+      </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
+    <div className="w-full border-t border-border">
+      <div className="flex justify-end px-5 pt-4">
         <Button variant="outline" size="sm" onClick={onRefresh}>
           <RefreshCw className="h-4 w-4" />
           Yenile
         </Button>
       </div>
 
-      <div className="glass-card overflow-hidden !p-0 hover:translate-y-0">
-        <div className="overflow-x-auto">
+      <div className="w-full overflow-x-auto">
           <table className="w-full min-w-[800px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-border bg-primary-500/5">
@@ -166,7 +167,6 @@ export function SurveyResponsesTable({
               )}
             </tbody>
           </table>
-        </div>
       </div>
     </div>
   )

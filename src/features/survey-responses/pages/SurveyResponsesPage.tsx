@@ -79,32 +79,6 @@ export function SurveyResponsesPage() {
     [koylerQuery.data],
   )
 
-  const onMenseiChange = (value: string) => {
-    setMenseiId(value)
-    setBolgeId('')
-    setMintikaId('')
-    setAlimNoktasiId('')
-    setKoyId('')
-  }
-
-  const onBolgeChange = (value: string) => {
-    setBolgeId(value)
-    setMintikaId('')
-    setAlimNoktasiId('')
-    setKoyId('')
-  }
-
-  const onMintikaChange = (value: string) => {
-    setMintikaId(value)
-    setAlimNoktasiId('')
-    setKoyId('')
-  }
-
-  const onAlimNoktasiChange = (value: string) => {
-    setAlimNoktasiId(value)
-    setKoyId('')
-  }
-
   return (
     <PageContainer>
       <div>
@@ -115,47 +89,47 @@ export function SurveyResponsesPage() {
         )}
       </div>
 
-      <Card>
-        <div className="mb-6 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <Card className="overflow-hidden !p-0" interactive={false}>
+        <div className="grid w-full grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <Select
             label="Menşei"
             value={menseiId}
-            onChange={(e) => onMenseiChange(e.target.value)}
+            onChange={(e) => setMenseiId(e.target.value)}
             options={menseiOptions}
             disabled={menseilerQuery.isLoading}
           />
           <Select
             label="Bölge"
             value={bolgeId}
-            onChange={(e) => onBolgeChange(e.target.value)}
+            onChange={(e) => setBolgeId(e.target.value)}
             options={bolgeOptions}
-            disabled={!menseiId || bolgelerQuery.isLoading}
+            disabled={bolgelerQuery.isLoading}
           />
           <Select
             label="Mıntıka"
             value={mintikaId}
-            onChange={(e) => onMintikaChange(e.target.value)}
+            onChange={(e) => setMintikaId(e.target.value)}
             options={mintikaOptions}
-            disabled={!bolgeId || mintikalarQuery.isLoading}
+            disabled={mintikalarQuery.isLoading}
           />
           <Select
             label="Alım noktası"
             value={alimNoktasiId}
-            onChange={(e) => onAlimNoktasiChange(e.target.value)}
+            onChange={(e) => setAlimNoktasiId(e.target.value)}
             options={alimNoktasiOptions}
-            disabled={!mintikaId || alimNoktalariQuery.isLoading}
+            disabled={alimNoktalariQuery.isLoading}
           />
           <Select
             label="Köy"
             value={koyId}
             onChange={(e) => setKoyId(e.target.value)}
             options={koyOptions}
-            disabled={!alimNoktasiId || koylerQuery.isLoading}
+            disabled={koylerQuery.isLoading}
           />
         </div>
 
         {!filtersReady ? (
-          <p className="text-sm text-muted">
+          <p className="px-5 pb-5 text-sm text-muted">
             Listelemek için menşei, bölge, mıntıka, alım noktası ve köy seçin.
           </p>
         ) : (

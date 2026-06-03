@@ -114,20 +114,24 @@ export const devResponsesStore = {
     return MENSEI_SEED
   },
 
-  getBolgeler(menseiId: number): BolgeDto[] {
-    return BOLGE_SEED.filter((b) => b.menseiId === menseiId)
+  getBolgeler(menseiId?: number): BolgeDto[] {
+    if (menseiId) return BOLGE_SEED.filter((b) => b.menseiId === menseiId)
+    return BOLGE_SEED
   },
 
-  getMintikalar(bolgeId: number): MintikaDto[] {
-    return MINTIKA_SEED.filter((m) => m.bolgeId === bolgeId)
+  getMintikalar(bolgeId?: number): MintikaDto[] {
+    if (bolgeId) return MINTIKA_SEED.filter((m) => m.bolgeId === bolgeId)
+    return MINTIKA_SEED
   },
 
-  getAlimNoktalari(mintikaId: number): AlimNoktasiDto[] {
-    return ALIM_NOKTASI_SEED.filter((a) => a.mintikaId === mintikaId)
+  getAlimNoktalari(mintikaId?: number): AlimNoktasiDto[] {
+    if (mintikaId) return ALIM_NOKTASI_SEED.filter((a) => a.mintikaId === mintikaId)
+    return ALIM_NOKTASI_SEED
   },
 
-  getKoyler(alimNoktasiId: number): KoyDto[] {
-    return KOY_SEED.filter((k) => k.alimNoktasiId === alimNoktasiId)
+  getKoyler(alimNoktasiId?: number): KoyDto[] {
+    if (alimNoktasiId) return KOY_SEED.filter((k) => k.alimNoktasiId === alimNoktasiId)
+    return KOY_SEED
   },
 
   getFiltered(params: SurveyResponsesQueryParams): SurveyResponseGroup[] {

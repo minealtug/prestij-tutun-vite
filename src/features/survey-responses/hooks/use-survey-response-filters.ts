@@ -12,31 +12,27 @@ export function useMenseiler() {
 export function useBolgeler(menseiId?: number) {
   return useQuery({
     queryKey: queryKeys.surveyResponses.bolgeler(menseiId),
-    queryFn: () => surveyResponsesApi.getBolgeler(menseiId!),
-    enabled: menseiId != null && menseiId > 0,
+    queryFn: () => surveyResponsesApi.getBolgeler(menseiId),
   })
 }
 
 export function useMintikalar(bolgeId?: number) {
   return useQuery({
     queryKey: queryKeys.surveyResponses.mintikalar(bolgeId),
-    queryFn: () => surveyResponsesApi.getMintikalar(bolgeId!),
-    enabled: bolgeId != null && bolgeId > 0,
+    queryFn: () => surveyResponsesApi.getMintikalar(bolgeId),
   })
 }
 
 export function useAlimNoktalari(mintikaId?: number) {
   return useQuery({
     queryKey: queryKeys.surveyResponses.alimNoktalari(mintikaId),
-    queryFn: () => surveyResponsesApi.getAlimNoktalari(mintikaId!),
-    enabled: mintikaId != null && mintikaId > 0,
+    queryFn: () => surveyResponsesApi.getAlimNoktalari(mintikaId),
   })
 }
 
 export function useKoyler(alimNoktasiId?: number) {
   return useQuery({
     queryKey: queryKeys.surveyResponses.koyler(alimNoktasiId),
-    queryFn: () => surveyResponsesApi.getKoyler(alimNoktasiId!),
-    enabled: alimNoktasiId != null && alimNoktasiId > 0,
+    queryFn: () => surveyResponsesApi.getKoyler(alimNoktasiId),
   })
 }
