@@ -52,24 +52,3 @@ export function groupAnketCevaplari(items: AnketCevapDto[]): SurveyResponseGroup
     (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
   )
 }
-
-export function filterSurveyResponseGroups(
-  groups: SurveyResponseGroup[],
-  search?: string,
-): SurveyResponseGroup[] {
-  const q = search?.trim().toLowerCase()
-  if (!q) return groups
-
-  return groups.filter((row) => {
-    if (row.username.toLowerCase().includes(q)) return true
-    if (row.fullName.toLowerCase().includes(q)) return true
-    if (row.surveyName.toLowerCase().includes(q)) return true
-    if (row.mintikaAdi.toLowerCase().includes(q)) return true
-    return row.answers.some(
-      (a) =>
-        a.questionText.toLowerCase().includes(q) ||
-        a.answer.toLowerCase().includes(q) ||
-        String(a.questionNo).includes(q),
-    )
-  })
-}

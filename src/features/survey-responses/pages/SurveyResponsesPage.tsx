@@ -1,32 +1,109 @@
 import { useMemo, useState } from 'react'
 import { Card } from '@/components/ui/Card'
-import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { Select } from '@/components/ui/Select'
 import { useAuthStore } from '@/stores/auth-store'
 import { SurveyResponsesTable } from '../components/SurveyResponsesTable'
-import { useEkiciler } from '../hooks/use-ekiciler'
+import {
+  useAlimNoktalari,
+  useBolgeler,
+  useKoyler,
+  useMenseiler,
+  useMintikalar,
+} from '../hooks/use-survey-response-filters'
 import { useSurveyResponses } from '../hooks/use-survey-responses'
 import { PageContainer } from '@/components/layout/PageContainer'
-import { formatEkiciLabel } from '../types/survey-response.types'
+import type { FilterOptionDto } from '../types/survey-response.types'
+import { hasAllSurveyFilters } from '../types/survey-response.types'
+
+function toSelectOptions(
+  items: FilterOptionDto[],
+  placeholder: string,
+): { value: string; label: string }[] {
+  const options = [{ value: '', label: placeholder }]
+  items.forEach((item) => options.push({ value: String(item.id), label: item.adi }))
+  return options
+}
 
 export function SurveyResponsesPage() {
   const user = useAuthStore((s) => s.user)
-  const ekicilerQuery = useEkiciler()
-  const [ekiciFilter, setEkiciFilter] = useState('')
+  const [menseiId, setMenseiId] = useState('')
+  const [bolgeId, setBolgeId] = useState('')
+  const [mintikaId, setMintikaId] = useState('')
+  const [alimNoktasiId, setAlimNoktasiId] = useState('')
+  const [koyId, setKoyId] = useState('')
 
-  const ekiciOptions = useMemo(() => {
-    const ekiciler = ekicilerQuery.data ?? []
-    return ekiciler.map((e) => ({
-      key: e.id,
-      value: e.id,
-      label: formatEkiciLabel(e),
-    }))
-  }, [ekicilerQuery.data])
+  const menseiIdNum = menseiId ? Number(menseiId) : undefined
+  const bolgeIdNum = bolgeId ? Number(bolgeId) : undefined
+  const mintikaIdNum = mintikaId ? Number(mintikaId) : undefined
+  const alimNoktasiIdNum = alimNoktasiId ? Number(alimNoktasiId) : undefined
+  const koyIdNum = koyId ? Number(koyId) : undefined
 
-  const responsesQuery = useSurveyResponses({
-    ekiciId: ekiciFilter || undefined,
-  })
+  const menseilerQuery = useMenseiler()
+  const bolgelerQuery = useBolgeler(menseiIdNum)
+  const mintikalarQuery = useMintikalar(bolgeIdNum)
+  const alimNoktalariQuery = useAlimNoktalari(mintikaIdNum)
+  const koylerQuery = useKoyler(alimNoktasiIdNum)
 
-  const showSelectEkiciHint = !ekiciFilter
+  const filterParams = useMemo(
+    () => ({
+      menseiId: menseiIdNum,
+      bolgeId: bolgeIdNum,
+      mintikaId: mintikaIdNum,
+      alimNoktasiId: alimNoktasiIdNum,
+      koyId: koyIdNum,
+    }),
+    [menseiIdNum, bolgeIdNum, mintikaIdNum, alimNoktasiIdNum, koyIdNum],
+  )
+
+  const responsesQuery = useSurveyResponses(filterParams)
+  const filtersReady = hasAllSurveyFilters(filterParams)
+
+  const menseiOptions = useMemo(
+    () => toSelectOptions(menseilerQuery.data ?? [], 'Menşei seçin'),
+    [menseilerQuery.data],
+  )
+  const bolgeOptions = useMemo(
+    () => toSelectOptions(bolgelerQuery.data ?? [], 'Bölge seçin'),
+    [bolgelerQuery.data],
+  )
+  const mintikaOptions = useMemo(
+    () => toSelectOptions(mintikalarQuery.data ?? [], 'Mıntıka seçin'),
+    [mintikalarQuery.data],
+  )
+  const alimNoktasiOptions = useMemo(
+    () => toSelectOptions(alimNoktalariQuery.data ?? [], 'Alım noktası seçin'),
+    [alimNoktalariQuery.data],
+  )
+  const koyOptions = useMemo(
+    () => toSelectOptions(koylerQuery.data ?? [], 'Köy seçin'),
+    [koylerQuery.data],
+  )
+
+  const onMenseiChange = (value: string) => {
+    setMenseiId(value)
+    setBolgeId('')
+    setMintikaId('')
+    setAlimNoktasiId('')
+    setKoyId('')
+  }
+
+  const onBolgeChange = (value: string) => {
+    setBolgeId(value)
+    setMintikaId('')
+    setAlimNoktasiId('')
+    setKoyId('')
+  }
+
+  const onMintikaChange = (value: string) => {
+    setMintikaId(value)
+    setAlimNoktasiId('')
+    setKoyId('')
+  }
+
+  const onAlimNoktasiChange = (value: string) => {
+    setAlimNoktasiId(value)
+    setKoyId('')
+  }
 
   return (
     <PageContainer>
@@ -39,19 +116,48 @@ export function SurveyResponsesPage() {
       </div>
 
       <Card>
-        <div className="mb-6 w-full">
-          <SearchableSelect
-            label="Ekici"
-            value={ekiciFilter}
-            onChange={setEkiciFilter}
-            options={ekiciOptions}
-            disabled={ekicilerQuery.isLoading}
-            placeholder="Ekici ara veya seç..."
+        <div className="mb-6 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <Select
+            label="Menşei"
+            value={menseiId}
+            onChange={(e) => onMenseiChange(e.target.value)}
+            options={menseiOptions}
+            disabled={menseilerQuery.isLoading}
+          />
+          <Select
+            label="Bölge"
+            value={bolgeId}
+            onChange={(e) => onBolgeChange(e.target.value)}
+            options={bolgeOptions}
+            disabled={!menseiId || bolgelerQuery.isLoading}
+          />
+          <Select
+            label="Mıntıka"
+            value={mintikaId}
+            onChange={(e) => onMintikaChange(e.target.value)}
+            options={mintikaOptions}
+            disabled={!bolgeId || mintikalarQuery.isLoading}
+          />
+          <Select
+            label="Alım noktası"
+            value={alimNoktasiId}
+            onChange={(e) => onAlimNoktasiChange(e.target.value)}
+            options={alimNoktasiOptions}
+            disabled={!mintikaId || alimNoktalariQuery.isLoading}
+          />
+          <Select
+            label="Köy"
+            value={koyId}
+            onChange={(e) => setKoyId(e.target.value)}
+            options={koyOptions}
+            disabled={!alimNoktasiId || koylerQuery.isLoading}
           />
         </div>
 
-        {showSelectEkiciHint ? (
-          <p className="text-sm text-muted">Listelemek için yukarıdan bir ekici seçin.</p>
+        {!filtersReady ? (
+          <p className="text-sm text-muted">
+            Listelemek için menşei, bölge, mıntıka, alım noktası ve köy seçin.
+          </p>
         ) : (
           <SurveyResponsesTable
             data={responsesQuery.data ?? []}

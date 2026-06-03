@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { AuthLayout } from '@/components/layout/AuthLayout'
 import { ProtectedRoute } from '@/components/routing/ProtectedRoute'
@@ -32,7 +32,11 @@ export const router = createBrowserRouter([
           { index: true, element: <DashboardPage /> },
           { path: 'soru-yonetimi', element: <QuestionsPage /> },
           { path: 'tanimlamalar/soru-tanimlamalari', element: <QuestionsPage /> },
-          { path: 'anket-yonetimi', element: <SurveysPage /> },
+          { path: 'tanimlamalar/anket-tanimlamalari', element: <SurveysPage /> },
+          {
+            path: 'anket-yonetimi',
+            element: <Navigate to="/tanimlamalar/anket-tanimlamalari" replace />,
+          },
           { path: 'anket-cevaplari', element: <SurveyResponsesPage /> },
           { path: 'raporlar', element: <ModulePage /> },
           { path: 'tanimlamalar', element: <ModulePage /> },

@@ -3,12 +3,16 @@ import type { AppError } from '@/lib/api/api-error'
 import { isDevAuthEnabled } from '@/features/auth/dev/dev-auth'
 import { devResponsesStore } from '../dev/dev-responses-store'
 import type {
+  AlimNoktasiDto,
   AnketCevapDto,
-  EkiciDto,
+  BolgeDto,
+  FilterOptionDto,
+  KoyDto,
+  MintikaDto,
   SurveyResponseGroup,
   SurveyResponsesQueryParams,
 } from '../types/survey-response.types'
-import { filterSurveyResponseGroups, groupAnketCevaplari } from '../utils/map-anket-cevap'
+import { groupAnketCevaplari } from '../utils/map-anket-cevap'
 
 function isNetworkError(error: unknown): boolean {
   return (
@@ -30,24 +34,56 @@ async function withDevFallback<T>(apiCall: () => Promise<T>, devCall: () => T): 
   }
 }
 
+function toQueryRecord(params: SurveyResponsesQueryParams): Record<string, unknown> {
+  return {
+    menseiId: params.menseiId,
+    bolgeId: params.bolgeId,
+    alimNoktasiId: params.alimNoktasiId,
+    mintikaId: params.mintikaId,
+    koyId: params.koyId,
+  }
+}
+
 export const surveyResponsesApi = {
-  getEkiciler: () =>
+  getMenseiler: () =>
     withDevFallback(
-      () => apiClient.get<EkiciDto[]>('/api/Ekici'),
-      () => devResponsesStore.getEkiciler(),
+      () => apiClient.get<FilterOptionDto[]>('/api/Mensei'),
+      () => devResponsesStore.getMenseiler(),
     ),
 
-  getByEkici: async (params: SurveyResponsesQueryParams): Promise<SurveyResponseGroup[]> => {
-    const fetchGroups = async (): Promise<SurveyResponseGroup[]> => {
-      if (!params.ekiciId) return []
+  getBolgeler: (menseiId: number) =>
+    withDevFallback(
+      () => apiClient.get<BolgeDto[]>(`/api/Mensei/${menseiId}/Bolge`),
+      () => devResponsesStore.getBolgeler(menseiId),
+    ),
 
-      const items = await apiClient.get<AnketCevapDto[]>('/api/AnketCevap', {
-        ekiciId: params.ekiciId,
-      })
-      const groups = groupAnketCevaplari(items)
-      return filterSurveyResponseGroups(groups, params.search)
+  getMintikalar: (bolgeId: number) =>
+    withDevFallback(
+      () => apiClient.get<MintikaDto[]>(`/api/Bolge/${bolgeId}/Mintika`),
+      () => devResponsesStore.getMintikalar(bolgeId),
+    ),
+
+  getAlimNoktalari: (mintikaId: number) =>
+    withDevFallback(
+      () => apiClient.get<AlimNoktasiDto[]>(`/api/Mintika/${mintikaId}/AlimNoktasi`),
+      () => devResponsesStore.getAlimNoktalari(mintikaId),
+    ),
+
+  getKoyler: (alimNoktasiId: number) =>
+    withDevFallback(
+      () => apiClient.get<KoyDto[]>(`/api/AlimNoktasi/${alimNoktasiId}/Koy`),
+      () => devResponsesStore.getKoyler(alimNoktasiId),
+    ),
+
+  getFiltered: async (params: SurveyResponsesQueryParams): Promise<SurveyResponseGroup[]> => {
+    const fetchGroups = async (): Promise<SurveyResponseGroup[]> => {
+      const items = await apiClient.get<AnketCevapDto[]>(
+        '/api/AnketCevap',
+        toQueryRecord(params),
+      )
+      return groupAnketCevaplari(items)
     }
 
-    return withDevFallback(fetchGroups, () => devResponsesStore.getByEkici(params))
+    return withDevFallback(fetchGroups, () => devResponsesStore.getFiltered(params))
   },
 }

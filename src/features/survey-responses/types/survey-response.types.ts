@@ -1,12 +1,22 @@
-export interface EkiciDto {
-  id: string
+export interface FilterOptionDto {
+  id: number
   adi: string
-  soyad: string | null
 }
 
-export function formatEkiciLabel(ekici: Pick<EkiciDto, 'adi' | 'soyad' | 'id'>): string {
-  const label = [ekici.adi, ekici.soyad].filter(Boolean).join(' ').trim()
-  return label || ekici.id
+export interface BolgeDto extends FilterOptionDto {
+  menseiId: number
+}
+
+export interface MintikaDto extends FilterOptionDto {
+  bolgeId: number
+}
+
+export interface AlimNoktasiDto extends FilterOptionDto {
+  mintikaId: number
+}
+
+export interface KoyDto extends FilterOptionDto {
+  alimNoktasiId: number
 }
 
 export interface AnketCevapDto {
@@ -18,8 +28,16 @@ export interface AnketCevapDto {
   ekiciSoyad: string
   sablonId: number
   sablonAdi: string
+  menseiId?: number | null
+  menseiAdi?: string | null
+  bolgeId?: number | null
+  bolgeAdi?: string | null
+  alimNoktasiId?: number | null
+  alimNoktasiAdi?: string | null
   mintikaId: number
   mintikaAdi: string
+  koyId?: number | null
+  koyAdi?: string | null
   kullaniciId: number
   islemTarihi: string
   cevapAltSecenekId: number | null
@@ -48,6 +66,19 @@ export interface SurveyResponseGroup {
 }
 
 export interface SurveyResponsesQueryParams {
-  ekiciId?: string
-  search?: string
+  menseiId?: number
+  bolgeId?: number
+  alimNoktasiId?: number
+  mintikaId?: number
+  koyId?: number
+}
+
+export function hasAllSurveyFilters(params?: SurveyResponsesQueryParams): boolean {
+  return Boolean(
+    params?.menseiId &&
+      params?.bolgeId &&
+      params?.alimNoktasiId &&
+      params?.mintikaId &&
+      params?.koyId,
+  )
 }

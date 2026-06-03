@@ -28,13 +28,15 @@ export const sidebarSections: NavSection[] = [
     items: [
       { to: '/', label: 'Ana Sayfa', icon: LayoutDashboard, end: true },
       { to: '/soru-yonetimi', label: 'Soru Ekleme', icon: FileQuestion },
-      { to: '/anket-yonetimi', label: 'Anket Ekleme', icon: ClipboardList },
       { to: '/anket-cevaplari', label: 'Cevaplanan Anketler', icon: MessageSquareReply },
       { to: '/raporlar', label: 'Raporlar', icon: BarChart3 },
       {
         label: 'Tanımlamalar',
         icon: BookMarked,
-        children: [{ to: '/tanimlamalar/soru-tanimlamalari', label: 'Tanımlı Sorular', icon: FileQuestion }],
+        children: [
+          { to: '/tanimlamalar/soru-tanimlamalari', label: 'Tanımlı Sorular', icon: FileQuestion },
+          { to: '/tanimlamalar/anket-tanimlamalari', label: 'Anket Tanımlama', icon: ClipboardList },
+        ],
       },
     ],
   },
@@ -50,11 +52,11 @@ export const sidebarSections: NavSection[] = [
 export const pageTitles: Record<string, string> = {
   '/': 'Ana Sayfa',
   '/soru-yonetimi': 'Soru Ekleme',
-  '/anket-yonetimi': 'Anket Ekleme',
   '/anket-cevaplari': 'Cevaplanan Anketler',
   '/raporlar': 'Raporlar',
   '/tanimlamalar': 'Tanımlamalar',
   '/tanimlamalar/soru-tanimlamalari': 'Tanımlı Sorular',
+  '/tanimlamalar/anket-tanimlamalari': 'Anket Tanımlama',
   '/yetkilendirme': 'Yetkilendirme',
   '/users': 'Kullanıcılar',
   '/settings': 'Ayarlar',
