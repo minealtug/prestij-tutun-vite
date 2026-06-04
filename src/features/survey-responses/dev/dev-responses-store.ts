@@ -10,6 +10,7 @@ import type {
   SurveyResponsesQueryParams,
 } from '../types/survey-response.types'
 import { getAnketCevapRowId } from '../types/survey-response.types'
+import { filterAnketCevapList } from '../utils/filter-anket-cevap-list'
 import { sortAnketCevapOzetList } from '../utils/map-anket-cevap'
 
 const MENSEI_SEED: FilterOptionDto[] = [
@@ -45,6 +46,7 @@ const OZET_SEED: AnketCevapOzetItem[] = [
   {
     id: getAnketCevapRowId('dev-ekici-1', 1),
     ekiciId: 'dev-ekici-1',
+    baslikId: 1,
     sablonId: 1,
     ekiciAd: 'Test',
     ekiciSoyad: 'Ekici',
@@ -91,10 +93,6 @@ const DETAIL_SORULAR: AnketSoruCevapDto[] = [
   },
 ]
 
-function matchesFilters(_item: AnketCevapOzetItem, _params: SurveyResponsesQueryParams): boolean {
-  return true
-}
-
 export const devResponsesStore = {
   getMenseiler(): FilterOptionDto[] {
     return MENSEI_SEED
@@ -121,8 +119,7 @@ export const devResponsesStore = {
   },
 
   getList(params: SurveyResponsesQueryParams): AnketCevapOzetItem[] {
-    const items = OZET_SEED.filter((r) => matchesFilters(r, params))
-    return sortAnketCevapOzetList(items)
+    return filterAnketCevapList(sortAnketCevapOzetList(OZET_SEED), params)
   },
 
   getDetail(ekiciId: string, sablonId: number): AnketCevapDetayDto {

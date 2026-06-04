@@ -54,9 +54,13 @@ export function mapAnketCevapOzetFromApi(raw: unknown): AnketCevapOzetItem | nul
   const sablonId = Number(pick(row, 'sablonId', 'SablonId') ?? 0)
   if (!Number.isFinite(sablonId) || sablonId <= 0) return null
 
+  const baslikIdRaw = Number(pick(row, 'baslikId', 'BaslikId') ?? NaN)
+  const baslikId = Number.isFinite(baslikIdRaw) && baslikIdRaw > 0 ? baslikIdRaw : undefined
+
   return {
     id: getAnketCevapRowId(ekiciId, sablonId),
     ekiciId,
+    baslikId,
     sablonId,
     ekiciAd: String(pick(row, 'ekiciAd', 'EkiciAd') ?? ''),
     ekiciSoyad: String(pick(row, 'ekiciSoyad', 'EkiciSoyad') ?? ''),

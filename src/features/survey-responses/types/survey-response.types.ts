@@ -38,6 +38,7 @@ export interface AnketSoruCevapDto {
 export interface AnketCevapOzetItem {
   id: string
   ekiciId: string
+  baslikId?: number
   sablonId: number
   ekiciAd: string
   ekiciSoyad: string
@@ -68,6 +69,9 @@ export interface SoruCevapDisplay {
 export const UNANSWERED_ANSWER_LABEL = 'Yanıtlanmadı'
 
 export interface SurveyResponsesQueryParams {
+  baslikId?: number
+  /** Seçilen anket adı — API yanıtını istemci tarafında süzmek için (query string'e eklenmez). */
+  anketAdi?: string
   menseiId?: number
   bolgeId?: number
   alimNoktasiId?: number
@@ -75,7 +79,7 @@ export interface SurveyResponsesQueryParams {
   koyId?: number
 }
 
-export function hasAnySurveyFilter(params?: SurveyResponsesQueryParams): boolean {
+export function hasGeoSurveyFilter(params?: SurveyResponsesQueryParams): boolean {
   return Boolean(
     params?.menseiId ||
       params?.bolgeId ||
@@ -83,6 +87,14 @@ export function hasAnySurveyFilter(params?: SurveyResponsesQueryParams): boolean
       params?.mintikaId ||
       params?.koyId,
   )
+}
+
+export function hasAnketSurveyFilter(params?: SurveyResponsesQueryParams): boolean {
+  return Boolean(params?.baslikId || params?.anketAdi?.trim())
+}
+
+export function hasAnySurveyFilter(params?: SurveyResponsesQueryParams): boolean {
+  return hasGeoSurveyFilter(params) || hasAnketSurveyFilter(params)
 }
 
 export function getAnketCevapRowId(ekiciId: string, sablonId: number): string {

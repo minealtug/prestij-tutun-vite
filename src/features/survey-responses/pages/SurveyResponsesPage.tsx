@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
 import { useAuthStore } from '@/stores/auth-store'
+import { SurveyResponseStatsCards } from '../components/SurveyResponseStatsCards'
 import { SurveyResponsesTable } from '../components/SurveyResponsesTable'
 import {
   useAlimNoktalari,
@@ -12,10 +13,12 @@ import {
   useMenseiler,
   useMintikalar,
 } from '../hooks/use-survey-response-filters'
+import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { useSurveyResponses } from '../hooks/use-survey-responses'
 import { PageContainer } from '@/components/layout/PageContainer'
 import type { FilterOptionDto, SurveyResponsesQueryParams } from '../types/survey-response.types'
 import { hasAnySurveyFilter } from '../types/survey-response.types'
+import { formatAppliedFilterSummary } from '../utils/format-applied-filter-summary'
 
 function toSelectOptions(
   items: FilterOptionDto[],
@@ -28,28 +31,51 @@ function toSelectOptions(
 
 export function SurveyResponsesPage() {
   const user = useAuthStore((s) => s.user)
+  const [baslikId, setBaslikId] = useState('')
   const [menseiId, setMenseiId] = useState('')
   const [bolgeId, setBolgeId] = useState('')
   const [mintikaId, setMintikaId] = useState('')
   const [alimNoktasiId, setAlimNoktasiId] = useState('')
   const [koyId, setKoyId] = useState('')
   const [appliedFilters, setAppliedFilters] = useState<SurveyResponsesQueryParams | null>(null)
+  const [appliedFilterSummary, setAppliedFilterSummary] = useState('')
 
+  const baslikIdNum = useMemo(() => {
+    const num = Number(baslikId)
+    return Number.isFinite(num) && num > 0 ? num : undefined
+  }, [baslikId])
   const menseiIdNum = menseiId ? Number(menseiId) : undefined
   const bolgeIdNum = bolgeId ? Number(bolgeId) : undefined
   const mintikaIdNum = mintikaId ? Number(mintikaId) : undefined
   const alimNoktasiIdNum = alimNoktasiId ? Number(alimNoktasiId) : undefined
   const koyIdNum = koyId ? Number(koyId) : undefined
 
+  const anketlerQuery = useSurveys()
+
+  const selectedAnketAdi = useMemo(() => {
+    if (!baslikId) return undefined
+    return (anketlerQuery.data ?? []).find((survey) => String(survey.id) === baslikId)?.name
+  }, [anketlerQuery.data, baslikId])
+
   const draftFilterParams = useMemo(
     () => ({
+      baslikId: baslikIdNum,
+      anketAdi: selectedAnketAdi,
       menseiId: menseiIdNum,
       bolgeId: bolgeIdNum,
       mintikaId: mintikaIdNum,
       alimNoktasiId: alimNoktasiIdNum,
       koyId: koyIdNum,
     }),
-    [menseiIdNum, bolgeIdNum, mintikaIdNum, alimNoktasiIdNum, koyIdNum],
+    [
+      baslikIdNum,
+      selectedAnketAdi,
+      menseiIdNum,
+      bolgeIdNum,
+      mintikaIdNum,
+      alimNoktasiIdNum,
+      koyIdNum,
+    ],
   )
 
   const draftFiltersReady = hasAnySurveyFilter(draftFilterParams)
@@ -66,7 +92,25 @@ export function SurveyResponsesPage() {
   const handleApplyFilters = () => {
     if (!draftFiltersReady) return
     setAppliedFilters(draftFilterParams)
+    setAppliedFilterSummary(
+      formatAppliedFilterSummary(draftFilterParams, {
+        anketler: anketlerQuery.data ?? [],
+        menseiler: menseilerQuery.data ?? [],
+        bolgeler: bolgelerQuery.data ?? [],
+        mintikalar: mintikalarQuery.data ?? [],
+        alimNoktalari: alimNoktalariQuery.data ?? [],
+        koyler: koylerQuery.data ?? [],
+      }),
+    )
   }
+
+  const anketOptions = useMemo(() => {
+    const options = [{ value: '', label: 'Anket seçin' }]
+    for (const survey of anketlerQuery.data ?? []) {
+      options.push({ value: String(survey.id), label: survey.name })
+    }
+    return options
+  }, [anketlerQuery.data])
 
   const menseiOptions = useMemo(
     () => toSelectOptions(menseilerQuery.data ?? [], 'Menşei seçin'),
@@ -100,7 +144,14 @@ export function SurveyResponsesPage() {
       </div>
 
       <Card className="overflow-hidden !p-0" interactive={false}>
-        <div className="grid w-full grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid w-full grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <Select
+            label="Anket"
+            value={baslikId}
+            onChange={(e) => setBaslikId(e.target.value)}
+            options={anketOptions}
+            disabled={anketlerQuery.isLoading}
+          />
           <Select
             label="Menşei"
             value={menseiId}
@@ -154,13 +205,20 @@ export function SurveyResponsesPage() {
             Listelemek için en az bir filtre seçin ve Filtrele&apos;ye tıklayın.
           </p>
         ) : (
-          <SurveyResponsesTable
-            data={responsesQuery.data ?? []}
-            isLoading={responsesQuery.isLoading}
-            isError={responsesQuery.isError}
-            error={responsesQuery.error}
-            onRefresh={() => void responsesQuery.refetch()}
-          />
+          <>
+            <SurveyResponseStatsCards
+              data={responsesQuery.data ?? []}
+              filterSummary={appliedFilterSummary}
+              isLoading={responsesQuery.isLoading}
+            />
+            <SurveyResponsesTable
+              data={responsesQuery.data ?? []}
+              isLoading={responsesQuery.isLoading}
+              isError={responsesQuery.isError}
+              error={responsesQuery.error}
+              onRefresh={() => void responsesQuery.refetch()}
+            />
+          </>
         )}
       </Card>
     </PageContainer>

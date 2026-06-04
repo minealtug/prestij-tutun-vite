@@ -12,6 +12,11 @@ import type {
   MintikaDto,
   SurveyResponsesQueryParams,
 } from '../types/survey-response.types'
+import {
+  hasAnketSurveyFilter,
+  hasGeoSurveyFilter,
+} from '../types/survey-response.types'
+import { filterAnketCevapList } from '../utils/filter-anket-cevap-list'
 import { sortAnketCevapOzetList } from '../utils/map-anket-cevap'
 import {
   mapAnketCevapDetayFromApi,
@@ -85,12 +90,47 @@ async function fetchKoylerFromApi(alimNoktasiId?: number): Promise<KoyDto[]> {
 
 function toQueryRecord(params: SurveyResponsesQueryParams): Record<string, unknown> {
   const record: Record<string, unknown> = {}
+  if (params.baslikId != null) record.baslikId = params.baslikId
   if (params.menseiId != null) record.menseiId = params.menseiId
   if (params.bolgeId != null) record.bolgeId = params.bolgeId
   if (params.mintikaId != null) record.mintikaId = params.mintikaId
   if (params.alimNoktasiId != null) record.alimNoktasiId = params.alimNoktasiId
   if (params.koyId != null) record.koyId = params.koyId
   return record
+}
+
+function mapAndFilterAnketCevapItems(
+  items: unknown[],
+  params: SurveyResponsesQueryParams,
+): AnketCevapOzetItem[] {
+  const ozet = items
+    .map((item) => mapAnketCevapOzetFromApi(item))
+    .filter((item): item is AnketCevapOzetItem => item !== null)
+  return filterAnketCevapList(sortAnketCevapOzetList(ozet), params)
+}
+
+async function fetchAnketCevapListFromApi(
+  params: SurveyResponsesQueryParams,
+): Promise<AnketCevapOzetItem[]> {
+  if (!hasGeoSurveyFilter(params) && hasAnketSurveyFilter(params)) {
+    const menseiler = await apiClient.get<FilterOptionDto[]>('/api/Mensei')
+    const lists = await Promise.all(
+      menseiler.map((mensei) =>
+        apiClient.get<unknown[]>(
+          '/api/AnketCevap',
+          toQueryRecord({ ...params, menseiId: mensei.id }),
+        ),
+      ),
+    )
+    const byId = new Map<string, AnketCevapOzetItem>()
+    for (const item of mapAndFilterAnketCevapItems(lists.flat(), params)) {
+      byId.set(item.id, item)
+    }
+    return sortAnketCevapOzetList([...byId.values()])
+  }
+
+  const items = await apiClient.get<unknown[]>('/api/AnketCevap', toQueryRecord(params))
+  return mapAndFilterAnketCevapItems(items, params)
 }
 
 export const surveyResponsesApi = {
@@ -124,17 +164,11 @@ export const surveyResponsesApi = {
       () => devResponsesStore.getKoyler(alimNoktasiId),
     ),
 
-  getList: async (params: SurveyResponsesQueryParams): Promise<AnketCevapOzetItem[]> => {
-    const fetchList = async (): Promise<AnketCevapOzetItem[]> => {
-      const items = await apiClient.get<unknown[]>('/api/AnketCevap', toQueryRecord(params))
-      const ozet = items
-        .map((item) => mapAnketCevapOzetFromApi(item))
-        .filter((item): item is AnketCevapOzetItem => item !== null)
-      return sortAnketCevapOzetList(ozet)
-    }
-
-    return withDevFallback(fetchList, () => devResponsesStore.getList(params))
-  },
+  getList: async (params: SurveyResponsesQueryParams): Promise<AnketCevapOzetItem[]> =>
+    withDevFallback(
+      () => fetchAnketCevapListFromApi(params),
+      () => devResponsesStore.getList(params),
+    ),
 
   getDetail: (ekiciId: string, sablonId: number) =>
     withDevFallback(
