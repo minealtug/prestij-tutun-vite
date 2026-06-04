@@ -1,15 +1,14 @@
 import type {
   AlimNoktasiDto,
-  AnketCevapDto,
+  AnketCevapGrupDto,
   BolgeDto,
   FilterOptionDto,
   KoyDto,
   MintikaDto,
   SurveyResponseGroup,
   SurveyResponsesQueryParams,
-  YanitlanmayanSorularDto,
 } from '../types/survey-response.types'
-import { groupAnketCevaplari } from '../utils/map-anket-cevap'
+import { mapAnketCevapListFromApi } from '../utils/map-anket-cevap'
 
 const MENSEI_SEED: FilterOptionDto[] = [
   { id: 1, adi: 'TÜRKİYE' },
@@ -40,73 +39,140 @@ const KOY_SEED: KoyDto[] = [
   { id: 103, adi: 'ÇAMLIK', alimNoktasiId: 2 },
 ]
 
-const CEVAP_SEED: AnketCevapDto[] = [
+const CEVAP_GRUP_SEED: AnketCevapGrupDto[] = [
   {
-    id: 'resp-1',
-    soruId: 1,
-    soruMetni: 'Genel memnuniyetiniz?',
     ekiciId: 'dev-ekici-1',
     ekiciAd: 'Test',
     ekiciSoyad: 'Ekici',
-    sablonId: 1,
-    sablonAdi: 'Sezon Sonu Anketi',
-    menseiId: 1,
-    menseiAdi: 'TÜRKİYE',
-    bolgeId: 1,
-    bolgeAdi: 'EGE',
     mintikaId: 6,
     mintikaAdi: 'KALE',
-    alimNoktasiId: 1,
-    alimNoktasiAdi: 'İZMİR',
-    koyId: 101,
-    koyAdi: 'YENİKÖY',
-    kullaniciId: 1,
-    islemTarihi: '2026-05-20T14:32:00.000Z',
-    cevapAltSecenekId: null,
-    cevapAltSecenekAdi: null,
-    cevapText: 'Çok memnunum',
-    cevapNumeric: null,
-    cevapDatetime: null,
-    birimId: null,
-    kaynak: 'Dev',
-  },
-  {
-    id: 'resp-2',
-    soruId: 2,
-    soruMetni: 'Ürün kalitesi hakkında görüşünüz',
-    ekiciId: 'dev-ekici-1',
-    ekiciAd: 'Test',
-    ekiciSoyad: 'Ekici',
     sablonId: 1,
     sablonAdi: 'Sezon Sonu Anketi',
-    menseiId: 1,
-    menseiAdi: 'TÜRKİYE',
-    bolgeId: 1,
-    bolgeAdi: 'EGE',
-    mintikaId: 6,
-    mintikaAdi: 'KALE',
-    alimNoktasiId: 1,
-    alimNoktasiAdi: 'İZMİR',
-    koyId: 101,
-    koyAdi: 'YENİKÖY',
-    kullaniciId: 1,
-    islemTarihi: '2026-05-20T14:32:00.000Z',
-    cevapAltSecenekId: null,
-    cevapAltSecenekAdi: null,
-    cevapText: 'Kalite standartların üzerinde',
-    cevapNumeric: null,
-    cevapDatetime: null,
-    birimId: null,
-    kaynak: 'Dev',
+    baslikId: 1,
+    baslikAdi: 'Sezon Sonu Anketi',
+    sonIslemTarihi: '2026-05-20T14:32:00.000Z',
+    yanitlananSoruSayisi: 2,
+    yanitlanmayanSoruSayisi: 2,
+    sorular: [
+      {
+        sira: 1,
+        soruId: 1,
+        soruMetni: 'Genel memnuniyetiniz?',
+        altSoruMetni: null,
+        zorunlu: true,
+        bagliSoru: false,
+        yanitlandi: true,
+        cevap: {
+          id: 'resp-1',
+          soruId: 1,
+          soruMetni: 'Genel memnuniyetiniz?',
+          ekiciId: 'dev-ekici-1',
+          ekiciAd: 'Test',
+          ekiciSoyad: 'Ekici',
+          sablonId: 1,
+          sablonAdi: 'Sezon Sonu Anketi',
+          mintikaId: 6,
+          mintikaAdi: 'KALE',
+          kullaniciId: 1,
+          islemTarihi: '2026-05-20T14:32:00.000Z',
+          cevapAltSecenekId: null,
+          cevapAltSecenekAdi: null,
+          cevapText: 'Çok memnunum',
+          cevapNumeric: null,
+          cevapDatetime: null,
+          birimId: null,
+          kaynak: 'Dev',
+        },
+      },
+      {
+        sira: 2,
+        soruId: 2,
+        soruMetni: 'Ürün kalitesi hakkında görüşünüz',
+        altSoruMetni: null,
+        zorunlu: true,
+        bagliSoru: false,
+        yanitlandi: true,
+        cevap: {
+          id: 'resp-2',
+          soruId: 2,
+          soruMetni: 'Ürün kalitesi hakkında görüşünüz',
+          ekiciId: 'dev-ekici-1',
+          ekiciAd: 'Test',
+          ekiciSoyad: 'Ekici',
+          sablonId: 1,
+          sablonAdi: 'Sezon Sonu Anketi',
+          mintikaId: 6,
+          mintikaAdi: 'KALE',
+          kullaniciId: 1,
+          islemTarihi: '2026-05-20T14:32:00.000Z',
+          cevapAltSecenekId: null,
+          cevapAltSecenekAdi: null,
+          cevapText: 'Kalite standartların üzerinde',
+          cevapNumeric: null,
+          cevapDatetime: null,
+          birimId: null,
+          kaynak: 'Dev',
+        },
+      },
+      {
+        sira: 3,
+        soruId: 3,
+        soruMetni: 'Ek önerileriniz?',
+        altSoruMetni: null,
+        zorunlu: false,
+        bagliSoru: false,
+        yanitlandi: false,
+        cevap: null,
+      },
+      {
+        sira: 4,
+        soruId: 4,
+        soruMetni: 'Detaylı açıklama',
+        altSoruMetni: 'Kalite değerlendirmenize göre',
+        zorunlu: false,
+        bagliSoru: true,
+        yanitlandi: false,
+        cevap: null,
+      },
+    ],
+    yanitlananSorular: [],
+    yanitlanmayanSorular: [
+      {
+        id: 3,
+        baslikId: 1,
+        baslikAdi: 'Sezon Sonu Anketi',
+        cevapGirdiTipAdi: 'Text',
+        soruMetni: 'Ek önerileriniz?',
+        altSoruMetni: null,
+        zorunlu: false,
+        aktif: true,
+        secenekGrupId: null,
+        bagliSoru: false,
+        bagliOlduguSoruId: null,
+        bagliOlduguSoru: null,
+        kaynak: 'Dev',
+      },
+      {
+        id: 4,
+        baslikId: 1,
+        baslikAdi: 'Sezon Sonu Anketi',
+        cevapGirdiTipAdi: 'Text',
+        soruMetni: 'Detaylı açıklama',
+        altSoruMetni: 'Kalite değerlendirmenize göre',
+        zorunlu: false,
+        aktif: true,
+        secenekGrupId: null,
+        bagliSoru: true,
+        bagliOlduguSoruId: 2,
+        bagliOlduguSoru: 'Ürün kalitesi hakkında görüşünüz',
+        kaynak: 'Dev',
+      },
+    ],
   },
 ]
 
-function matchesFilters(row: AnketCevapDto, params: SurveyResponsesQueryParams): boolean {
-  if (params.menseiId && row.menseiId !== params.menseiId) return false
-  if (params.bolgeId && row.bolgeId !== params.bolgeId) return false
-  if (params.mintikaId && row.mintikaId !== params.mintikaId) return false
-  if (params.alimNoktasiId && row.alimNoktasiId !== params.alimNoktasiId) return false
-  if (params.koyId && row.koyId !== params.koyId) return false
+function matchesFilters(grup: AnketCevapGrupDto, params: SurveyResponsesQueryParams): boolean {
+  if (params.mintikaId && grup.mintikaId !== params.mintikaId) return false
   return true
 }
 
@@ -136,42 +202,7 @@ export const devResponsesStore = {
   },
 
   getFiltered(params: SurveyResponsesQueryParams): SurveyResponseGroup[] {
-    const items = CEVAP_SEED.filter((r) => matchesFilters(r, params))
-    return groupAnketCevaplari(items)
-  },
-
-  getUnansweredQuestions(ekiciId: string, baslikId: number): YanitlanmayanSorularDto {
-    const answeredIds = new Set(
-      CEVAP_SEED.filter((r) => r.ekiciId === ekiciId && r.sablonId === baslikId).map((r) => r.soruId),
-    )
-
-    const unanswered =
-      ekiciId === 'dev-ekici-1' && baslikId === 1
-        ? [
-            {
-              id: 3,
-              baslikId: 1,
-              baslikAdi: 'Sezon Sonu Anketi',
-              cevapGirdiTipAdi: 'Text',
-              soruMetni: 'Ek önerileriniz?',
-              altSoruMetni: null,
-              zorunlu: false,
-              aktif: true,
-              secenekGrupId: null,
-              bagliSoru: false,
-              bagliOlduguSoruId: null,
-              bagliOlduguSoru: null,
-              kaynak: 'Dev',
-            },
-          ].filter((q) => !answeredIds.has(q.id))
-        : []
-
-    return {
-      ekiciId,
-      baslikId,
-      baslikAdi: 'Sezon Sonu Anketi',
-      yanitlanmayanSoruSayisi: unanswered.length,
-      yanitlanmayanSorular: unanswered,
-    }
+    const items = CEVAP_GRUP_SEED.filter((r) => matchesFilters(r, params))
+    return mapAnketCevapListFromApi(items)
   },
 }

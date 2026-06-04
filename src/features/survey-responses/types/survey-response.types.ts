@@ -19,7 +19,7 @@ export interface KoyDto extends FilterOptionDto {
   alimNoktasiId: number
 }
 
-export interface AnketCevapDto {
+export interface AnketCevapDegerDto {
   id: string
   soruId: number
   soruMetni: string
@@ -28,17 +28,8 @@ export interface AnketCevapDto {
   ekiciSoyad: string
   sablonId: number
   sablonAdi: string
-  baslikId?: number
-  menseiId?: number | null
-  menseiAdi?: string | null
-  bolgeId?: number | null
-  bolgeAdi?: string | null
-  alimNoktasiId?: number | null
-  alimNoktasiAdi?: string | null
   mintikaId: number
   mintikaAdi: string
-  koyId?: number | null
-  koyAdi?: string | null
   kullaniciId: number
   islemTarihi: string
   cevapAltSecenekId: number | null
@@ -50,11 +41,15 @@ export interface AnketCevapDto {
   kaynak: string | null
 }
 
-export interface ResponseAnswerDetail {
-  questionNo: number
-  questionText: string
-  answer: string
-  isUnanswered?: boolean
+export interface AnketSoruCevapDto {
+  sira: number
+  soruId: number
+  soruMetni: string
+  altSoruMetni?: string | null
+  zorunlu?: boolean
+  bagliSoru?: boolean
+  yanitlandi: boolean
+  cevap?: AnketCevapDegerDto | null
 }
 
 export interface YanitlanmayanSoruDto {
@@ -69,16 +64,39 @@ export interface YanitlanmayanSoruDto {
   secenekGrupId?: number | null
   bagliSoru?: boolean
   bagliOlduguSoruId?: number | null
-  bagliOlduguSoru?: YanitlanmayanSoruDto | null
+  bagliOlduguSoru?: string | YanitlanmayanSoruDto | null
   kaynak?: string | null
 }
 
-export interface YanitlanmayanSorularDto {
+export interface AnketCevapGrupDto {
   ekiciId: string
+  ekiciAd: string
+  ekiciSoyad: string
+  mintikaId: number
+  mintikaAdi: string
+  sablonId: number
+  sablonAdi: string
   baslikId: number
-  baslikAdi?: string | null
+  baslikAdi: string
+  sonIslemTarihi: string
+  yanitlananSoruSayisi: number
   yanitlanmayanSoruSayisi: number
+  sorular: AnketSoruCevapDto[]
+  yanitlananSorular: AnketCevapDegerDto[]
   yanitlanmayanSorular: YanitlanmayanSoruDto[]
+}
+
+export interface ResponseAnswerDetail {
+  questionNo: number
+  soruId: number
+  questionText: string
+  altSoruMetni?: string | null
+  answer: string
+  isUnanswered?: boolean
+  bagliSoru?: boolean
+  bagliOlduguSoruId?: number | null
+  bagliOlduguSoruText?: string | null
+  zorunlu?: boolean
 }
 
 export interface SurveyResponseGroup {
@@ -86,10 +104,11 @@ export interface SurveyResponseGroup {
   ekiciId: string
   baslikId: number
   submittedAt: string
-  username: string
   fullName: string
   surveyName: string
   mintikaAdi: string
+  yanitlananSoruSayisi: number
+  yanitlanmayanSoruSayisi: number
   answers: ResponseAnswerDetail[]
 }
 

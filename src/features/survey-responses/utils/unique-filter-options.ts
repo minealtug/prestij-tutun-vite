@@ -1,7 +1,8 @@
-export function uniqueById<T extends { id: number; adi: string }>(items: T[]): T[] {
-  const map = new Map<number, T>()
-  for (const item of items) {
-    map.set(item.id, item)
-  }
-  return [...map.values()].sort((a, b) => a.adi.localeCompare(b.adi, 'tr-TR'))
+export function uniqueById<T extends { id: number }>(items: T[]): T[] {
+  const seen = new Set<number>()
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
 }

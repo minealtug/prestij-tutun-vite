@@ -130,7 +130,10 @@ export function SurveyResponsesTable({
                         <td className="px-4 py-3 text-foreground">{row.surveyName}</td>
                         <td className="px-4 py-3">
                           <span className="rounded-full bg-accent-500/20 px-2.5 py-0.5 text-xs font-medium text-primary-800">
-                            {row.answers.length} cevaplı
+                            {row.yanitlananSoruSayisi} cevaplı
+                            {row.yanitlanmayanSoruSayisi > 0
+                              ? ` · ${row.yanitlanmayanSoruSayisi} eksik`
+                              : ''}
                           </span>
                         </td>
                       </tr>
