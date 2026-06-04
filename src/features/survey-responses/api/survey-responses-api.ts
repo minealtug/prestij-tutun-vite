@@ -4,15 +4,19 @@ import { isDevAuthEnabled } from '@/features/auth/dev/dev-auth'
 import { devResponsesStore } from '../dev/dev-responses-store'
 import type {
   AlimNoktasiDto,
+  AnketCevapDetayDto,
+  AnketCevapOzetItem,
   BolgeDto,
   FilterOptionDto,
   KoyDto,
   MintikaDto,
-  SurveyResponseGroup,
   SurveyResponsesQueryParams,
 } from '../types/survey-response.types'
-import { mapAnketCevapListFromApi } from '../utils/map-anket-cevap'
-import { mapAnketCevapGrupFromApi } from '../utils/normalize-survey-response-api'
+import { sortAnketCevapOzetList } from '../utils/map-anket-cevap'
+import {
+  mapAnketCevapDetayFromApi,
+  mapAnketCevapOzetFromApi,
+} from '../utils/normalize-survey-response-api'
 import { uniqueById } from '../utils/unique-filter-options'
 
 function isNetworkError(error: unknown): boolean {
@@ -80,13 +84,13 @@ async function fetchKoylerFromApi(alimNoktasiId?: number): Promise<KoyDto[]> {
 }
 
 function toQueryRecord(params: SurveyResponsesQueryParams): Record<string, unknown> {
-  return {
-    menseiId: params.menseiId,
-    bolgeId: params.bolgeId,
-    alimNoktasiId: params.alimNoktasiId,
-    mintikaId: params.mintikaId,
-    koyId: params.koyId,
-  }
+  const record: Record<string, unknown> = {}
+  if (params.menseiId != null) record.menseiId = params.menseiId
+  if (params.bolgeId != null) record.bolgeId = params.bolgeId
+  if (params.mintikaId != null) record.mintikaId = params.mintikaId
+  if (params.alimNoktasiId != null) record.alimNoktasiId = params.alimNoktasiId
+  if (params.koyId != null) record.koyId = params.koyId
+  return record
 }
 
 export const surveyResponsesApi = {
@@ -120,15 +124,26 @@ export const surveyResponsesApi = {
       () => devResponsesStore.getKoyler(alimNoktasiId),
     ),
 
-  getFiltered: async (params: SurveyResponsesQueryParams): Promise<SurveyResponseGroup[]> => {
-    const fetchGroups = async (): Promise<SurveyResponseGroup[]> => {
+  getList: async (params: SurveyResponsesQueryParams): Promise<AnketCevapOzetItem[]> => {
+    const fetchList = async (): Promise<AnketCevapOzetItem[]> => {
       const items = await apiClient.get<unknown[]>('/api/AnketCevap', toQueryRecord(params))
-      const groups = items
-        .map((item) => mapAnketCevapGrupFromApi(item))
-        .filter((item): item is NonNullable<typeof item> => item !== null)
-      return mapAnketCevapListFromApi(groups)
+      const ozet = items
+        .map((item) => mapAnketCevapOzetFromApi(item))
+        .filter((item): item is AnketCevapOzetItem => item !== null)
+      return sortAnketCevapOzetList(ozet)
     }
 
-    return withDevFallback(fetchGroups, () => devResponsesStore.getFiltered(params))
+    return withDevFallback(fetchList, () => devResponsesStore.getList(params))
   },
+
+  getDetail: (ekiciId: string, sablonId: number) =>
+    withDevFallback(
+      async (): Promise<AnketCevapDetayDto> => {
+        const raw = await apiClient.get<unknown>(
+          `/api/AnketCevap/ekici/${encodeURIComponent(ekiciId)}/sablon/${sablonId}`,
+        )
+        return mapAnketCevapDetayFromApi(raw)
+      },
+      () => devResponsesStore.getDetail(ekiciId, sablonId),
+    ),
 }

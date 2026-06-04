@@ -1,14 +1,16 @@
 import type {
   AlimNoktasiDto,
-  AnketCevapGrupDto,
+  AnketCevapDetayDto,
+  AnketCevapOzetItem,
+  AnketSoruCevapDto,
   BolgeDto,
   FilterOptionDto,
   KoyDto,
   MintikaDto,
-  SurveyResponseGroup,
   SurveyResponsesQueryParams,
 } from '../types/survey-response.types'
-import { mapAnketCevapListFromApi } from '../utils/map-anket-cevap'
+import { getAnketCevapRowId } from '../types/survey-response.types'
+import { sortAnketCevapOzetList } from '../utils/map-anket-cevap'
 
 const MENSEI_SEED: FilterOptionDto[] = [
   { id: 1, adi: 'TÜRKİYE' },
@@ -39,140 +41,57 @@ const KOY_SEED: KoyDto[] = [
   { id: 103, adi: 'ÇAMLIK', alimNoktasiId: 2 },
 ]
 
-const CEVAP_GRUP_SEED: AnketCevapGrupDto[] = [
+const OZET_SEED: AnketCevapOzetItem[] = [
   {
+    id: getAnketCevapRowId('dev-ekici-1', 1),
     ekiciId: 'dev-ekici-1',
+    sablonId: 1,
     ekiciAd: 'Test',
     ekiciSoyad: 'Ekici',
-    mintikaId: 6,
     mintikaAdi: 'KALE',
-    sablonId: 1,
-    sablonAdi: 'Sezon Sonu Anketi',
-    baslikId: 1,
     baslikAdi: 'Sezon Sonu Anketi',
+    sablonAdi: 'Sezon Sonu Anketi',
     sonIslemTarihi: '2026-05-20T14:32:00.000Z',
     yanitlananSoruSayisi: 2,
     yanitlanmayanSoruSayisi: 2,
-    sorular: [
-      {
-        sira: 1,
-        soruId: 1,
-        soruMetni: 'Genel memnuniyetiniz?',
-        altSoruMetni: null,
-        zorunlu: true,
-        bagliSoru: false,
-        yanitlandi: true,
-        cevap: {
-          id: 'resp-1',
-          soruId: 1,
-          soruMetni: 'Genel memnuniyetiniz?',
-          ekiciId: 'dev-ekici-1',
-          ekiciAd: 'Test',
-          ekiciSoyad: 'Ekici',
-          sablonId: 1,
-          sablonAdi: 'Sezon Sonu Anketi',
-          mintikaId: 6,
-          mintikaAdi: 'KALE',
-          kullaniciId: 1,
-          islemTarihi: '2026-05-20T14:32:00.000Z',
-          cevapAltSecenekId: null,
-          cevapAltSecenekAdi: null,
-          cevapText: 'Çok memnunum',
-          cevapNumeric: null,
-          cevapDatetime: null,
-          birimId: null,
-          kaynak: 'Dev',
-        },
-      },
-      {
-        sira: 2,
-        soruId: 2,
-        soruMetni: 'Ürün kalitesi hakkında görüşünüz',
-        altSoruMetni: null,
-        zorunlu: true,
-        bagliSoru: false,
-        yanitlandi: true,
-        cevap: {
-          id: 'resp-2',
-          soruId: 2,
-          soruMetni: 'Ürün kalitesi hakkında görüşünüz',
-          ekiciId: 'dev-ekici-1',
-          ekiciAd: 'Test',
-          ekiciSoyad: 'Ekici',
-          sablonId: 1,
-          sablonAdi: 'Sezon Sonu Anketi',
-          mintikaId: 6,
-          mintikaAdi: 'KALE',
-          kullaniciId: 1,
-          islemTarihi: '2026-05-20T14:32:00.000Z',
-          cevapAltSecenekId: null,
-          cevapAltSecenekAdi: null,
-          cevapText: 'Kalite standartların üzerinde',
-          cevapNumeric: null,
-          cevapDatetime: null,
-          birimId: null,
-          kaynak: 'Dev',
-        },
-      },
-      {
-        sira: 3,
-        soruId: 3,
-        soruMetni: 'Ek önerileriniz?',
-        altSoruMetni: null,
-        zorunlu: false,
-        bagliSoru: false,
-        yanitlandi: false,
-        cevap: null,
-      },
-      {
-        sira: 4,
-        soruId: 4,
-        soruMetni: 'Detaylı açıklama',
-        altSoruMetni: 'Kalite değerlendirmenize göre',
-        zorunlu: false,
-        bagliSoru: true,
-        yanitlandi: false,
-        cevap: null,
-      },
-    ],
-    yanitlananSorular: [],
-    yanitlanmayanSorular: [
-      {
-        id: 3,
-        baslikId: 1,
-        baslikAdi: 'Sezon Sonu Anketi',
-        cevapGirdiTipAdi: 'Text',
-        soruMetni: 'Ek önerileriniz?',
-        altSoruMetni: null,
-        zorunlu: false,
-        aktif: true,
-        secenekGrupId: null,
-        bagliSoru: false,
-        bagliOlduguSoruId: null,
-        bagliOlduguSoru: null,
-        kaynak: 'Dev',
-      },
-      {
-        id: 4,
-        baslikId: 1,
-        baslikAdi: 'Sezon Sonu Anketi',
-        cevapGirdiTipAdi: 'Text',
-        soruMetni: 'Detaylı açıklama',
-        altSoruMetni: 'Kalite değerlendirmenize göre',
-        zorunlu: false,
-        aktif: true,
-        secenekGrupId: null,
-        bagliSoru: true,
-        bagliOlduguSoruId: 2,
-        bagliOlduguSoru: 'Ürün kalitesi hakkında görüşünüz',
-        kaynak: 'Dev',
-      },
-    ],
   },
 ]
 
-function matchesFilters(grup: AnketCevapGrupDto, params: SurveyResponsesQueryParams): boolean {
-  if (params.mintikaId && grup.mintikaId !== params.mintikaId) return false
+const DETAIL_SORULAR: AnketSoruCevapDto[] = [
+  {
+    sira: 1,
+    soruId: 1,
+    soruMetni: 'Genel memnuniyetiniz?',
+    yanitlandi: true,
+    cevap: { cevapAltSecenekAdi: null, cevapText: 'Çok memnunum' },
+  },
+  {
+    sira: 2,
+    soruId: 2,
+    soruMetni: 'Ürün kalitesi hakkında görüşünüz',
+    yanitlandi: true,
+    cevap: { cevapAltSecenekAdi: null, cevapText: 'Kalite standartların üzerinde' },
+  },
+  {
+    sira: 3,
+    soruId: 3,
+    soruMetni: 'Ek önerileriniz?',
+    yanitlandi: false,
+    cevap: null,
+  },
+  {
+    sira: 4,
+    soruId: 4,
+    soruMetni: 'Detaylı açıklama',
+    altSoruMetni: 'Kalite değerlendirmenize göre',
+    bagliSoru: true,
+    bagliOlduguSoruId: 2,
+    yanitlandi: false,
+    cevap: null,
+  },
+]
+
+function matchesFilters(_item: AnketCevapOzetItem, _params: SurveyResponsesQueryParams): boolean {
   return true
 }
 
@@ -201,8 +120,18 @@ export const devResponsesStore = {
     return KOY_SEED
   },
 
-  getFiltered(params: SurveyResponsesQueryParams): SurveyResponseGroup[] {
-    const items = CEVAP_GRUP_SEED.filter((r) => matchesFilters(r, params))
-    return mapAnketCevapListFromApi(items)
+  getList(params: SurveyResponsesQueryParams): AnketCevapOzetItem[] {
+    const items = OZET_SEED.filter((r) => matchesFilters(r, params))
+    return sortAnketCevapOzetList(items)
+  },
+
+  getDetail(ekiciId: string, sablonId: number): AnketCevapDetayDto {
+    if (ekiciId === 'dev-ekici-1' && sablonId === 1) {
+      return {
+        sorular: DETAIL_SORULAR,
+        yanitlanmayanSoruSayisi: 2,
+      }
+    }
+    return { sorular: [], yanitlanmayanSoruSayisi: 0 }
   },
 }

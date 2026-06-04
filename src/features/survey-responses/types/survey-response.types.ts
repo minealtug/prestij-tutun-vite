@@ -20,25 +20,8 @@ export interface KoyDto extends FilterOptionDto {
 }
 
 export interface AnketCevapDegerDto {
-  id: string
-  soruId: number
-  soruMetni: string
-  ekiciId: string
-  ekiciAd: string
-  ekiciSoyad: string
-  sablonId: number
-  sablonAdi: string
-  mintikaId: number
-  mintikaAdi: string
-  kullaniciId: number
-  islemTarihi: string
-  cevapAltSecenekId: number | null
   cevapAltSecenekAdi: string | null
   cevapText: string | null
-  cevapNumeric: number | null
-  cevapDatetime: string | null
-  birimId: number | null
-  kaynak: string | null
 }
 
 export interface AnketSoruCevapDto {
@@ -46,70 +29,40 @@ export interface AnketSoruCevapDto {
   soruId: number
   soruMetni: string
   altSoruMetni?: string | null
-  zorunlu?: boolean
   bagliSoru?: boolean
+  bagliOlduguSoruId?: number | null
   yanitlandi: boolean
   cevap?: AnketCevapDegerDto | null
 }
 
-export interface YanitlanmayanSoruDto {
-  id: number
-  baslikId: number
-  baslikAdi?: string | null
-  cevapGirdiTipAdi?: string | null
-  soruMetni: string
-  altSoruMetni?: string | null
-  zorunlu?: boolean
-  aktif?: boolean
-  secenekGrupId?: number | null
-  bagliSoru?: boolean
-  bagliOlduguSoruId?: number | null
-  bagliOlduguSoru?: string | YanitlanmayanSoruDto | null
-  kaynak?: string | null
-}
-
-export interface AnketCevapGrupDto {
+export interface AnketCevapOzetItem {
+  id: string
   ekiciId: string
+  sablonId: number
   ekiciAd: string
   ekiciSoyad: string
-  mintikaId: number
   mintikaAdi: string
-  sablonId: number
-  sablonAdi: string
-  baslikId: number
   baslikAdi: string
+  sablonAdi: string
   sonIslemTarihi: string
   yanitlananSoruSayisi: number
   yanitlanmayanSoruSayisi: number
+}
+
+export interface AnketCevapDetayDto {
   sorular: AnketSoruCevapDto[]
-  yanitlananSorular: AnketCevapDegerDto[]
-  yanitlanmayanSorular: YanitlanmayanSoruDto[]
-}
-
-export interface ResponseAnswerDetail {
-  questionNo: number
-  soruId: number
-  questionText: string
-  altSoruMetni?: string | null
-  answer: string
-  isUnanswered?: boolean
-  bagliSoru?: boolean
-  bagliOlduguSoruId?: number | null
-  bagliOlduguSoruText?: string | null
-  zorunlu?: boolean
-}
-
-export interface SurveyResponseGroup {
-  id: string
-  ekiciId: string
-  baslikId: number
-  submittedAt: string
-  fullName: string
-  surveyName: string
-  mintikaAdi: string
-  yanitlananSoruSayisi: number
   yanitlanmayanSoruSayisi: number
-  answers: ResponseAnswerDetail[]
+}
+
+export interface SoruCevapDisplay {
+  soruId: number
+  sira: number
+  soruMetni: string
+  altSoruMetni?: string | null
+  yanitlandi: boolean
+  cevapMetni: string
+  bagliSoru: boolean
+  children: SoruCevapDisplay[]
 }
 
 export const UNANSWERED_ANSWER_LABEL = 'Yanıtlanmadı'
@@ -130,4 +83,25 @@ export function hasAnySurveyFilter(params?: SurveyResponsesQueryParams): boolean
       params?.mintikaId ||
       params?.koyId,
   )
+}
+
+export function getAnketCevapRowId(ekiciId: string, sablonId: number): string {
+  return `${ekiciId}|${sablonId}`
+}
+
+export function getOzetFullName(item: Pick<AnketCevapOzetItem, 'ekiciAd' | 'ekiciSoyad'>): string {
+  return [item.ekiciAd, item.ekiciSoyad].filter(Boolean).join(' ').trim() || '-'
+}
+
+export function getOzetSurveyName(
+  item: Pick<AnketCevapOzetItem, 'baslikAdi' | 'sablonAdi'>,
+): string {
+  return item.baslikAdi?.trim() || item.sablonAdi?.trim() || '-'
+}
+
+export function getOzetDetayBadge(item: Pick<
+  AnketCevapOzetItem,
+  'yanitlananSoruSayisi' | 'yanitlanmayanSoruSayisi'
+>): string {
+  return `${item.yanitlananSoruSayisi} cevaplı - ${item.yanitlanmayanSoruSayisi} eksik`
 }

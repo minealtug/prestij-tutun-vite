@@ -9,7 +9,7 @@ import {
 export function useSurveyResponses(params?: SurveyResponsesQueryParams) {
   return useQuery({
     queryKey: queryKeys.surveyResponses.all(params),
-    queryFn: () => surveyResponsesApi.getFiltered(params ?? {}),
+    queryFn: () => surveyResponsesApi.getList(params ?? {}),
     enabled: hasAnySurveyFilter(params),
   })
 }
