@@ -6,6 +6,7 @@ import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { Skeleton } from '@/components/feedback/Skeleton'
 import type { SurveyResponseGroup } from '../types/survey-response.types'
+import { SurveyResponseAnswersPanel } from './SurveyResponseAnswersPanel'
 
 interface SurveyResponsesTableProps {
   data: SurveyResponseGroup[]
@@ -129,7 +130,7 @@ export function SurveyResponsesTable({
                         <td className="px-4 py-3 text-foreground">{row.surveyName}</td>
                         <td className="px-4 py-3">
                           <span className="rounded-full bg-accent-500/20 px-2.5 py-0.5 text-xs font-medium text-primary-800">
-                            {row.answers.length} soru
+                            {row.answers.length} cevaplı
                           </span>
                         </td>
                       </tr>
@@ -137,26 +138,7 @@ export function SurveyResponsesTable({
                         <tr key={`${row.id}-detail`} className="border-b border-border bg-surface/80">
                           <td colSpan={6} className="px-4 py-4">
                             <div className="rounded-lg border border-border bg-surface-elevated p-4">
-                              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
-                                Sorular ve cevaplar
-                              </p>
-                              <ul className="space-y-3">
-                                {row.answers.map((a) => (
-                                  <li
-                                    key={`${row.id}-${a.questionNo}`}
-                                    className="border-b border-border/50 pb-3 last:border-0 last:pb-0"
-                                  >
-                                    <p className="text-xs font-medium text-primary-600">
-                                      Soru {a.questionNo}
-                                    </p>
-                                    <p className="mt-0.5 text-sm text-foreground">{a.questionText}</p>
-                                    <p className="mt-2 rounded-md bg-primary-500/5 px-3 py-2 text-sm text-foreground">
-                                      <span className="font-medium text-muted">Cevap: </span>
-                                      {a.answer}
-                                    </p>
-                                  </li>
-                                ))}
-                              </ul>
+                              <SurveyResponseAnswersPanel row={row} />
                             </div>
                           </td>
                         </tr>

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -7,6 +7,10 @@ import { getErrorMessage } from '@/lib/api/api-error'
 import { SurveysTable } from '../components/SurveysTable'
 import { useCreateSurvey, useDeleteSurvey, useSurveys } from '../hooks/use-surveys'
 import { PageContainer } from '@/components/layout/PageContainer'
+import {
+  DUPLICATE_SURVEY_NAME_MESSAGE,
+  isSurveyNameTaken,
+} from '../utils/survey-name'
 
 export function SurveysPage() {
   const surveysQuery = useSurveys()
@@ -15,14 +19,18 @@ export function SurveysPage() {
   const [surveyName, setSurveyName] = useState('')
 
   const surveyCount = surveysQuery.data?.length ?? 0
+  const trimmedName = surveyName.trim()
+  const isDuplicateName = useMemo(
+    () => isSurveyNameTaken(trimmedName, surveysQuery.data ?? []),
+    [trimmedName, surveysQuery.data],
+  )
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    const name = surveyName.trim()
-    if (!name) return
+    if (!trimmedName || isDuplicateName) return
 
     createSurvey.mutate(
-      { name },
+      { name: trimmedName },
       {
         onSuccess: () => setSurveyName(''),
       },
@@ -58,7 +66,21 @@ export function SurveysPage() {
                 required
               />
 
-              <Button type="submit" fullWidth loading={createSurvey.isPending}>
+              {isDuplicateName && (
+                <p
+                  className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+                  role="alert"
+                >
+                  {DUPLICATE_SURVEY_NAME_MESSAGE}
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                fullWidth
+                loading={createSurvey.isPending}
+                disabled={!trimmedName || isDuplicateName}
+              >
                 <Plus className="h-4 w-4" />
                 Anket Ekle
               </Button>

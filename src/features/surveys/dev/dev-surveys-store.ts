@@ -1,4 +1,8 @@
 import type { CreateSurveyRequest, SurveyDto } from '../types/survey.types'
+import {
+  DUPLICATE_SURVEY_NAME_MESSAGE,
+  isSurveyNameTaken,
+} from '../utils/survey-name'
 
 const STORAGE_KEY = 'prestij-dev-surveys'
 
@@ -23,13 +27,18 @@ export const devSurveysStore = {
   },
 
   create(payload: CreateSurveyRequest): SurveyDto {
+    const existing = read()
+    if (isSurveyNameTaken(payload.name, existing)) {
+      throw new Error(DUPLICATE_SURVEY_NAME_MESSAGE)
+    }
+
     const survey: SurveyDto = {
       id: crypto.randomUUID(),
       name: payload.name.trim(),
       category: payload.category,
       createdAt: new Date().toISOString(),
     }
-    write([...read(), survey])
+    write([...existing, survey])
     return survey
   },
 

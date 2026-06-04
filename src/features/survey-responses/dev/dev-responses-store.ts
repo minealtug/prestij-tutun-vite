@@ -7,6 +7,7 @@ import type {
   MintikaDto,
   SurveyResponseGroup,
   SurveyResponsesQueryParams,
+  YanitlanmayanSorularDto,
 } from '../types/survey-response.types'
 import { groupAnketCevaplari } from '../utils/map-anket-cevap'
 
@@ -137,5 +138,40 @@ export const devResponsesStore = {
   getFiltered(params: SurveyResponsesQueryParams): SurveyResponseGroup[] {
     const items = CEVAP_SEED.filter((r) => matchesFilters(r, params))
     return groupAnketCevaplari(items)
+  },
+
+  getUnansweredQuestions(ekiciId: string, baslikId: number): YanitlanmayanSorularDto {
+    const answeredIds = new Set(
+      CEVAP_SEED.filter((r) => r.ekiciId === ekiciId && r.sablonId === baslikId).map((r) => r.soruId),
+    )
+
+    const unanswered =
+      ekiciId === 'dev-ekici-1' && baslikId === 1
+        ? [
+            {
+              id: 3,
+              baslikId: 1,
+              baslikAdi: 'Sezon Sonu Anketi',
+              cevapGirdiTipAdi: 'Text',
+              soruMetni: 'Ek önerileriniz?',
+              altSoruMetni: null,
+              zorunlu: false,
+              aktif: true,
+              secenekGrupId: null,
+              bagliSoru: false,
+              bagliOlduguSoruId: null,
+              bagliOlduguSoru: null,
+              kaynak: 'Dev',
+            },
+          ].filter((q) => !answeredIds.has(q.id))
+        : []
+
+    return {
+      ekiciId,
+      baslikId,
+      baslikAdi: 'Sezon Sonu Anketi',
+      yanitlanmayanSoruSayisi: unanswered.length,
+      yanitlanmayanSorular: unanswered,
+    }
   },
 }

@@ -29,5 +29,7 @@ export const queryKeys = {
     koyler: (alimNoktasiId?: number) =>
       ['survey-responses', 'koyler', alimNoktasiId ?? null] as const,
     all: (params?: object) => ['survey-responses', params ?? {}] as const,
+    unanswered: (ekiciId: string, baslikId: number) =>
+      ['survey-responses', 'unanswered', ekiciId, baslikId] as const,
   },
 } as const

@@ -4,7 +4,6 @@ import { isDevAuthEnabled } from '@/features/auth/dev/dev-auth'
 import { devResponsesStore } from '../dev/dev-responses-store'
 import type {
   AlimNoktasiDto,
-  AnketCevapDto,
   BolgeDto,
   FilterOptionDto,
   KoyDto,
@@ -13,6 +12,10 @@ import type {
   SurveyResponsesQueryParams,
 } from '../types/survey-response.types'
 import { groupAnketCevaplari } from '../utils/map-anket-cevap'
+import {
+  mapAnketCevapFromApi,
+  normalizeYanitlanmayanSorularDto,
+} from '../utils/normalize-survey-response-api'
 import { uniqueById } from '../utils/unique-filter-options'
 
 function isNetworkError(error: unknown): boolean {
@@ -122,13 +125,21 @@ export const surveyResponsesApi = {
 
   getFiltered: async (params: SurveyResponsesQueryParams): Promise<SurveyResponseGroup[]> => {
     const fetchGroups = async (): Promise<SurveyResponseGroup[]> => {
-      const items = await apiClient.get<AnketCevapDto[]>(
-        '/api/AnketCevap',
-        toQueryRecord(params),
-      )
-      return groupAnketCevaplari(items)
+      const items = await apiClient.get<unknown[]>('/api/AnketCevap', toQueryRecord(params))
+      return groupAnketCevaplari(items.map((item) => mapAnketCevapFromApi(item)))
     }
 
     return withDevFallback(fetchGroups, () => devResponsesStore.getFiltered(params))
   },
+
+  getUnansweredQuestions: (ekiciId: string, baslikId: number) =>
+    withDevFallback(
+      async () => {
+        const raw = await apiClient.get<unknown>(
+          `/api/AnketCevap/ekici/${encodeURIComponent(ekiciId)}/baslik/${baslikId}/yanitlanmayan-sorular`,
+        )
+        return normalizeYanitlanmayanSorularDto(raw)
+      },
+      () => devResponsesStore.getUnansweredQuestions(ekiciId, baslikId),
+    ),
 }

@@ -28,6 +28,7 @@ export interface AnketCevapDto {
   ekiciSoyad: string
   sablonId: number
   sablonAdi: string
+  baslikId?: number
   menseiId?: number | null
   menseiAdi?: string | null
   bolgeId?: number | null
@@ -53,10 +54,37 @@ export interface ResponseAnswerDetail {
   questionNo: number
   questionText: string
   answer: string
+  isUnanswered?: boolean
+}
+
+export interface YanitlanmayanSoruDto {
+  id: number
+  baslikId: number
+  baslikAdi?: string | null
+  cevapGirdiTipAdi?: string | null
+  soruMetni: string
+  altSoruMetni?: string | null
+  zorunlu?: boolean
+  aktif?: boolean
+  secenekGrupId?: number | null
+  bagliSoru?: boolean
+  bagliOlduguSoruId?: number | null
+  bagliOlduguSoru?: YanitlanmayanSoruDto | null
+  kaynak?: string | null
+}
+
+export interface YanitlanmayanSorularDto {
+  ekiciId: string
+  baslikId: number
+  baslikAdi?: string | null
+  yanitlanmayanSoruSayisi: number
+  yanitlanmayanSorular: YanitlanmayanSoruDto[]
 }
 
 export interface SurveyResponseGroup {
   id: string
+  ekiciId: string
+  baslikId: number
   submittedAt: string
   username: string
   fullName: string
@@ -64,6 +92,8 @@ export interface SurveyResponseGroup {
   mintikaAdi: string
   answers: ResponseAnswerDetail[]
 }
+
+export const UNANSWERED_ANSWER_LABEL = 'Yanıtlanmadı'
 
 export interface SurveyResponsesQueryParams {
   menseiId?: number

@@ -3,6 +3,10 @@ import type { AppError } from '@/lib/api/api-error'
 import { isDevAuthEnabled } from '@/features/auth/dev/dev-auth'
 import { devSurveysStore } from '../dev/dev-surveys-store'
 import type { CreateSurveyRequest, SurveyDto } from '../types/survey.types'
+import {
+  DUPLICATE_SURVEY_NAME_MESSAGE,
+  isSurveyNameTaken,
+} from '../utils/survey-name'
 
 interface LegacySurveyDto {
   id: string | number
@@ -53,6 +57,12 @@ export const surveysApi = {
   create: (payload: CreateSurveyRequest) =>
     withDevFallback(
       async () => {
+        const items = await apiClient.get<LegacySurveyDto[]>('/api/AnketBaslik')
+        const existing = items.map(mapLegacySurvey)
+        if (isSurveyNameTaken(payload.name, existing)) {
+          throw new Error(DUPLICATE_SURVEY_NAME_MESSAGE)
+        }
+
         const created = await apiClient.post<LegacySurveyDto>('/api/AnketBaslik', {
           adi: payload.name,
         })

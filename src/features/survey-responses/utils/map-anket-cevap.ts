@@ -25,12 +25,15 @@ export function groupAnketCevaplari(items: AnketCevapDto[]): SurveyResponseGroup
   const map = new Map<string, GroupAccumulator>()
 
   for (const row of items) {
-    const key = `${row.ekiciId}|${row.sablonId}`
+    const baslikId = row.baslikId ?? row.sablonId
+    const key = `${row.ekiciId}|${baslikId}`
     let entry = map.get(key)
     if (!entry) {
       entry = {
         group: {
           id: key,
+          ekiciId: row.ekiciId,
+          baslikId,
           submittedAt: row.islemTarihi,
           username: String(row.kullaniciId),
           fullName: [row.ekiciAd, row.ekiciSoyad].filter(Boolean).join(' ').trim() || '-',
