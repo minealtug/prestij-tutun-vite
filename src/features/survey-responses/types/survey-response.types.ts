@@ -115,5 +115,5 @@ export function getOzetDetayBadge(item: Pick<
   AnketCevapOzetItem,
   'yanitlananSoruSayisi' | 'yanitlanmayanSoruSayisi'
 >): string {
-  return `${item.yanitlananSoruSayisi} cevaplı - ${item.yanitlanmayanSoruSayisi} eksik`
+  return `${item.yanitlananSoruSayisi} cevaplı - ${item.yanitlanmayanSoruSayisi} cevapsız`
 }

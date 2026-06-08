@@ -9,6 +9,9 @@ export const queryKeys = {
   users: {
     all: (params?: object) => ['users', params ?? {}] as const,
     detail: (id: string) => ['users', id] as const,
+    userTypes: ['users', 'user-types'] as const,
+    departmans: ['users', 'departmans'] as const,
+    mintikas: ['users', 'mintikas'] as const,
   },
   settings: {
     profile: ['settings', 'profile'] as const,

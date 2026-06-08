@@ -19,6 +19,7 @@ export interface TableProps<T> {
   emptyTitle?: string
   emptyMessage?: string
   className?: string
+  getRowClassName?: (row: T) => string | undefined
   pagination?: {
     pageSize: number
     pageSizeOptions?: number[]
@@ -33,6 +34,7 @@ export function Table<T>({
   emptyTitle = 'Kayıt bulunamadı',
   emptyMessage,
   className,
+  getRowClassName,
   pagination,
 }: TableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1)
@@ -111,7 +113,10 @@ export function Table<T>({
               visibleData.map((row) => (
                 <tr
                   key={keyExtractor(row)}
-                  className="border-b border-border/60 transition-colors last:border-0 hover:bg-primary-500/5"
+                  className={cn(
+                    'border-b border-border/60 transition-colors last:border-0 hover:bg-primary-500/5',
+                    getRowClassName?.(row),
+                  )}
                 >
                   {columns.map((col) => (
                     <td key={col.key} className={cn('px-4 py-3 text-foreground', col.className)}>
@@ -125,11 +130,11 @@ export function Table<T>({
         </table>
       </div>
       {pagination && data.length > 0 && (
-        <div className="flex items-center justify-between border-t border-border/70 px-4 py-3">
+        <div className="flex flex-col gap-3 border-t border-border/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted">
-            Sayfa {currentPage} / {totalPages} - Ilk {visibleData.length} / {data.length} kayit
+            Sayfa {currentPage} / {totalPages} — {visibleData.length} / {data.length} kayıt
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <select
               aria-label="Sayfadaki kayıt sayısı"
               className="h-8 rounded-md border border-border bg-surface-elevated px-2 text-xs text-foreground"
