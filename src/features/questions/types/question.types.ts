@@ -1,3 +1,11 @@
+export type AnswerType =
+  | 'long_text'
+  | 'short_text'
+  | 'single_choice'
+  | 'multiple_choice'
+  | 'number'
+  | 'date'
+
 export interface QuestionDto {
   id: string | number
   baslikId: number

@@ -25,6 +25,11 @@ export function mapUserFromApi(raw: unknown): UserDto | null {
     admin: Boolean(pick(row, 'admin', 'Admin')),
     aktif: Boolean(pick(row, 'aktif', 'Aktif')),
     lokasyon: pick(row, 'lokasyon', 'Lokasyon') ?? null,
+    departmanId: (() => {
+      const raw = pick(row, 'departmanId', 'DepartmanId')
+      const num = Number(raw)
+      return Number.isFinite(num) && num > 0 ? num : null
+    })(),
     departmanAdi: pick(row, 'departmanAdi', 'DepartmanAdi') ?? null,
     mintikaAdi: pick(row, 'mintikaAdi', 'MintikaAdi') ?? null,
     uretimMerkeziYetki: Boolean(pick(row, 'uretimMerkeziYetki', 'UretimMerkeziYetki')),

@@ -38,7 +38,7 @@ export function useCreateUser() {
   return useMutation({
     mutationFn: (form: CreateUserFormState) => usersApi.createFromForm(form),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['users'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.users.all() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.users.departmans })
     },
   })

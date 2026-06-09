@@ -10,31 +10,30 @@ import { DEV_TEST_CREDENTIALS, isDevAuthEnabled } from '../dev/dev-auth'
 export function LoginPage() {
   const login = useLogin()
   const devAuth = isDevAuthEnabled()
-  const [email, setEmail] = useState(devAuth ? DEV_TEST_CREDENTIALS.email : '')
+  const [userName, setUserName] = useState(devAuth ? DEV_TEST_CREDENTIALS.userName : '')
   const [password, setPassword] = useState(devAuth ? DEV_TEST_CREDENTIALS.password : '')
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    login.mutate({ email, password })
+    login.mutate({ userName, password })
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col items-center text-center">
         <Logo variant="login" />
-  
       </div>
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="E-posta"
-            type="email"
-            autoComplete="email"
+            label="Kullanıcı adı"
+            type="text"
+            autoComplete="username"
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="ornek@prestij.com"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            placeholder="kullanici.adi"
           />
           <Input
             label="Şifre"
@@ -69,16 +68,12 @@ export function LoginPage() {
 
         {devAuth ? (
           <div className="mt-4 rounded-lg border border-accent-500/40 bg-accent-500/10 px-3 py-2 text-center text-xs text-foreground">
-            <p className="font-medium">Geçici test kullanıcısı (yalnızca geliştirme)</p>
+            <p className="font-medium">Geliştirme ortamı — örnek kullanıcı</p>
             <p className="mt-1 text-muted">
-              {DEV_TEST_CREDENTIALS.email} / {DEV_TEST_CREDENTIALS.password}
+              {DEV_TEST_CREDENTIALS.userName} / {DEV_TEST_CREDENTIALS.password}
             </p>
           </div>
-        ) : (
-          <p className="mt-4 text-center text-xs text-muted">
-            Backend hazır olduğunda POST /api/auth/login endpoint&apos;i kullanılır.
-          </p>
-        )}
+        ) : null}
       </Card>
     </div>
   )

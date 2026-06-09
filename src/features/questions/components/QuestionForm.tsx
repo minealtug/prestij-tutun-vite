@@ -24,7 +24,11 @@ const defaultForm = {
   bagliSoru: false,
 }
 
-export function QuestionForm() {
+interface QuestionFormProps {
+  readOnly?: boolean
+}
+
+export function QuestionForm({ readOnly = false }: QuestionFormProps) {
   const createQuestion = useCreateQuestion()
   const createLinkedQuestionWithMigrate = useCreateLinkedQuestionWithMigrate()
   const surveysQuery = useSurveys()
@@ -79,6 +83,7 @@ export function QuestionForm() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
+    if (readOnly) return
     setFormError('')
     setLinkedMigrateResult(null)
 
@@ -247,6 +252,7 @@ export function QuestionForm() {
         <div className="flex flex-wrap gap-3 border-t border-border pt-4">
           <Button
             type="submit"
+            disabled={readOnly}
             loading={createQuestion.isPending || createLinkedQuestionWithMigrate.isPending}
           >
             <Save className="h-4 w-4" />

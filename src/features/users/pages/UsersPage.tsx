@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { CreateUserModal } from '../components/CreateUserModal'
 import { UsersTable } from '../components/UsersTable'
 import { useUsers } from '../hooks/use-users'
@@ -29,6 +30,7 @@ function matchesSearch(user: UserDto, query: string) {
 }
 
 export function UsersPage() {
+  const { canRead, canEdit, loading: permissionLoading } = useRequirePagePermission()
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -41,6 +43,16 @@ export function UsersPage() {
     return items.filter((user) => matchesSearch(user, query))
   }, [search, usersQuery.data])
 
+  if (permissionLoading) {
+    return (
+      <PageContainer>
+        <p className="text-sm text-muted">Yetkiler kontrol ediliyor…</p>
+      </PageContainer>
+    )
+  }
+
+  if (!canRead) return null
+
   return (
     <PageContainer>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -48,7 +60,11 @@ export function UsersPage() {
           <h2 className="text-xl font-bold text-foreground">Kullanıcılar</h2>
           <p className="text-sm text-muted">GET /api/User</p>
         </div>
-        <Button onClick={() => setModalOpen(true)} className="w-full sm:w-auto">
+        <Button
+          onClick={() => setModalOpen(true)}
+          className="w-full sm:w-auto"
+          disabled={!canEdit}
+        >
           <UserPlus className="h-4 w-4" />
           Yeni Kullanıcı
         </Button>

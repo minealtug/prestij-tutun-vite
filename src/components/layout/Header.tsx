@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils/cn'
 import { useUiStore } from '@/stores/ui-store'
 import { useAuthStore } from '@/stores/auth-store'
+import { usePermissionsStore } from '@/features/permissions/stores/permissions-store'
 import { Button } from '@/components/ui/Button'
 
 const HEADER_TITLE = 'PRESTİJ TÜTÜN A.Ş.'
@@ -11,8 +12,10 @@ export function Header() {
   const navigate = useNavigate()
   const { setMobileSidebarOpen } = useUiStore()
   const { user, clearSession } = useAuthStore()
+  const clearPermissions = usePermissionsStore((s) => s.clear)
 
   const handleLogout = () => {
+    clearPermissions()
     clearSession()
     navigate('/login', { replace: true })
   }
@@ -45,7 +48,7 @@ export function Header() {
           </div>
           <div className="hidden text-left md:block">
             <p className="text-xs font-medium text-foreground">{user?.fullName ?? 'Kullanıcı'}</p>
-            <p className="text-[10px] text-muted">{user?.email ?? ''}</p>
+            <p className="text-[10px] text-muted">{user?.userName ?? user?.email ?? ''}</p>
           </div>
         </div>
 

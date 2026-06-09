@@ -16,12 +16,13 @@ import {
   useUpdateQuestion,
 } from '../hooks/use-questions'
 import { useCreateSurvey, useSurveys } from '@/features/surveys/hooks/use-surveys'
-import { CATEGORY_OPTIONS } from '../constants'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import type { QuestionDto } from '../types/question.types'
 
 export function QuestionsPage() {
   const location = useLocation()
+  const { canRead, canEdit, loading: permissionLoading } = useRequirePagePermission()
   const isDefinitionsPage = location.pathname.startsWith('/tanimlamalar')
   const surveysQuery = useSurveys()
   const createSurvey = useCreateSurvey()
@@ -44,6 +45,7 @@ export function QuestionsPage() {
   }, [isDefinitionsPage, selectedSurveyId, surveysQuery.data])
 
   const handleCreateSurvey = () => {
+    if (!canEdit) return
     createSurvey.mutate(
       { name: surveyName, category: surveyCategory },
       {
@@ -57,6 +59,7 @@ export function QuestionsPage() {
   }
 
   const openEditModal = (question: QuestionDto) => {
+    if (!canEdit) return
     setEditingQuestion(question)
     setEditText(question.soruMetni)
   }
@@ -67,7 +70,7 @@ export function QuestionsPage() {
   }
 
   const handleEditSave = () => {
-    if (!editingQuestion || !editText.trim()) return
+    if (!canEdit || !editingQuestion || !editText.trim()) return
     updateQuestion.mutate(
       {
         id: editingQuestion.id,
@@ -85,7 +88,7 @@ export function QuestionsPage() {
   }
 
   const handleSetPassive = (question: QuestionDto) => {
-    if (!question.aktif) return
+    if (!canEdit || !question.aktif) return
     if (!window.confirm('Bu soruyu pasife almak istediğinize emin misiniz?')) return
     setQuestionActive.mutate({
       id: question.id,
@@ -94,7 +97,7 @@ export function QuestionsPage() {
   }
 
   const handleDelete = (question: QuestionDto) => {
-    if (question.kaynak !== 'AppDb') return
+    if (!canEdit || question.kaynak !== 'AppDb') return
     if (!window.confirm('Bu soruyu silmek istediğinize emin misiniz?')) return
     deleteQuestion.mutate(question.id)
   }
@@ -126,6 +129,16 @@ export function QuestionsPage() {
 
   const isDefinitionsLoading = isDefinitionsPage && selectedSurveyId > 0 ? questionsQuery.isLoading : false
 
+  if (permissionLoading) {
+    return (
+      <PageContainer>
+        <p className="text-sm text-muted">Yetkiler kontrol ediliyor…</p>
+      </PageContainer>
+    )
+  }
+
+  if (!canRead) return null
+
   return (
     <PageContainer>
       {!isDefinitionsPage && (
@@ -135,7 +148,11 @@ export function QuestionsPage() {
             <p className="text-sm text-muted">Anket sorularını oluşturun ve yönetin</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setSurveyModalOpen(true)}>
+            <Button
+              variant="outline"
+              onClick={() => setSurveyModalOpen(true)}
+              disabled={!canEdit}
+            >
               <ClipboardList className="h-4 w-4" />
               Yeni Anket Ekle
             </Button>
@@ -143,7 +160,7 @@ export function QuestionsPage() {
         </div>
       )}
 
-      {!isDefinitionsPage && <QuestionForm />}
+      {!isDefinitionsPage && <QuestionForm readOnly={!canEdit} />}
 
       {isDefinitionsPage && (
         <Card>
@@ -152,8 +169,7 @@ export function QuestionsPage() {
               label="Anket"
               value={selectedSurveyId > 0 ? String(selectedSurveyId) : ''}
               onChange={(e) => setSelectedSurveyId(Number(e.target.value) || 0)}
-              options={surveySelectOptions}
-              placeholder="Anket seçin"
+              options={[{ key: 'placeholder', value: '', label: 'Anket seçin' }, ...surveySelectOptions]}
             />
           </div>
         </Card>
@@ -167,9 +183,9 @@ export function QuestionsPage() {
             isError={questionsQuery.isError && Boolean(getDefinitionsError())}
             error={getDefinitionsError()}
             onRefresh={refreshQuestions}
-            onEdit={openEditModal}
-            onSetPassive={handleSetPassive}
-            onDelete={handleDelete}
+            onEdit={canEdit ? openEditModal : undefined}
+            onSetPassive={canEdit ? handleSetPassive : undefined}
+            onDelete={canEdit ? handleDelete : undefined}
             isUpdating={isMutating}
             isDeleting={deleteQuestion.isPending}
           />

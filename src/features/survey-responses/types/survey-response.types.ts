@@ -19,6 +19,14 @@ export interface KoyDto extends FilterOptionDto {
   alimNoktasiId: number
 }
 
+export interface CografiFiltreOptionsDto {
+  menseiler: FilterOptionDto[]
+  bolgeler: BolgeDto[]
+  mintikalar: MintikaDto[]
+  alimNoktalari: AlimNoktasiDto[]
+  koyler: KoyDto[]
+}
+
 export interface AnketCevapDegerDto {
   cevapAltSecenekAdi: string | null
   cevapText: string | null

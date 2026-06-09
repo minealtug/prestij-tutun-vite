@@ -1,27 +1,9 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { authApi } from '../api/auth-api'
-import { isDevAuthEnabled, tryDevLogin } from '../dev/dev-auth'
 import { useAuthStore } from '@/stores/auth-store'
 import type { LoginRequest } from '../types/auth.types'
 import { getErrorMessage } from '@/lib/api/api-error'
-import type { AppError } from '@/lib/api/api-error'
-
-async function loginWithApiOrDev(payload: LoginRequest) {
-  if (isDevAuthEnabled()) {
-    const devSession = tryDevLogin(payload)
-    if (devSession) return devSession
-
-    const invalid: AppError = {
-      status: 401,
-      message: 'Geçersiz test kullanıcısı. Giriş kutusundaki e-posta ve şifreyi kullanın.',
-      isNetworkError: false,
-    }
-    throw invalid
-  }
-
-  return authApi.login(payload)
-}
 
 export function useLogin() {
   const navigate = useNavigate()
@@ -29,13 +11,17 @@ export function useLogin() {
   const setSession = useAuthStore((s) => s.setSession)
 
   return useMutation({
-    mutationFn: (payload: LoginRequest) => loginWithApiOrDev(payload),
+    mutationFn: (payload: LoginRequest) => authApi.login(payload),
     onSuccess: (data) => {
       setSession(data.accessToken, {
         id: data.user.id,
+        userName: data.user.userName,
         email: data.user.email,
         fullName: data.user.fullName,
         role: data.user.role,
+        admin: data.user.admin,
+        departmanId: data.user.departmanId,
+        departmanAdi: data.user.departmanAdi,
       })
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/'
       navigate(from, { replace: true })

@@ -6,16 +6,17 @@ import { Select } from '@/components/ui/Select'
 import { useAuthStore } from '@/stores/auth-store'
 import { SurveyResponseStatsCards } from '../components/SurveyResponseStatsCards'
 import { SurveyResponsesTable } from '../components/SurveyResponsesTable'
+import { useCografiFiltreOptions } from '../hooks/use-survey-response-filters'
 import {
-  useAlimNoktalari,
-  useBolgeler,
-  useKoyler,
-  useMenseiler,
-  useMintikalar,
-} from '../hooks/use-survey-response-filters'
+  getAlimNoktalariForMintika,
+  getBolgelerForMensei,
+  getKoylerForAlimNoktasi,
+  getMintikalarForBolge,
+} from '../utils/cografi-filtre'
 import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { useSurveyResponses } from '../hooks/use-survey-responses'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import type { FilterOptionDto, SurveyResponsesQueryParams } from '../types/survey-response.types'
 import { hasAnySurveyFilter } from '../types/survey-response.types'
 import { formatAppliedFilterSummary } from '../utils/format-applied-filter-summary'
@@ -30,6 +31,7 @@ function toSelectOptions(
 }
 
 export function SurveyResponsesPage() {
+  const { canRead, loading: permissionLoading } = useRequirePagePermission()
   const user = useAuthStore((s) => s.user)
   const [baslikId, setBaslikId] = useState('')
   const [menseiId, setMenseiId] = useState('')
@@ -80,11 +82,26 @@ export function SurveyResponsesPage() {
 
   const draftFiltersReady = hasAnySurveyFilter(draftFilterParams)
 
-  const menseilerQuery = useMenseiler()
-  const bolgelerQuery = useBolgeler(menseiIdNum)
-  const mintikalarQuery = useMintikalar(bolgeIdNum)
-  const alimNoktalariQuery = useAlimNoktalari(mintikaIdNum)
-  const koylerQuery = useKoyler(alimNoktasiIdNum)
+  const cografiFiltreQuery = useCografiFiltreOptions()
+  const cografiFiltre = cografiFiltreQuery.data
+
+  const menseiler = cografiFiltre?.menseiler ?? []
+  const bolgeler = useMemo(
+    () => (cografiFiltre ? getBolgelerForMensei(cografiFiltre, menseiIdNum) : []),
+    [cografiFiltre, menseiIdNum],
+  )
+  const mintikalar = useMemo(
+    () => (cografiFiltre ? getMintikalarForBolge(cografiFiltre, bolgeIdNum) : []),
+    [cografiFiltre, bolgeIdNum],
+  )
+  const alimNoktalari = useMemo(
+    () => (cografiFiltre ? getAlimNoktalariForMintika(cografiFiltre, mintikaIdNum) : []),
+    [cografiFiltre, mintikaIdNum],
+  )
+  const koyler = useMemo(
+    () => (cografiFiltre ? getKoylerForAlimNoktasi(cografiFiltre, alimNoktasiIdNum) : []),
+    [cografiFiltre, alimNoktasiIdNum],
+  )
 
   const responsesQuery = useSurveyResponses(appliedFilters ?? undefined)
   const filtersReady = hasAnySurveyFilter(appliedFilters ?? undefined)
@@ -95,11 +112,11 @@ export function SurveyResponsesPage() {
     setAppliedFilterSummary(
       formatAppliedFilterSummary(draftFilterParams, {
         anketler: anketlerQuery.data ?? [],
-        menseiler: menseilerQuery.data ?? [],
-        bolgeler: bolgelerQuery.data ?? [],
-        mintikalar: mintikalarQuery.data ?? [],
-        alimNoktalari: alimNoktalariQuery.data ?? [],
-        koyler: koylerQuery.data ?? [],
+        menseiler,
+        bolgeler,
+        mintikalar,
+        alimNoktalari,
+        koyler,
       }),
     )
   }
@@ -113,32 +130,45 @@ export function SurveyResponsesPage() {
   }, [anketlerQuery.data])
 
   const menseiOptions = useMemo(
-    () => toSelectOptions(menseilerQuery.data ?? [], 'Menşei seçin'),
-    [menseilerQuery.data],
+    () => toSelectOptions(menseiler, 'Menşei seçin'),
+    [menseiler],
   )
   const bolgeOptions = useMemo(
-    () => toSelectOptions(bolgelerQuery.data ?? [], 'Bölge seçin'),
-    [bolgelerQuery.data],
+    () => toSelectOptions(bolgeler, 'Bölge seçin'),
+    [bolgeler],
   )
   const mintikaOptions = useMemo(
-    () => toSelectOptions(mintikalarQuery.data ?? [], 'Mıntıka seçin'),
-    [mintikalarQuery.data],
+    () => toSelectOptions(mintikalar, 'Mıntıka seçin'),
+    [mintikalar],
   )
   const alimNoktasiOptions = useMemo(
-    () => toSelectOptions(alimNoktalariQuery.data ?? [], 'Alım noktası seçin'),
-    [alimNoktalariQuery.data],
+    () => toSelectOptions(alimNoktalari, 'Alım noktası seçin'),
+    [alimNoktalari],
   )
   const koyOptions = useMemo(
-    () => toSelectOptions(koylerQuery.data ?? [], 'Köy seçin'),
-    [koylerQuery.data],
+    () => toSelectOptions(koyler, 'Köy seçin'),
+    [koyler],
   )
+
+  if (permissionLoading) {
+    return (
+      <PageContainer>
+        <p className="text-sm text-muted">Yetkiler kontrol ediliyor…</p>
+      </PageContainer>
+    )
+  }
+
+  if (!canRead) return null
 
   return (
     <PageContainer>
       <div>
-        {user?.email && (
+        {(user?.userName || user?.email) && (
           <p className="mt-1 text-xs text-muted">
-            Oturum: <span className="font-medium text-foreground">{user.email}</span>
+            Oturum:{' '}
+            <span className="font-medium text-foreground">
+              {user.userName ?? user.email}
+            </span>
           </p>
         )}
       </div>
@@ -157,35 +187,35 @@ export function SurveyResponsesPage() {
             value={menseiId}
             onChange={(e) => setMenseiId(e.target.value)}
             options={menseiOptions}
-            disabled={menseilerQuery.isLoading}
+            disabled={cografiFiltreQuery.isLoading}
           />
           <Select
             label="Bölge"
             value={bolgeId}
             onChange={(e) => setBolgeId(e.target.value)}
             options={bolgeOptions}
-            disabled={bolgelerQuery.isLoading}
+            disabled={cografiFiltreQuery.isLoading}
           />
           <Select
             label="Mıntıka"
             value={mintikaId}
             onChange={(e) => setMintikaId(e.target.value)}
             options={mintikaOptions}
-            disabled={mintikalarQuery.isLoading}
+            disabled={cografiFiltreQuery.isLoading}
           />
           <Select
             label="Alım noktası"
             value={alimNoktasiId}
             onChange={(e) => setAlimNoktasiId(e.target.value)}
             options={alimNoktasiOptions}
-            disabled={alimNoktalariQuery.isLoading}
+            disabled={cografiFiltreQuery.isLoading}
           />
           <Select
             label="Köy"
             value={koyId}
             onChange={(e) => setKoyId(e.target.value)}
             options={koyOptions}
-            disabled={koylerQuery.isLoading}
+            disabled={cografiFiltreQuery.isLoading}
           />
         </div>
 

@@ -121,8 +121,8 @@ export function CreateUserModal({ open, onClose }: CreateUserModalProps) {
     onClose()
   }
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
+  const handleSave = (e?: FormEvent) => {
+    e?.preventDefault()
     const nextErrors = validateCreateUserForm(form)
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
@@ -147,15 +147,15 @@ export function CreateUserModal({ open, onClose }: CreateUserModalProps) {
           <Button variant="outline" onClick={handleClose} disabled={createUser.isPending}>
             İptal
           </Button>
-          <Button type="submit" form="create-user-form" disabled={createUser.isPending}>
-            {createUser.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+          <Button onClick={() => handleSave()} loading={createUser.isPending} disabled={createUser.isPending}>
+            Kaydet
           </Button>
         </div>
       }
     >
       <form
         id="create-user-form"
-        onSubmit={handleSubmit}
+        onSubmit={handleSave}
         className="max-h-[min(68vh,640px)] space-y-5 overflow-y-auto pr-1"
         noValidate
       >

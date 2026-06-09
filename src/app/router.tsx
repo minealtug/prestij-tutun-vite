@@ -11,6 +11,7 @@ import { QuestionsPage } from '@/features/questions/pages/QuestionsPage'
 import { SurveysPage } from '@/features/surveys/pages/SurveysPage'
 import { SurveyResponsesPage } from '@/features/survey-responses/pages/SurveyResponsesPage'
 import { ModulePage } from '@/pages/ModulePage'
+import { YetkilendirmePage } from '@/features/permissions/pages/YetkilendirmePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
 export const router = createBrowserRouter([
@@ -40,7 +41,7 @@ export const router = createBrowserRouter([
           { path: 'anket-cevaplari', element: <SurveyResponsesPage /> },
           { path: 'raporlar', element: <ModulePage /> },
           { path: 'tanimlamalar', element: <ModulePage /> },
-          { path: 'yetkilendirme', element: <ModulePage /> },
+          { path: 'yetkilendirme', element: <YetkilendirmePage /> },
           { path: 'users', element: <UsersPage /> },
           { path: 'settings', element: <SettingsPage /> },
         ],

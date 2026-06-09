@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/feedback/EmptyState'
 import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { useQuestions } from '@/features/questions/hooks/use-questions'
 import { useAuthStore } from '@/stores/auth-store'
+import { PERMISSION_DENIED_KEY } from '@/features/permissions/hooks/use-require-page-permission'
 
 function displayCount(value: number | undefined, loading: boolean) {
   if (loading) return '…'
@@ -28,6 +29,7 @@ function getGreetingByHour(hour: number) {
 
 export function DashboardPage() {
   const [activityPage, setActivityPage] = useState(1)
+  const [permissionMessage, setPermissionMessage] = useState<string | null>(null)
   const [now, setNow] = useState(() => new Date())
   const activityPageSize = 4
   const user = useAuthStore((state) => state.user)
@@ -37,6 +39,15 @@ export function DashboardPage() {
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000)
     return () => window.clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    const message = sessionStorage.getItem(PERMISSION_DENIED_KEY)
+    if (!message) return
+    sessionStorage.removeItem(PERMISSION_DENIED_KEY)
+    setPermissionMessage(message)
+    const timeout = window.setTimeout(() => setPermissionMessage(null), 5000)
+    return () => window.clearTimeout(timeout)
   }, [])
 
   const greeting = getGreetingByHour(now.getHours())
@@ -73,6 +84,14 @@ export function DashboardPage() {
 
   return (
     <PageContainer>
+      {permissionMessage && (
+        <div
+          className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          role="alert"
+        >
+          {permissionMessage}
+        </div>
+      )}
       <section className="gradient-brand rounded-2xl px-6 py-5 shadow-lg md:px-8 md:py-6">
         <p className="text-xs font-medium uppercase tracking-wider text-white/75">
           Dashboard Özeti

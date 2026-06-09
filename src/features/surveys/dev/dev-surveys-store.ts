@@ -35,8 +35,7 @@ export const devSurveysStore = {
     const survey: SurveyDto = {
       id: crypto.randomUUID(),
       name: payload.name.trim(),
-      category: payload.category,
-      createdAt: new Date().toISOString(),
+      aciklama: payload.category ?? null,
     }
     write([...existing, survey])
     return survey

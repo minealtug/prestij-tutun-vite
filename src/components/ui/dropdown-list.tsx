@@ -54,6 +54,7 @@ export function DropdownListPortal({
       id={id}
       role="listbox"
       style={{ top: position.top, left: position.left, width: position.width }}
+      onMouseDown={(e) => e.stopPropagation()}
       className={cn(
         'fixed z-[200] max-h-60 overflow-auto rounded-lg border border-border bg-surface-elevated py-1 shadow-lg',
         className,

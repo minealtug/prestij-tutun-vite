@@ -4,6 +4,7 @@ import type {
   AnketCevapOzetItem,
   AnketSoruCevapDto,
   BolgeDto,
+  CografiFiltreOptionsDto,
   FilterOptionDto,
   KoyDto,
   MintikaDto,
@@ -94,28 +95,14 @@ const DETAIL_SORULAR: AnketSoruCevapDto[] = [
 ]
 
 export const devResponsesStore = {
-  getMenseiler(): FilterOptionDto[] {
-    return MENSEI_SEED
-  },
-
-  getBolgeler(menseiId?: number): BolgeDto[] {
-    if (menseiId) return BOLGE_SEED.filter((b) => b.menseiId === menseiId)
-    return BOLGE_SEED
-  },
-
-  getMintikalar(bolgeId?: number): MintikaDto[] {
-    if (bolgeId) return MINTIKA_SEED.filter((m) => m.bolgeId === bolgeId)
-    return MINTIKA_SEED
-  },
-
-  getAlimNoktalari(mintikaId?: number): AlimNoktasiDto[] {
-    if (mintikaId) return ALIM_NOKTASI_SEED.filter((a) => a.mintikaId === mintikaId)
-    return ALIM_NOKTASI_SEED
-  },
-
-  getKoyler(alimNoktasiId?: number): KoyDto[] {
-    if (alimNoktasiId) return KOY_SEED.filter((k) => k.alimNoktasiId === alimNoktasiId)
-    return KOY_SEED
+  getCografiFiltreOptions(): CografiFiltreOptionsDto {
+    return {
+      menseiler: MENSEI_SEED,
+      bolgeler: BOLGE_SEED,
+      mintikalar: MINTIKA_SEED,
+      alimNoktalari: ALIM_NOKTASI_SEED,
+      koyler: KOY_SEED,
+    }
   },
 
   getList(params: SurveyResponsesQueryParams): AnketCevapOzetItem[] {

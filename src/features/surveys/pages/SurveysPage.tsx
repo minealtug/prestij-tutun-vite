@@ -7,12 +7,14 @@ import { getErrorMessage } from '@/lib/api/api-error'
 import { SurveysTable } from '../components/SurveysTable'
 import { useCreateSurvey, useDeleteSurvey, useSurveys } from '../hooks/use-surveys'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import {
   DUPLICATE_SURVEY_NAME_MESSAGE,
   isSurveyNameTaken,
 } from '../utils/survey-name'
 
 export function SurveysPage() {
+  const { canRead, canEdit, loading: permissionLoading } = useRequirePagePermission()
   const surveysQuery = useSurveys()
   const createSurvey = useCreateSurvey()
   const deleteSurvey = useDeleteSurvey()
@@ -27,7 +29,7 @@ export function SurveysPage() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (!trimmedName || isDuplicateName) return
+    if (!canEdit || !trimmedName || isDuplicateName) return
 
     createSurvey.mutate(
       { name: trimmedName },
@@ -38,9 +40,20 @@ export function SurveysPage() {
   }
 
   const handleDelete = (id: string) => {
+    if (!canEdit) return
     if (!window.confirm('Bu anketi silmek istediğinize emin misiniz?')) return
     deleteSurvey.mutate(id)
   }
+
+  if (permissionLoading) {
+    return (
+      <PageContainer>
+        <p className="text-sm text-muted">Yetkiler kontrol ediliyor…</p>
+      </PageContainer>
+    )
+  }
+
+  if (!canRead) return null
 
   return (
     <PageContainer>
@@ -79,7 +92,7 @@ export function SurveysPage() {
                 type="submit"
                 fullWidth
                 loading={createSurvey.isPending}
-                disabled={!trimmedName || isDuplicateName}
+                disabled={!canEdit || !trimmedName || isDuplicateName}
               >
                 <Plus className="h-4 w-4" />
                 Anket Ekle
@@ -111,7 +124,7 @@ export function SurveysPage() {
             error={surveysQuery.error}
             count={surveyCount}
             onRefresh={() => void surveysQuery.refetch()}
-            onDelete={handleDelete}
+            onDelete={canEdit ? handleDelete : undefined}
             isDeleting={deleteSurvey.isPending}
           />
         </Card>

@@ -1,13 +1,12 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
+import { useAuthStore } from '@/stores/auth-store'
 
 export function GuestRoute() {
-  // Login ekrani gecici olarak devre disi.
-  // const isAuthenticated = useAuthStore((s) => s.isAuthenticated())
-  //
-  // if (isAuthenticated) {
-  //   return <Navigate to="/" replace />
-  // }
-  return <Navigate to="/" replace />
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated())
 
-  // return <Outlet />
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />
+  }
+
+  return <Outlet />
 }

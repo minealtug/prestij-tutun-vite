@@ -11,7 +11,7 @@ interface SurveysTableProps {
   error: unknown
   count: number
   onRefresh: () => void
-  onDelete: (id: string) => void
+  onDelete?: (id: string) => void
   isDeleting: boolean
 }
 
@@ -38,27 +38,31 @@ export function SurveysTable({
         </div>
       ),
     },
-    {
-      key: 'actions',
-      header: 'İŞLEMLER',
-      className: 'w-28 text-right',
-      render: (row) => (
-        <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="sm" aria-label="Düzenle" disabled title="API hazır olunca">
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Sil"
-            disabled={isDeleting}
-            onClick={() => onDelete(row.id)}
-          >
-            <Trash2 className="h-4 w-4 text-red-600" />
-          </Button>
-        </div>
-      ),
-    },
+    ...(onDelete
+      ? [
+          {
+            key: 'actions',
+            header: 'İŞLEMLER',
+            className: 'w-28 text-right',
+            render: (row: SurveyDto) => (
+              <div className="flex justify-end gap-1">
+                <Button variant="ghost" size="sm" aria-label="Düzenle" disabled title="API hazır olunca">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Sil"
+                  disabled={isDeleting}
+                  onClick={() => onDelete(row.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-red-600" />
+                </Button>
+              </div>
+            ),
+          } satisfies TableColumn<SurveyDto>,
+        ]
+      : []),
   ]
 
   return (

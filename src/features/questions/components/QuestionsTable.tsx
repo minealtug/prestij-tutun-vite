@@ -32,9 +32,9 @@ interface QuestionsTableProps {
   isError: boolean
   error: unknown
   onRefresh: () => void
-  onEdit: (question: QuestionDto) => void
-  onSetPassive: (question: QuestionDto) => void
-  onDelete: (question: QuestionDto) => void
+  onEdit?: (question: QuestionDto) => void
+  onSetPassive?: (question: QuestionDto) => void
+  onDelete?: (question: QuestionDto) => void
   isUpdating: boolean
   isDeleting: boolean
 }
@@ -125,46 +125,54 @@ export function QuestionsTable({
         return row.bagliOlduguSoruId != null ? `#${row.bagliOlduguSoruId}` : '-'
       },
     },
-    {
-      key: 'actions',
-      header: 'İŞLEMLER',
-      className: 'w-44',
-      render: (row) => (
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Düzenle"
-            disabled={isUpdating}
-            onClick={() => onEdit(row)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Pasife Al"
-            disabled={isUpdating || !row.aktif}
-            onClick={() => onSetPassive(row)}
-            title={row.aktif ? 'Pasife al' : 'Zaten pasif'}
-          >
-            <Ban className="h-4 w-4 text-amber-600" />
-          </Button>
-          {row.kaynak === 'AppDb' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label="Sil"
-              disabled={isDeleting}
-              onClick={() => onDelete(row)}
-              title="Soruyu sil"
-            >
-              <Trash2 className="h-4 w-4 text-red-600" />
-            </Button>
-          )}
-        </div>
-      ),
-    },
+    ...(onEdit || onSetPassive || onDelete
+      ? [
+          {
+            key: 'actions',
+            header: 'İŞLEMLER',
+            className: 'w-44',
+            render: (row: QuestionDto) => (
+              <div className="flex gap-1">
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Düzenle"
+                    disabled={isUpdating}
+                    onClick={() => onEdit(row)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+                {onSetPassive && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Pasife Al"
+                    disabled={isUpdating || !row.aktif}
+                    onClick={() => onSetPassive(row)}
+                    title={row.aktif ? 'Pasife al' : 'Zaten pasif'}
+                  >
+                    <Ban className="h-4 w-4 text-amber-600" />
+                  </Button>
+                )}
+                {onDelete && row.kaynak === 'AppDb' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Sil"
+                    disabled={isDeleting}
+                    onClick={() => onDelete(row)}
+                    title="Soruyu sil"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </Button>
+                )}
+              </div>
+            ),
+          } satisfies TableColumn<QuestionDto>,
+        ]
+      : []),
   ]
 
   return (

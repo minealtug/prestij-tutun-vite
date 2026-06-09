@@ -23,14 +23,13 @@ export const queryKeys = {
   surveys: {
     all: ['surveys'] as const,
   },
+  permissions: {
+    menus: ['permissions', 'menus'] as const,
+    yetkiler: ['permissions', 'yetkiler'] as const,
+    departmans: ['permissions', 'departmans'] as const,
+  },
   surveyResponses: {
-    menseiler: ['survey-responses', 'menseiler'] as const,
-    bolgeler: (menseiId?: number) => ['survey-responses', 'bolgeler', menseiId ?? null] as const,
-    mintikalar: (bolgeId?: number) => ['survey-responses', 'mintikalar', bolgeId ?? null] as const,
-    alimNoktalari: (mintikaId?: number) =>
-      ['survey-responses', 'alim-noktalari', mintikaId ?? null] as const,
-    koyler: (alimNoktasiId?: number) =>
-      ['survey-responses', 'koyler', alimNoktasiId ?? null] as const,
+    cografiFiltreOptions: ['survey-responses', 'cografi-filtre-options'] as const,
     all: (params?: object) => ['survey-responses', params ?? {}] as const,
     detail: (ekiciId: string, sablonId: number) =>
       ['survey-responses', 'detail', ekiciId, sablonId] as const,

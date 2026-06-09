@@ -1,10 +1,18 @@
 import { apiClient } from '@/lib/api/api-client'
-import type { LoginRequest, LoginResponse } from '../types/auth.types'
+import type { AuthMeResponse, LoginRequest, LoginResponse } from '../types/auth.types'
+import { normalizeAuthMeResponse, normalizeLoginResponse } from '../utils/normalize-login-response'
 
 export const authApi = {
-  login: (payload: LoginRequest) => apiClient.post<LoginResponse>('/auth/login', payload),
+  login: async (payload: LoginRequest): Promise<LoginResponse> => {
+    const raw = await apiClient.post<unknown>('/api/Auth/login', {
+      userName: payload.userName,
+      password: payload.password,
+    })
+    return normalizeLoginResponse(raw)
+  },
 
-  me: () => apiClient.get<LoginResponse['user']>('/auth/me'),
-
-  logout: () => apiClient.post<void>('/auth/logout'),
+  me: async (): Promise<AuthMeResponse> => {
+    const raw = await apiClient.get<unknown>('/api/Auth/me')
+    return normalizeAuthMeResponse(raw)
+  },
 }

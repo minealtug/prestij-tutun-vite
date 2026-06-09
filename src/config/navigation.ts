@@ -23,6 +23,44 @@ export interface NavSection {
   items: NavItem[]
 }
 
+/** Yalnızca admin kullanıcıların görebileceği rotalar */
+export const ADMIN_ONLY_PATHS = ['/yetkilendirme', '/users'] as const
+
+export function isAdminOnlyPath(path: string): boolean {
+  const normalized = path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path || '/'
+  return (ADMIN_ONLY_PATHS as readonly string[]).includes(normalized)
+}
+
+export interface AssignableMenuUrlOption {
+  value: string
+  label: string
+}
+
+/** Yetkilendirme modalı — admin sayfaları hariç tüm sidebar rotaları */
+export function getAssignableMenuUrlOptions(): AssignableMenuUrlOption[] {
+  const seen = new Set<string>()
+  const options: AssignableMenuUrlOption[] = []
+
+  function collect(items: NavItem[]) {
+    for (const item of items) {
+      if (item.to && !isAdminOnlyPath(item.to) && !seen.has(item.to)) {
+        seen.add(item.to)
+        options.push({
+          value: item.to,
+          label: pageTitles[item.to] ?? item.label,
+        })
+      }
+      if (item.children?.length) collect(item.children)
+    }
+  }
+
+  for (const section of sidebarSections) {
+    collect(section.items)
+  }
+
+  return options.sort((a, b) => a.label.localeCompare(b.label, 'tr-TR'))
+}
+
 export const sidebarSections: NavSection[] = [
   {
     items: [

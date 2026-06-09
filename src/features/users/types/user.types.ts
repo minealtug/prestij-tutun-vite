@@ -6,6 +6,7 @@ export interface UserDto {
   admin: boolean
   aktif: boolean
   lokasyon: string | null
+  departmanId: number | null
   departmanAdi: string | null
   mintikaAdi: string | null
   uretimMerkeziYetki: boolean

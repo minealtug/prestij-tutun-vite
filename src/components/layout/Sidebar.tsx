@@ -1,17 +1,63 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, ChevronDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useUiStore } from '@/stores/ui-store'
-import { sidebarSections } from '@/config/navigation'
+import { isAdminOnlyPath, sidebarSections, type NavItem } from '@/config/navigation'
+import { usePermissions } from '@/features/permissions/hooks/use-permissions'
 
 const APP_NAME = 'AGRIVION'
+
+function isItemVisible(item: NavItem, hasReadPermission: (url: string) => boolean, isAdmin: boolean) {
+  if (item.to && isAdminOnlyPath(item.to)) return isAdmin
+  if (item.to === '/') return true
+
+  if (item.children?.length) {
+    return item.children.some(
+      (child) => child.to && (child.to === '/' || hasReadPermission(child.to)),
+    )
+  }
+
+  if (item.to) return hasReadPermission(item.to)
+  return true
+}
+
+function filterNavItems(
+  items: NavItem[],
+  hasReadPermission: (url: string) => boolean,
+  isAdmin: boolean,
+): NavItem[] {
+  return items
+    .filter((item) => isItemVisible(item, hasReadPermission, isAdmin))
+    .map((item) =>
+      item.children
+        ? {
+            ...item,
+            children: item.children.filter(
+              (child) => !child.to || child.to === '/' || hasReadPermission(child.to),
+            ),
+          }
+        : item,
+    )
+}
 
 export function Sidebar() {
   const { sidebarCollapsed, mobileSidebarOpen, toggleSidebar, setMobileSidebarOpen } =
     useUiStore()
   const location = useLocation()
+  const { hasReadPermission, isAdmin, loading } = usePermissions()
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ Tanımlamalar: true })
+
+  const visibleSections = useMemo(
+    () =>
+      sidebarSections
+        .map((section) => ({
+          ...section,
+          items: filterNavItems(section.items, hasReadPermission, isAdmin),
+        }))
+        .filter((section) => section.items.length > 0),
+    [hasReadPermission, isAdmin],
+  )
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -58,7 +104,10 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-4 overflow-y-auto p-3">
-        {sidebarSections.map((section) => (
+        {loading && !sidebarCollapsed && (
+          <p className="px-3 text-xs text-white/50">Menü yükleniyor…</p>
+        )}
+        {visibleSections.map((section) => (
           <div key={section.title ?? 'main'}>
             {section.title && !sidebarCollapsed && (
               <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-white/45">
