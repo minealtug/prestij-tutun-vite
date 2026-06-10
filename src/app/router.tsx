@@ -10,6 +10,7 @@ import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { QuestionsPage } from '@/features/questions/pages/QuestionsPage'
 import { SurveysPage } from '@/features/surveys/pages/SurveysPage'
 import { SurveyResponsesPage } from '@/features/survey-responses/pages/SurveyResponsesPage'
+import { SurveyFillPage } from '@/features/survey-fill/pages/SurveyFillPage'
 import { ModulePage } from '@/pages/ModulePage'
 import { YetkilendirmePage } from '@/features/permissions/pages/YetkilendirmePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
             path: 'anket-yonetimi',
             element: <Navigate to="/tanimlamalar/anket-tanimlamalari" replace />,
           },
+          { path: 'anket-doldurma', element: <SurveyFillPage /> },
           { path: 'anket-cevaplari', element: <SurveyResponsesPage /> },
           { path: 'raporlar', element: <ModulePage /> },
           { path: 'tanimlamalar', element: <ModulePage /> },

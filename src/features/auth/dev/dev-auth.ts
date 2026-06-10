@@ -35,6 +35,7 @@ export function tryDevLogin(payload: LoginRequest): LoginResponse | null {
       admin: true,
       departmanId: null,
       departmanAdi: null,
+      mintikaId: null,
     },
   }
 }

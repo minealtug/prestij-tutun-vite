@@ -34,4 +34,10 @@ export const queryKeys = {
     detail: (ekiciId: string, sablonId: number) =>
       ['survey-responses', 'detail', ekiciId, sablonId] as const,
   },
+  surveyFill: {
+    ekiciler: ['survey-fill', 'ekiciler'] as const,
+    sablonlar: (baslikId: number) => ['survey-fill', 'sablonlar', baslikId] as const,
+    oturum: (params: { baslikId: number; sablonId: number; ekiciId: string }) =>
+      ['survey-fill', 'oturum', params] as const,
+  },
 } as const

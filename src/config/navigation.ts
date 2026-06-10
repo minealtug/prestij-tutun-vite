@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   FileQuestion,
   ClipboardList,
+  ClipboardPen,
   MessageSquareReply,
   BarChart3,
   BookMarked,
@@ -66,6 +67,7 @@ export const sidebarSections: NavSection[] = [
     items: [
       { to: '/', label: 'Ana Sayfa', icon: LayoutDashboard, end: true },
       { to: '/soru-yonetimi', label: 'Soru Ekleme', icon: FileQuestion },
+      { to: '/anket-doldurma', label: 'Anket Doldurma Ekranı', icon: ClipboardPen },
       { to: '/anket-cevaplari', label: 'Cevaplanan Anketler', icon: MessageSquareReply },
       { to: '/raporlar', label: 'Raporlar', icon: BarChart3 },
       {
@@ -90,6 +92,7 @@ export const sidebarSections: NavSection[] = [
 export const pageTitles: Record<string, string> = {
   '/': 'Ana Sayfa',
   '/soru-yonetimi': 'Soru Ekleme',
+  '/anket-doldurma': 'Anket Doldurma Ekranı',
   '/anket-cevaplari': 'Cevaplanan Anketler',
   '/raporlar': 'Raporlar',
   '/tanimlamalar': 'Tanımlamalar',

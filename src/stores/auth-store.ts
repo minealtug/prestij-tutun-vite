@@ -14,6 +14,7 @@ export interface AuthUser {
   admin: boolean
   departmanId: number | null
   departmanAdi: string | null
+  mintikaId: number | null
 }
 
 interface AuthState {

@@ -12,6 +12,7 @@ export interface AuthUserDto {
   admin: boolean
   departmanId: number | null
   departmanAdi: string | null
+  mintikaId: number | null
 }
 
 export interface LoginResponse {
@@ -29,6 +30,7 @@ export interface AuthMeResponse {
     email?: string | null
     departmanId?: number | null
     departmanAdi?: string | null
+    mintikaId?: number | null
     aktif: boolean
     admin: boolean
   }

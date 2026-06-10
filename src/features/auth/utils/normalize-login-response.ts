@@ -37,6 +37,7 @@ function mapAuthUser(userRaw: Record<string, unknown>, fallbackUserName = ''): A
     admin: Boolean(pick(userRaw, 'admin', 'Admin') ?? false),
     departmanId: readNumber(pick(userRaw, 'departmanId', 'DepartmanId')),
     departmanAdi: pick(userRaw, 'departmanAdi', 'DepartmanAdi') ?? null,
+    mintikaId: readNumber(pick(userRaw, 'mintikaId', 'MintikaId')),
   }
 }
 
@@ -78,6 +79,7 @@ export function normalizeAuthMeResponse(raw: unknown): AuthMeResponse {
       email: pick(userRaw, 'email', 'Email'),
       departmanId: readNumber(pick(userRaw, 'departmanId', 'DepartmanId')),
       departmanAdi: pick(userRaw, 'departmanAdi', 'DepartmanAdi') ?? null,
+      mintikaId: readNumber(pick(userRaw, 'mintikaId', 'MintikaId')),
       aktif: Boolean(pick(userRaw, 'aktif', 'Aktif') ?? true),
       admin: Boolean(pick(userRaw, 'admin', 'Admin') ?? false),
     },
@@ -95,5 +97,6 @@ export function mapAuthMeUserToSession(user: AuthMeResponse['user']) {
     admin: user.admin,
     departmanId: user.departmanId ?? null,
     departmanAdi: user.departmanAdi ?? null,
+    mintikaId: user.mintikaId ?? null,
   }
 }

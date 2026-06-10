@@ -25,6 +25,7 @@ export function useLogin() {
           admin: data.user.admin,
           departmanId: data.user.departmanId,
           departmanAdi: data.user.departmanAdi,
+          mintikaId: data.user.mintikaId,
         },
         getLoginExpiresAtMs(data),
       )
