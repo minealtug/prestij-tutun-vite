@@ -1,4 +1,5 @@
 import type { AuthMeResponse, AuthUserDto, LoginResponse } from '../types/auth.types'
+import { parseApiExpiresAtMs } from './token-expiry'
 
 function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
   for (const key of keys) {
@@ -47,12 +48,19 @@ export function normalizeLoginResponse(raw: unknown): LoginResponse {
   const accessToken = String(
     pick(row, 'accessToken', 'AccessToken', 'token', 'Token') ?? '',
   )
+  const expiresIn = pick<number>(row, 'expiresIn', 'ExpiresIn')
+  const expiresAtRaw = pick(row, 'expiresAt', 'ExpiresAt')
 
   return {
     accessToken,
-    expiresIn: pick(row, 'expiresIn', 'ExpiresIn'),
+    expiresIn,
+    expiresAt: expiresAtRaw !== undefined ? String(expiresAtRaw) : undefined,
     user: mapAuthUser(userRaw, String(pick(row, 'userName', 'UserName') ?? '')),
   }
+}
+
+export function getLoginExpiresAtMs(response: LoginResponse): number | null {
+  return parseApiExpiresAtMs(response.expiresAt, response.expiresIn)
 }
 
 export function normalizeAuthMeResponse(raw: unknown): AuthMeResponse {

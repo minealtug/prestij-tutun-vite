@@ -17,6 +17,7 @@ export interface AuthUserDto {
 export interface LoginResponse {
   accessToken: string
   expiresIn?: number
+  expiresAt?: string
   user: AuthUserDto
 }
 

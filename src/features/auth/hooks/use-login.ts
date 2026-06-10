@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { authApi } from '../api/auth-api'
 import { useAuthStore } from '@/stores/auth-store'
 import type { LoginRequest } from '../types/auth.types'
+import { getLoginExpiresAtMs } from '../utils/normalize-login-response'
 import { getErrorMessage } from '@/lib/api/api-error'
 
 export function useLogin() {
@@ -13,16 +14,20 @@ export function useLogin() {
   return useMutation({
     mutationFn: (payload: LoginRequest) => authApi.login(payload),
     onSuccess: (data) => {
-      setSession(data.accessToken, {
-        id: data.user.id,
-        userName: data.user.userName,
-        email: data.user.email,
-        fullName: data.user.fullName,
-        role: data.user.role,
-        admin: data.user.admin,
-        departmanId: data.user.departmanId,
-        departmanAdi: data.user.departmanAdi,
-      })
+      setSession(
+        data.accessToken,
+        {
+          id: data.user.id,
+          userName: data.user.userName,
+          email: data.user.email,
+          fullName: data.user.fullName,
+          role: data.user.role,
+          admin: data.user.admin,
+          departmanId: data.user.departmanId,
+          departmanAdi: data.user.departmanAdi,
+        },
+        getLoginExpiresAtMs(data),
+      )
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/'
       navigate(from, { replace: true })
     },

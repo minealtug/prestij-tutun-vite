@@ -1,5 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import {
+  isTokenExpired,
+  resolveTokenExpiryMs,
+} from '@/features/auth/utils/token-expiry'
 
 export interface AuthUser {
   id: string
@@ -15,7 +19,8 @@ export interface AuthUser {
 interface AuthState {
   accessToken: string | null
   user: AuthUser | null
-  setSession: (token: string, user: AuthUser) => void
+  expiresAt: number | null
+  setSession: (token: string, user: AuthUser, expiresAt?: number | null) => void
   updateUser: (patch: Partial<AuthUser>) => void
   clearSession: () => void
   isAuthenticated: () => boolean
@@ -26,14 +31,28 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       accessToken: null,
       user: null,
-      setSession: (accessToken, user) => set({ accessToken, user }),
+      expiresAt: null,
+      setSession: (accessToken, user, expiresAt = null) => {
+        const resolvedExpiry = resolveTokenExpiryMs(accessToken, expiresAt)
+        set({ accessToken, user, expiresAt: resolvedExpiry })
+      },
       updateUser: (patch) =>
         set((state) => ({
           user: state.user ? { ...state.user, ...patch } : state.user,
         })),
-      clearSession: () => set({ accessToken: null, user: null }),
-      isAuthenticated: () => Boolean(get().accessToken),
+      clearSession: () => set({ accessToken: null, user: null, expiresAt: null }),
+      isAuthenticated: () => {
+        const { accessToken, expiresAt } = get()
+        return !isTokenExpired(accessToken, expiresAt)
+      },
     }),
-    { name: 'prestij-auth' },
+    {
+      name: 'prestij-auth',
+      onRehydrateStorage: () => (state) => {
+        if (state && !state.isAuthenticated()) {
+          state.clearSession()
+        }
+      },
+    },
   ),
 )

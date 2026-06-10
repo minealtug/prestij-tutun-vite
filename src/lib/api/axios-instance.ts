@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { normalizeApiError } from './api-error'
+import { usePermissionsStore } from '@/features/permissions/stores/permissions-store'
 import { useAuthStore } from '@/stores/auth-store'
 
 export const api = axios.create({
@@ -21,5 +22,16 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => Promise.reject(normalizeApiError(error)),
+  (error) => {
+    if (error.response?.status === 401) {
+      usePermissionsStore.getState().clear()
+      useAuthStore.getState().clearSession()
+
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.assign('/login')
+      }
+    }
+
+    return Promise.reject(normalizeApiError(error))
+  },
 )

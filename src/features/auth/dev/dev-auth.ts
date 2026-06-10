@@ -25,7 +25,7 @@ export function tryDevLogin(payload: LoginRequest): LoginResponse | null {
 
   return {
     accessToken: 'dev-temporary-token',
-    expiresIn: 86_400,
+    expiresIn: 8 * 60 * 60,
     user: {
       id: 'dev-user-1',
       userName: DEV_TEST_CREDENTIALS.userName,
