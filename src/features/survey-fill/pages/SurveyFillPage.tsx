@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
 import { PageContainer } from '@/components/layout/PageContainer'
@@ -9,11 +10,38 @@ import { useAnketSablonlar } from '../hooks/use-anket-yanit'
 
 export function SurveyFillPage() {
   const { canRead, canEdit, loading: permissionLoading } = useRequirePagePermission()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [selectedBaslikId, setSelectedBaslikId] = useState(0)
   const [selectedSablonId, setSelectedSablonId] = useState(0)
+  const [initialEkiciId, setInitialEkiciId] = useState<string | null>(null)
 
   const surveysQuery = useSurveys()
   const sablonlarQuery = useAnketSablonlar(selectedBaslikId > 0 ? selectedBaslikId : null)
+
+  useEffect(() => {
+    const baslikId = Number(searchParams.get('baslikId'))
+    const sablonId = Number(searchParams.get('sablonId'))
+    const ekiciId = searchParams.get('ekiciId')?.trim() || null
+
+    if (!Number.isFinite(baslikId) || baslikId <= 0) return
+    if (!Number.isFinite(sablonId) || sablonId <= 0) return
+    if (!ekiciId) return
+
+    setSelectedBaslikId(baslikId)
+    setSelectedSablonId(sablonId)
+    setInitialEkiciId(ekiciId)
+    setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  const selectedSurvey = useMemo(
+    () => (surveysQuery.data ?? []).find((survey) => Number(survey.id) === selectedBaslikId),
+    [surveysQuery.data, selectedBaslikId],
+  )
+
+  const selectedSablon = useMemo(
+    () => (sablonlarQuery.data ?? []).find((sablon) => sablon.id === selectedSablonId),
+    [sablonlarQuery.data, selectedSablonId],
+  )
 
   const surveyOptions = useMemo(
     () => [
@@ -72,6 +100,7 @@ export function SurveyFillPage() {
             onChange={(e) => {
               setSelectedBaslikId(Number(e.target.value) || 0)
               setSelectedSablonId(0)
+              setInitialEkiciId(null)
             }}
             options={surveyOptions}
             disabled={surveysQuery.isLoading}
@@ -80,7 +109,10 @@ export function SurveyFillPage() {
           <Select
             label="Şablon"
             value={selectedSablonId > 0 ? String(selectedSablonId) : ''}
-            onChange={(e) => setSelectedSablonId(Number(e.target.value) || 0)}
+            onChange={(e) => {
+              setSelectedSablonId(Number(e.target.value) || 0)
+              setInitialEkiciId(null)
+            }}
             options={sablonOptions}
             disabled={selectedBaslikId <= 0 || sablonlarQuery.isLoading}
             required
@@ -91,6 +123,9 @@ export function SurveyFillPage() {
           <SurveyFillForm
             baslikId={selectedBaslikId}
             sablonId={selectedSablonId}
+            baslikAdi={selectedSurvey?.name}
+            sablonAdi={selectedSablon?.adi}
+            initialEkiciId={initialEkiciId}
             canSubmit={canEdit}
             onRefreshSablonlar={() => void sablonlarQuery.refetch()}
           />

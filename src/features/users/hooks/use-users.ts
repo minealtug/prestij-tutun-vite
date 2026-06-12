@@ -1,7 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/query-keys'
+import { useAuthStore } from '@/stores/auth-store'
 import { usersApi } from '../api/users-api'
-import type { CreateUserFormState } from '../types/user.types'
+import type { CreateUserFormState, UserDto } from '../types/user.types'
+
+function syncAuthUserIfSelf(updatedUser: UserDto | null) {
+  if (!updatedUser) return
+
+  const authUser = useAuthStore.getState().user
+  if (!authUser || authUser.id !== String(updatedUser.id)) return
+
+  useAuthStore.getState().updateUser({
+    fullName: updatedUser.fullName,
+    admin: updatedUser.admin,
+    departmanId: updatedUser.departmanId,
+    departmanAdi: updatedUser.departmanAdi,
+    mintikaId: updatedUser.mintikaId,
+  })
+}
 
 export function useUsers() {
   return useQuery({
@@ -61,7 +77,8 @@ export function useUpdateUser() {
   return useMutation({
     mutationFn: ({ id, form }: { id: number; form: CreateUserFormState }) =>
       usersApi.updateFromForm(id, form),
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
+      syncAuthUserIfSelf(data)
       void queryClient.invalidateQueries({ queryKey: queryKeys.users.all() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(String(variables.id)) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.users.departmans })

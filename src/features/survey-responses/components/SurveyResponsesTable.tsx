@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react'
-import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/feedback/ErrorState'
@@ -7,10 +7,11 @@ import { EmptyState } from '@/components/feedback/EmptyState'
 import { Skeleton } from '@/components/feedback/Skeleton'
 import type { AnketCevapOzetItem } from '../types/survey-response.types'
 import {
-  getOzetDetayBadge,
   getOzetFullName,
+  getOzetKullaniciAdi,
   getOzetSurveyName,
 } from '../types/survey-response.types'
+import { formatSonIslemTarihi } from '../utils/map-anket-cevap'
 import { SurveyResponseAnswersPanel } from './SurveyResponseAnswersPanel'
 
 interface SurveyResponsesTableProps {
@@ -21,8 +22,15 @@ interface SurveyResponsesTableProps {
   onRefresh: () => void
 }
 
-function formatSonIslemTarihi(iso: string) {
-  return new Date(iso).toLocaleDateString('tr-TR')
+function ExpandIcon({ open }: { open: boolean }) {
+  return (
+    <span
+      className="inline-flex h-6 w-6 items-center justify-center text-muted"
+      aria-hidden
+    >
+      {open ? '▲' : '▼'}
+    </span>
+  )
 }
 
 export function SurveyResponsesTable({
@@ -71,21 +79,30 @@ export function SurveyResponsesTable({
       </div>
 
       <div className="w-full overflow-x-auto">
-        <table className="w-full min-w-[800px] border-collapse text-left text-sm">
+        <table className="w-full min-w-[900px] border-collapse text-left text-sm">
           <thead>
-            <tr className="border-b border-border bg-primary-500/5">
-              <th className="w-10 px-3 py-3" aria-hidden />
-              <th className="px-4 py-3 font-semibold text-foreground">TARİH</th>
-              <th className="px-4 py-3 font-semibold text-foreground">EKİCİ</th>
-              <th className="px-4 py-3 font-semibold text-foreground">MINTİKA</th>
-              <th className="px-4 py-3 font-semibold text-foreground">ANKET</th>
-              <th className="px-4 py-3 font-semibold text-foreground">DETAY</th>
+            <tr className="border-b border-border">
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                TARİH
+              </th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                KULLANICI
+              </th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                ADI SOYADI
+              </th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                ANKET
+              </th>
+              <th className="w-20 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted">
+                DETAY
+              </th>
             </tr>
           </thead>
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-0">
+                <td colSpan={5} className="p-0">
                   <EmptyState
                     compact
                     title="Henüz anket cevabı yok"
@@ -96,12 +113,14 @@ export function SurveyResponsesTable({
             ) : (
               data.map((row) => {
                 const isOpen = expandedId === row.id
+                const kategoriAdi = row.baslikAdi?.trim() || 'Genel'
+
                 return (
                   <Fragment key={row.id}>
                     <tr
                       className={cn(
                         'cursor-pointer border-b border-border/60 transition-colors hover:bg-primary-500/5',
-                        isOpen && 'bg-primary-500/5',
+                        isOpen && 'bg-primary-500/[0.03]',
                       )}
                       onClick={() => toggle(row.id)}
                       onKeyDown={(e) => {
@@ -114,35 +133,26 @@ export function SurveyResponsesTable({
                       role="button"
                       aria-expanded={isOpen}
                     >
-                      <td className="px-3 py-3 text-muted">
-                        {isOpen ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                      </td>
                       <td className="px-4 py-3 whitespace-nowrap text-foreground">
                         {formatSonIslemTarihi(row.sonIslemTarihi)}
                       </td>
+                      <td className="px-4 py-3 text-foreground">{getOzetKullaniciAdi(row)}</td>
                       <td className="px-4 py-3 text-foreground">{getOzetFullName(row)}</td>
-                      <td className="px-4 py-3 text-foreground">{row.mintikaAdi}</td>
                       <td className="px-4 py-3 text-foreground">{getOzetSurveyName(row)}</td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full bg-accent-500/20 px-2.5 py-0.5 text-xs font-medium text-primary-800">
-                          {getOzetDetayBadge(row)}
-                        </span>
+                      <td className="px-4 py-3 text-center">
+                        <ExpandIcon open={isOpen} />
                       </td>
                     </tr>
                     {isOpen && (
-                      <tr key={`${row.id}-detail`} className="border-b border-border bg-surface/80">
-                        <td colSpan={6} className="px-4 py-4">
-                          <div className="rounded-lg border border-border bg-surface-elevated p-4">
-                            <SurveyResponseAnswersPanel
-                              ekiciId={row.ekiciId}
-                              sablonId={row.sablonId}
-                              enabled={isOpen}
-                            />
-                          </div>
+                      <tr className="border-b border-border bg-surface/50">
+                        <td colSpan={5} className="p-0">
+                          <SurveyResponseAnswersPanel
+                            ekiciId={row.ekiciId}
+                            sablonId={row.sablonId}
+                            baslikId={row.baslikId}
+                            kategoriAdi={kategoriAdi}
+                            enabled={isOpen}
+                          />
                         </td>
                       </tr>
                     )}

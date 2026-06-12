@@ -14,7 +14,7 @@ function rowMatchesAnketAdi(item: AnketCevapOzetItem, anketAdi: string): boolean
   if (baslik && normalizeAnketAdi(baslik) === target) return true
 
   const sablon = item.sablonAdi?.trim()
-  if (!baslik && sablon && normalizeAnketAdi(sablon) === target) return true
+  if (sablon && normalizeAnketAdi(sablon) === target) return true
 
   return false
 }

@@ -5,19 +5,27 @@ import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { Skeleton } from '@/components/feedback/Skeleton'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { useAnswerInputTypes, useQuestions } from '@/features/questions/hooks/use-questions'
 import { useAuthStore } from '@/stores/auth-store'
+import { useUser } from '@/features/users/hooks/use-users'
 import { getErrorMessage } from '@/lib/api/api-error'
 import { SurveyFillQuestionField } from './SurveyFillQuestionField'
 import {
   useAnketYanitOturum,
   useSubmitAnketYanitCevapBatch,
 } from '../hooks/use-anket-yanit'
+import { useAltSeceneklerByGrupIds } from '../hooks/use-alt-secenekler'
 import { useEkiciler } from '../hooks/use-ekiciler'
+import {
+  enrichOturumQuestionsWithDefinitions,
+  mergeAltSeceneklerIntoQuestions,
+} from '../utils/enrich-oturum-questions'
 import {
   hasEkiciProducerQuestion,
   isEkiciProducerQuestion,
 } from '../utils/is-ekici-producer-question'
 import { getEkiciFullName } from '../utils/normalize-ekici-api'
+import { buildAnswerTypeKindLookup } from '../utils/build-answer-type-kind-lookup'
 import { buildAnketYanitCevapRequest } from '../utils/build-anket-yanit-cevap'
 import {
   buildInitialAnswersMap,
@@ -30,10 +38,15 @@ import {
 import { getQuestionKey } from '../utils/question-key'
 import { resolveSurveyFillMintikaId } from '../utils/resolve-survey-fill-mintika-id'
 import { validateSurveyFillAnswers } from '../utils/validate-survey-fill-answers'
+import { useSurveyFillRecentStore } from '../stores/survey-fill-recent-store'
+import { SurveyFillSuccessModal } from './SurveyFillSuccessModal'
 
 interface SurveyFillFormProps {
   baslikId: number
   sablonId: number
+  baslikAdi?: string
+  sablonAdi?: string
+  initialEkiciId?: string | null
   canSubmit?: boolean
   onRefreshSablonlar?: () => void
 }
@@ -41,12 +54,18 @@ interface SurveyFillFormProps {
 export function SurveyFillForm({
   baslikId,
   sablonId,
+  baslikAdi = '',
+  sablonAdi = '',
+  initialEkiciId = null,
   canSubmit = true,
   onRefreshSablonlar,
 }: SurveyFillFormProps) {
+  const addRecentSave = useSurveyFillRecentStore((state) => state.addRecentSave)
   const [sessionEkiciId, setSessionEkiciId] = useState<string | null>(null)
   const [ekiciDraft, setEkiciDraft] = useState('')
   const [ekiciStepError, setEkiciStepError] = useState('')
+  const [successModalOpen, setSuccessModalOpen] = useState(false)
+  const [lastSavedCount, setLastSavedCount] = useState(0)
 
   const oturumQuery = useAnketYanitOturum(
     sessionEkiciId
@@ -54,22 +73,61 @@ export function SurveyFillForm({
       : null,
   )
   const submitCevapBatch = useSubmitAnketYanitCevapBatch()
+  const answerInputTypesQuery = useAnswerInputTypes()
+  const questionDefinitionsQuery = useQuestions(baslikId)
+  const answerTypeLookup = useMemo(
+    () => buildAnswerTypeKindLookup(answerInputTypesQuery.data),
+    [answerInputTypesQuery.data],
+  )
   const ekicilerQuery = useEkiciler(true)
   const authUser = useAuthStore((state) => state.user)
+  const authUserId = authUser?.id ? Number(authUser.id) : null
+  const currentUserQuery = useUser(
+    authUserId != null && Number.isFinite(authUserId) ? authUserId : null,
+  )
 
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [initialAnswers, setInitialAnswers] = useState<Record<string, string>>({})
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [submitError, setSubmitError] = useState('')
 
-  const visibleQuestions = useMemo(
+  const baseVisibleQuestions = useMemo(
     () => sortOturumQuestionsForFill(getVisibleOturumQuestions(oturumQuery.data)),
     [oturumQuery.data],
   )
 
+  const enrichedQuestions = useMemo(
+    () =>
+      enrichOturumQuestionsWithDefinitions(
+        baseVisibleQuestions,
+        questionDefinitionsQuery.data,
+        answerInputTypesQuery.data,
+      ),
+    [baseVisibleQuestions, questionDefinitionsQuery.data, answerInputTypesQuery.data],
+  )
+
+  const secenekGrupIds = useMemo(
+    () =>
+      enrichedQuestions
+        .map((question) => question.secenekGrupId)
+        .filter((id): id is number => id != null && id > 0),
+    [enrichedQuestions],
+  )
+
+  const altSeceneklerQuery = useAltSeceneklerByGrupIds(secenekGrupIds)
+
+  const visibleQuestions = useMemo(
+    () =>
+      mergeAltSeceneklerIntoQuestions(
+        enrichedQuestions,
+        altSeceneklerQuery.optionsByGrupId,
+      ),
+    [enrichedQuestions, altSeceneklerQuery.optionsByGrupId],
+  )
+
   const progress = useMemo(
-    () => getFormFillProgress(visibleQuestions, answers),
-    [visibleQuestions, answers],
+    () => getFormFillProgress(visibleQuestions, answers, answerTypeLookup),
+    [visibleQuestions, answers, answerTypeLookup],
   )
 
   const hasEkiciQuestion = useMemo(
@@ -97,19 +155,26 @@ export function SurveyFillForm({
       resolveSurveyFillMintikaId({
         oturumMintikaId: oturumQuery.data?.mintikaId,
         ekiciMintikaId: selectedEkici?.mintikaId,
-        userMintikaId: authUser?.mintikaId,
+        userMintikaId: authUser?.mintikaId ?? currentUserQuery.data?.mintikaId,
       }),
-    [oturumQuery.data?.mintikaId, selectedEkici?.mintikaId, authUser?.mintikaId],
+    [
+      oturumQuery.data?.mintikaId,
+      selectedEkici?.mintikaId,
+      authUser?.mintikaId,
+      currentUserQuery.data?.mintikaId,
+    ],
   )
 
   useEffect(() => {
-    setSessionEkiciId(null)
-    setEkiciDraft('')
+    setSessionEkiciId(initialEkiciId)
+    setEkiciDraft(initialEkiciId ?? '')
     setEkiciStepError('')
     setAnswers({})
     setInitialAnswers({})
     setFieldErrors({})
-  }, [baslikId, sablonId])
+    setSubmitError('')
+    setSuccessModalOpen(false)
+  }, [baslikId, sablonId, initialEkiciId])
 
   useEffect(() => {
     if (!oturumQuery.data) return
@@ -117,12 +182,12 @@ export function SurveyFillForm({
     const questions = sortOturumQuestionsForFill(getVisibleOturumQuestions(oturumQuery.data))
     if (questions.length === 0) return
 
-    const nextAnswers = buildInitialAnswersMap(questions, sessionEkiciId)
+    const nextAnswers = buildInitialAnswersMap(questions, sessionEkiciId, answerTypeLookup)
     setAnswers(nextAnswers)
     setInitialAnswers(nextAnswers)
     setFieldErrors({})
     setSubmitError('')
-  }, [oturumQuery.dataUpdatedAt, sessionEkiciId, oturumQuery.data])
+  }, [oturumQuery.dataUpdatedAt, sessionEkiciId, oturumQuery.data, answerTypeLookup])
 
   const handleRefresh = () => {
     void oturumQuery.refetch()
@@ -153,7 +218,11 @@ export function SurveyFillForm({
   const handleSubmitAnswers = () => {
     if (!canSubmit || !sessionEkiciId) return
 
-    const validationErrors = validateSurveyFillAnswers(visibleQuestions, answers)
+    const validationErrors = validateSurveyFillAnswers(
+      visibleQuestions,
+      answers,
+      answerTypeLookup,
+    )
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors)
       return
@@ -183,10 +252,28 @@ export function SurveyFillForm({
         mintikaId,
         question,
         answers[getQuestionKey(question)] ?? '',
+        answerTypeLookup,
       ),
     )
 
+    const savedCount = questionsToSubmit.length
+
     submitCevapBatch.mutate(payloads, {
+      onSuccess: () => {
+        const ekiciAdi = selectedEkici ? getEkiciFullName(selectedEkici) : sessionEkiciId
+        addRecentSave({
+          baslikId,
+          sablonId,
+          ekiciId: sessionEkiciId,
+          baslikAdi: baslikAdi || `Anket #${baslikId}`,
+          sablonAdi: sablonAdi || `Şablon #${sablonId}`,
+          ekiciAdi,
+          answeredCount: savedCount,
+        })
+        setLastSavedCount(savedCount)
+        setInitialAnswers({ ...answers })
+        setSuccessModalOpen(true)
+      },
       onError: (error) => setSubmitError(getErrorMessage(error)),
     })
   }
@@ -285,6 +372,7 @@ export function SurveyFillForm({
   }
 
   return (
+    <>
     <div className="border-t border-border">
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
         <p className="text-sm text-muted">
@@ -340,6 +428,8 @@ export function SurveyFillForm({
               onChange={(value) => handleAnswerChange(key, value)}
               ekiciOptions={isEkiciQuestion ? ekiciOptions : undefined}
               ekiciLoading={isEkiciQuestion && ekicilerQuery.isLoading}
+              selectLoading={altSeceneklerQuery.isLoading}
+              answerTypeLookup={answerTypeLookup}
             />
           )
         })}
@@ -367,5 +457,12 @@ export function SurveyFillForm({
         </div>
       </div>
     </div>
+    <SurveyFillSuccessModal
+      open={successModalOpen}
+      onClose={() => setSuccessModalOpen(false)}
+      baslikId={baslikId}
+      answeredCount={lastSavedCount}
+    />
+    </>
   )
 }

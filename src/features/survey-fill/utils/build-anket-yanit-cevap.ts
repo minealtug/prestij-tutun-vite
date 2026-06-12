@@ -1,4 +1,5 @@
 import type { AnketYanitCevapRequest, AnketYanitSoruDto } from '../types/anket-yanit.types'
+import type { AnswerTypeKindLookup } from './build-answer-type-kind-lookup'
 import { resolveQuestionInputKind } from './resolve-question-input-kind'
 
 export function buildAnketYanitCevapRequest(
@@ -8,8 +9,9 @@ export function buildAnketYanitCevapRequest(
   mintikaId: number,
   soru: AnketYanitSoruDto,
   value: string,
+  answerTypeLookup?: AnswerTypeKindLookup,
 ): AnketYanitCevapRequest {
-  const kind = resolveQuestionInputKind(soru)
+  const kind = resolveQuestionInputKind(soru, answerTypeLookup)
   const base: AnketYanitCevapRequest = {
     baslikId,
     sablonId,
@@ -20,6 +22,14 @@ export function buildAnketYanitCevapRequest(
 
   if (kind === 'ekici') {
     return { ...base, ekiciId: value || sessionEkiciId, cevapText: null }
+  }
+
+  if (kind === 'select') {
+    const optionId = Number(value)
+    if (Number.isFinite(optionId) && optionId > 0) {
+      return { ...base, cevapAltSecenekId: optionId, cevapText: null }
+    }
+    return { ...base, cevapText: value.trim() || null }
   }
 
   if (kind === 'checkbox') {

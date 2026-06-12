@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Filter } from 'lucide-react'
+import { useSurveyFillRecentStore } from '@/features/survey-fill/stores/survey-fill-recent-store'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
@@ -20,6 +22,7 @@ import { useRequirePagePermission } from '@/features/permissions/hooks/use-requi
 import type { FilterOptionDto, SurveyResponsesQueryParams } from '../types/survey-response.types'
 import { hasAnySurveyFilter } from '../types/survey-response.types'
 import { formatAppliedFilterSummary } from '../utils/format-applied-filter-summary'
+import { mergeRecentSavesWithResponses } from '../utils/merge-recent-survey-saves'
 
 function toSelectOptions(
   items: FilterOptionDto[],
@@ -33,6 +36,8 @@ function toSelectOptions(
 export function SurveyResponsesPage() {
   const { canRead, loading: permissionLoading } = useRequirePagePermission()
   const user = useAuthStore((s) => s.user)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const recentSaves = useSurveyFillRecentStore((state) => state.items)
   const [baslikId, setBaslikId] = useState('')
   const [menseiId, setMenseiId] = useState('')
   const [bolgeId, setBolgeId] = useState('')
@@ -105,6 +110,56 @@ export function SurveyResponsesPage() {
 
   const responsesQuery = useSurveyResponses(appliedFilters ?? undefined)
   const filtersReady = hasAnySurveyFilter(appliedFilters ?? undefined)
+
+  const tableData = useMemo(
+    () =>
+      mergeRecentSavesWithResponses(
+        responsesQuery.data ?? [],
+        recentSaves,
+        appliedFilters ?? undefined,
+      ),
+    [responsesQuery.data, recentSaves, appliedFilters],
+  )
+
+  useEffect(() => {
+    const baslikIdParam = searchParams.get('baslikId')
+    const autoApply = searchParams.get('auto') === '1'
+    if (!autoApply || !baslikIdParam) return
+
+    const num = Number(baslikIdParam)
+    if (!Number.isFinite(num) || num <= 0) return
+
+    setBaslikId(baslikIdParam)
+
+    if (anketlerQuery.isLoading) return
+
+    const anketAdi = (anketlerQuery.data ?? []).find(
+      (survey) => String(survey.id) === baslikIdParam,
+    )?.name
+    const params: SurveyResponsesQueryParams = { baslikId: num, anketAdi }
+    setAppliedFilters(params)
+    setAppliedFilterSummary(
+      formatAppliedFilterSummary(params, {
+        anketler: anketlerQuery.data ?? [],
+        menseiler,
+        bolgeler,
+        mintikalar,
+        alimNoktalari,
+        koyler,
+      }),
+    )
+    setSearchParams({}, { replace: true })
+  }, [
+    searchParams,
+    setSearchParams,
+    anketlerQuery.isLoading,
+    anketlerQuery.data,
+    menseiler,
+    bolgeler,
+    mintikalar,
+    alimNoktalari,
+    koyler,
+  ])
 
   const handleApplyFilters = () => {
     if (!draftFiltersReady) return
@@ -232,17 +287,18 @@ export function SurveyResponsesPage() {
 
         {!filtersReady ? (
           <p className="px-5 pb-5 text-sm text-muted">
-            Listelemek için en az bir filtre seçin ve Filtrele&apos;ye tıklayın.
+            Listelemek için <span className="font-medium text-foreground">Anket</span> veya en az
+            bir coğrafi filtre (menşei, bölge, mıntıka vb.) seçin ve Filtrele&apos;ye tıklayın.
           </p>
         ) : (
           <>
             <SurveyResponseStatsCards
-              data={responsesQuery.data ?? []}
+              data={tableData}
               filterSummary={appliedFilterSummary}
               isLoading={responsesQuery.isLoading}
             />
             <SurveyResponsesTable
-              data={responsesQuery.data ?? []}
+              data={tableData}
               isLoading={responsesQuery.isLoading}
               isError={responsesQuery.isError}
               error={responsesQuery.error}

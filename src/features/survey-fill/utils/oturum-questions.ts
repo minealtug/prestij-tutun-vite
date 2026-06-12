@@ -1,4 +1,5 @@
 import type { AnketYanitOturumDto, AnketYanitSoruDto } from '../types/anket-yanit.types'
+import type { AnswerTypeKindLookup } from './build-answer-type-kind-lookup'
 import { isEkiciProducerQuestion } from './is-ekici-producer-question'
 import { getQuestionKey } from './question-key'
 import { resolveQuestionInputKind } from './resolve-question-input-kind'
@@ -21,11 +22,20 @@ export function getCurrentOturumQuestion(
   return visible.find((soru) => !soru.yanitlandi) ?? null
 }
 
-function isQuestionAnswered(question: AnketYanitSoruDto, value: string): boolean {
-  const kind = resolveQuestionInputKind(question)
+function isQuestionAnswered(
+  question: AnketYanitSoruDto,
+  value: string,
+  answerTypeLookup?: AnswerTypeKindLookup,
+): boolean {
+  const kind = resolveQuestionInputKind(question, answerTypeLookup)
 
   if (kind === 'checkbox') {
     return question.zorunlu ? value === 'true' : true
+  }
+
+  if (kind === 'select') {
+    const optionId = Number(value)
+    return Number.isFinite(optionId) && optionId > 0
   }
 
   return value.trim().length > 0
@@ -35,10 +45,15 @@ function isQuestionAnswered(question: AnketYanitSoruDto, value: string): boolean
 export function getFormFillProgress(
   questions: AnketYanitSoruDto[],
   answers: Record<string, string>,
+  answerTypeLookup?: AnswerTypeKindLookup,
 ) {
   const total = questions.length
   const answered = questions.filter((question) =>
-    isQuestionAnswered(question, answers[getQuestionKey(question)] ?? ''),
+    isQuestionAnswered(
+      question,
+      answers[getQuestionKey(question)] ?? '',
+      answerTypeLookup,
+    ),
   ).length
 
   return { total, answered }
@@ -47,8 +62,9 @@ export function getFormFillProgress(
 export function getInitialAnswerValue(
   soru: AnketYanitSoruDto,
   sessionEkiciId?: string | null,
+  answerTypeLookup?: AnswerTypeKindLookup,
 ): string {
-  const kind = resolveQuestionInputKind(soru)
+  const kind = resolveQuestionInputKind(soru, answerTypeLookup)
 
   if (kind === 'ekici') {
     return soru.ekiciId ?? sessionEkiciId ?? ''
@@ -59,6 +75,14 @@ export function getInitialAnswerValue(
     return text === 'evet' || text === 'true' ? 'true' : 'false'
   }
 
+  if (kind === 'select') {
+    if (soru.cevapAltSecenekId != null) return String(soru.cevapAltSecenekId)
+    const matched = soru.altSecenekler?.find(
+      (option) => option.adi === soru.cevapText?.trim(),
+    )
+    return matched ? String(matched.id) : ''
+  }
+
   if (soru.cevapText) return soru.cevapText
   return ''
 }
@@ -66,10 +90,15 @@ export function getInitialAnswerValue(
 export function buildInitialAnswersMap(
   questions: AnketYanitSoruDto[],
   sessionEkiciId?: string | null,
+  answerTypeLookup?: AnswerTypeKindLookup,
 ): Record<string, string> {
   const answers: Record<string, string> = {}
   for (const question of questions) {
-    answers[getQuestionKey(question)] = getInitialAnswerValue(question, sessionEkiciId)
+    answers[getQuestionKey(question)] = getInitialAnswerValue(
+      question,
+      sessionEkiciId,
+      answerTypeLookup,
+    )
   }
   return answers
 }

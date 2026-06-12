@@ -53,6 +53,7 @@ export interface AnketCevapOzetItem {
   mintikaAdi: string
   baslikAdi: string
   sablonAdi: string
+  kullaniciAdi?: string
   sonIslemTarihi: string
   yanitlananSoruSayisi: number
   yanitlanmayanSoruSayisi: number
@@ -105,12 +106,25 @@ export function hasAnySurveyFilter(params?: SurveyResponsesQueryParams): boolean
   return hasGeoSurveyFilter(params) || hasAnketSurveyFilter(params)
 }
 
-export function getAnketCevapRowId(ekiciId: string, sablonId: number): string {
+export function getAnketCevapRowId(
+  ekiciId: string,
+  sablonId: number,
+  baslikId?: number,
+): string {
+  if (baslikId != null && baslikId > 0) {
+    return `${ekiciId}|${baslikId}|${sablonId}`
+  }
   return `${ekiciId}|${sablonId}`
 }
 
 export function getOzetFullName(item: Pick<AnketCevapOzetItem, 'ekiciAd' | 'ekiciSoyad'>): string {
   return [item.ekiciAd, item.ekiciSoyad].filter(Boolean).join(' ').trim() || '-'
+}
+
+export function getOzetKullaniciAdi(
+  item: Pick<AnketCevapOzetItem, 'kullaniciAdi'>,
+): string {
+  return item.kullaniciAdi?.trim() || '—'
 }
 
 export function getOzetSurveyName(

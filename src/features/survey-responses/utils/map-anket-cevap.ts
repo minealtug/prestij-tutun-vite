@@ -63,3 +63,58 @@ export function sortAnketCevapOzetList(items: AnketCevapOzetItem[]): AnketCevapO
     (a, b) => new Date(b.sonIslemTarihi).getTime() - new Date(a.sonIslemTarihi).getTime(),
   )
 }
+
+export interface FlatSoruCevapRow {
+  soruId: number
+  kategori: string
+  soruMetni: string
+  cevapMetni: string
+  yanitlandi: boolean
+}
+
+function flattenSoruNode(
+  soru: SoruCevapDisplay,
+  kategori: string,
+  rows: FlatSoruCevapRow[],
+) {
+  rows.push({
+    soruId: soru.soruId,
+    kategori,
+    soruMetni: soru.soruMetni,
+    cevapMetni: soru.cevapMetni,
+    yanitlandi: soru.yanitlandi,
+  })
+
+  for (const child of soru.children) {
+    flattenSoruNode(child, kategori, rows)
+  }
+}
+
+export function flattenSoruCevapTree(
+  sorular: SoruCevapDisplay[],
+  defaultKategori = 'Genel',
+): FlatSoruCevapRow[] {
+  const rows: FlatSoruCevapRow[] = []
+  for (const soru of sorular) {
+    flattenSoruNode(soru, defaultKategori, rows)
+  }
+  return rows
+}
+
+export function formatSonIslemTarihi(iso: string): string {
+  if (!iso?.trim()) return '-'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return '-'
+
+  const day = date.toLocaleDateString('tr-TR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+  const time = date.toLocaleTimeString('tr-TR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+  return `${day} ${time}`
+}

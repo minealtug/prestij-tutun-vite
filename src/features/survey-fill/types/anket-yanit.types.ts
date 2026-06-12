@@ -4,6 +4,11 @@ export interface AnketSablonDto {
   baslikId?: number | null
 }
 
+export interface AltSecenekOptionDto {
+  id: number
+  adi: string
+}
+
 export interface AnketYanitSoruDto {
   soruId: number
   sira: number
@@ -14,8 +19,11 @@ export interface AnketYanitSoruDto {
   bagliSoru: boolean
   cevapGirdiTipAdi: string | null
   cevapGirdiTipId: number | null
+  secenekGrupId: number | null
+  altSecenekler: AltSecenekOptionDto[]
   yanitlandi: boolean
   cevapText: string | null
+  cevapAltSecenekId: number | null
   ekiciId: string | null
 }
 
@@ -53,4 +61,7 @@ export interface SurveyFillSoruView {
   zorunlu: boolean
   bagliSoru?: boolean
   cevapGirdiTipAdi?: string | null
+  cevapGirdiTipId?: number | null
+  secenekGrupId?: number | null
+  altSecenekler?: AltSecenekOptionDto[]
 }

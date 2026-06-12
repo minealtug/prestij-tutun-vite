@@ -6,10 +6,11 @@ export function useSurveyResponseDetail(
   ekiciId: string,
   sablonId: number,
   enabled: boolean,
+  baslikId?: number,
 ) {
   return useQuery({
-    queryKey: queryKeys.surveyResponses.detail(ekiciId, sablonId),
-    queryFn: () => surveyResponsesApi.getDetail(ekiciId, sablonId),
+    queryKey: queryKeys.surveyResponses.detail(ekiciId, sablonId, baslikId),
+    queryFn: () => surveyResponsesApi.getDetail(ekiciId, sablonId, baslikId),
     enabled: enabled && Boolean(ekiciId) && sablonId > 0,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 30 * 60 * 1000,

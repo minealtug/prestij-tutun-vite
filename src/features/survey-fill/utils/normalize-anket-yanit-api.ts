@@ -3,6 +3,7 @@ import type {
   AnketYanitOturumDto,
   AnketYanitSoruDto,
 } from '../types/anket-yanit.types'
+import { mapAltSeceneklerFromApi } from './normalize-alt-secenek-api'
 
 function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
   for (const key of keys) {
@@ -27,10 +28,19 @@ function readTamamlanabilir(raw: unknown): boolean {
   return Boolean(pick(row, 'tamamlanabilir', 'Tamamlanabilir', 'value', 'Value'))
 }
 
+function readOptionalPositiveId(raw: unknown): number | null {
+  const num = Number(raw)
+  return Number.isFinite(num) && num > 0 ? num : null
+}
+
 function readCevapFields(cevapRaw: unknown) {
   const cevap = asRecord(cevapRaw)
   if (Object.keys(cevap).length === 0) {
-    return { cevapText: null as string | null, ekiciId: null as string | null }
+    return {
+      cevapText: null as string | null,
+      cevapAltSecenekId: null as number | null,
+      ekiciId: null as string | null,
+    }
   }
 
   const cevapTextRaw = pick(cevap, 'cevapText', 'CevapText')
@@ -38,8 +48,15 @@ function readCevapFields(cevapRaw: unknown) {
 
   return {
     cevapText: cevapTextRaw != null ? String(cevapTextRaw) : null,
+    cevapAltSecenekId: readOptionalPositiveId(
+      pick(cevap, 'cevapAltSecenekId', 'CevapAltSecenekId'),
+    ),
     ekiciId: ekiciRaw != null ? String(ekiciRaw) : null,
   }
+}
+
+function readAltSecenekler(raw: unknown) {
+  return mapAltSeceneklerFromApi(raw)
 }
 
 function mergeSoruMetadata(
@@ -57,6 +74,12 @@ function mergeSoruMetadata(
     cevapGirdiTipAdi: pick(metadata, 'cevapGirdiTipAdi', 'CevapGirdiTipAdi') ?? soru.cevapGirdiTipAdi,
     cevapGirdiTipId:
       readNumber(pick(metadata, 'cevapGirdiTipId', 'CevapGirdiTipId')) ?? soru.cevapGirdiTipId,
+    secenekGrupId:
+      readOptionalPositiveId(pick(metadata, 'secenekGrupId', 'SecenekGrupId')) ?? soru.secenekGrupId,
+    altSecenekler: (() => {
+      const parsed = readAltSecenekler(pick(metadata, 'altSecenekler', 'AltSecenekler'))
+      return parsed.length > 0 ? parsed : soru.altSecenekler
+    })(),
   }
 }
 
@@ -141,12 +164,17 @@ export function mapAnketYanitSoruFromApi(
     bagliSoru: Boolean(pick(row, 'bagliSoru', 'BagliSoru')),
     cevapGirdiTipAdi: pick(row, 'cevapGirdiTipAdi', 'CevapGirdiTipAdi') ?? null,
     cevapGirdiTipId: readNumber(pick(row, 'cevapGirdiTipId', 'CevapGirdiTipId')),
+    secenekGrupId: readOptionalPositiveId(pick(row, 'secenekGrupId', 'SecenekGrupId')),
+    altSecenekler: readAltSecenekler(pick(row, 'altSecenekler', 'AltSecenekler')),
     yanitlandi,
     cevapText:
       cevapFields.cevapText ??
       (pick(row, 'cevapText', 'CevapText') != null
         ? String(pick(row, 'cevapText', 'CevapText'))
         : null),
+    cevapAltSecenekId:
+      cevapFields.cevapAltSecenekId ??
+      readOptionalPositiveId(pick(row, 'cevapAltSecenekId', 'CevapAltSecenekId')),
     ekiciId:
       cevapFields.ekiciId ??
       (pick(row, 'ekiciId', 'EkiciId') != null ? String(pick(row, 'ekiciId', 'EkiciId')) : null),
@@ -170,8 +198,11 @@ function mapYanitlanmayanSoruFromApi(raw: unknown): AnketYanitSoruDto | null {
     bagliSoru: Boolean(pick(row, 'bagliSoru', 'BagliSoru')),
     cevapGirdiTipAdi: pick(row, 'cevapGirdiTipAdi', 'CevapGirdiTipAdi') ?? null,
     cevapGirdiTipId: readNumber(pick(row, 'cevapGirdiTipId', 'CevapGirdiTipId')),
+    secenekGrupId: readOptionalPositiveId(pick(row, 'secenekGrupId', 'SecenekGrupId')),
+    altSecenekler: readAltSecenekler(pick(row, 'altSecenekler', 'AltSecenekler')),
     yanitlandi: false,
     cevapText: null,
+    cevapAltSecenekId: null,
     ekiciId: null,
   }
 }

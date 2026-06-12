@@ -1,8 +1,10 @@
 import { cn } from '@/lib/utils/cn'
 import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { SearchableSelect, type SearchableSelectOption } from '@/components/ui/SearchableSelect'
 import { Textarea } from '@/components/ui/Textarea'
 import type { SurveyFillSoruView } from '../types/anket-yanit.types'
+import type { AnswerTypeKindLookup } from '../utils/build-answer-type-kind-lookup'
 import { getFriendlyAnswerTypeLabel } from '@/features/questions/utils/answer-type-label'
 import { getQuestionKey } from '../utils/question-key'
 import { getSurveyFillQuestionLabel } from '../utils/is-ekici-producer-question'
@@ -17,6 +19,8 @@ interface SurveyFillQuestionFieldProps {
   onChange: (value: string) => void
   ekiciOptions?: SearchableSelectOption[]
   ekiciLoading?: boolean
+  selectLoading?: boolean
+  answerTypeLookup?: AnswerTypeKindLookup
 }
 
 export function SurveyFillQuestionField({
@@ -27,13 +31,19 @@ export function SurveyFillQuestionField({
   onChange,
   ekiciOptions = [],
   ekiciLoading = false,
+  selectLoading = false,
+  answerTypeLookup,
 }: SurveyFillQuestionFieldProps) {
   const fieldId = `survey-fill-${getQuestionKey(question)}`
-  const kind = resolveQuestionInputKind(question)
+  const kind = resolveQuestionInputKind(question, answerTypeLookup)
   const questionLabel = getSurveyFillQuestionLabel(question)
   const answerHint = question.cevapGirdiTipAdi
     ? getFriendlyAnswerTypeLabel(question.cevapGirdiTipAdi)
     : undefined
+  const selectOptions = (question.altSecenekler ?? []).map((option) => ({
+    value: String(option.id),
+    label: option.adi,
+  }))
 
   return (
     <article
@@ -82,6 +92,24 @@ export function SurveyFillQuestionField({
             placeholder={ekiciLoading ? 'Ekiciler yükleniyor...' : 'Ad veya soyad ile ekici ara...'}
             emptyMessage="Eşleşen ekici bulunamadı"
           />
+        ) : kind === 'select' ? (
+          <Select
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            options={[
+              {
+                value: '',
+                label: selectLoading
+                  ? 'Seçenekler yükleniyor...'
+                  : selectOptions.length > 0
+                    ? 'Seçenek seçin'
+                    : 'Seçenek bulunamadı',
+              },
+              ...selectOptions,
+            ]}
+            disabled={selectLoading || selectOptions.length === 0}
+            error={error}
+          />
         ) : kind === 'textarea' ? (
           <Textarea
             id={fieldId}
@@ -119,7 +147,7 @@ export function SurveyFillQuestionField({
           </p>
         )}
 
-        {answerHint && kind !== 'checkbox' && kind !== 'ekici' && (
+        {answerHint && kind !== 'checkbox' && kind !== 'ekici' && kind !== 'select' && (
           <p className="mt-1.5 text-xs text-muted">{answerHint}</p>
         )}
       </div>

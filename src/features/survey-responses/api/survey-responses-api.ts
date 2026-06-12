@@ -19,7 +19,9 @@ import {
   mapAnketCevapDetayFromApi,
   mapAnketCevapOzetFromApi,
 } from '../utils/normalize-survey-response-api'
+import { anketYanitApi } from '@/features/survey-fill/api/anket-yanit-api'
 import { mapCografiFiltreOptionsFromApi } from '../utils/cografi-filtre'
+import { mapOturumToCevapDetay } from '../utils/map-oturum-to-cevap-detay'
 
 function isNetworkError(error: unknown): boolean {
   return (
@@ -62,11 +64,30 @@ function mapAndFilterAnketCevapItems(
   return filterAnketCevapList(sortAnketCevapOzetList(ozet), params)
 }
 
+async function fetchMenseilerForAnketOnlySearch(): Promise<FilterOptionDto[]> {
+  try {
+    const raw = await apiClient.get<unknown>('/api/CografiFiltre/options')
+    const menseiler = mapCografiFiltreOptionsFromApi(raw).menseiler
+    if (menseiler.length > 0) return menseiler
+  } catch {
+    // CografiFiltre yoksa eski uç noktayı dene
+  }
+
+  const legacy = await apiClient.get<FilterOptionDto[]>('/api/Mensei')
+  return legacy ?? []
+}
+
 async function fetchAnketCevapListFromApi(
   params: SurveyResponsesQueryParams,
 ): Promise<AnketCevapOzetItem[]> {
   if (!hasGeoSurveyFilter(params) && hasAnketSurveyFilter(params)) {
-    const menseiler = await apiClient.get<FilterOptionDto[]>('/api/Mensei')
+    const menseiler = await fetchMenseilerForAnketOnlySearch()
+    if (menseiler.length === 0) {
+      throw new Error(
+        'Anket filtresi için menşei listesi alınamadı. Lütfen menşei veya başka bir coğrafi filtre seçin.',
+      )
+    }
+
     const lists = await Promise.all(
       menseiler.map((mensei) =>
         apiClient.get<unknown[]>(
@@ -102,13 +123,38 @@ export const surveyResponsesApi = {
       () => devResponsesStore.getList(params),
     ),
 
-  getDetail: (ekiciId: string, sablonId: number) =>
+  getDetail: (ekiciId: string, sablonId: number, baslikId?: number) =>
     withDevFallback(
       async (): Promise<AnketCevapDetayDto> => {
-        const raw = await apiClient.get<unknown>(
-          `/api/AnketCevap/ekici/${encodeURIComponent(ekiciId)}/sablon/${sablonId}`,
-        )
-        return mapAnketCevapDetayFromApi(raw)
+        if (baslikId != null && baslikId > 0) {
+          try {
+            const oturum = await anketYanitApi.getOturum({ baslikId, sablonId, ekiciId })
+            const fromOturum = mapOturumToCevapDetay(oturum)
+            if (fromOturum.sorular.length > 0) return fromOturum
+          } catch {
+            // Oturum yoksa AnketCevap detayına düş
+          }
+        }
+
+        try {
+          const raw = await apiClient.get<unknown>(
+            `/api/AnketCevap/ekici/${encodeURIComponent(ekiciId)}/sablon/${sablonId}`,
+          )
+          const row = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+          const responseBaslikId = Number(row.baslikId ?? row.BaslikId ?? NaN)
+          const baslikMatches =
+            baslikId == null ||
+            !Number.isFinite(responseBaslikId) ||
+            responseBaslikId <= 0 ||
+            responseBaslikId === baslikId
+
+          const detail = mapAnketCevapDetayFromApi(raw)
+          if (detail.sorular.length > 0 && baslikMatches) return detail
+        } catch {
+          // AnketCevap detayı yok
+        }
+
+        return { sorular: [], yanitlanmayanSoruSayisi: 0 }
       },
       () => devResponsesStore.getDetail(ekiciId, sablonId),
     ),

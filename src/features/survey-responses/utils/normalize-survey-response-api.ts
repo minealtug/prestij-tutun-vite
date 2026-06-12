@@ -58,7 +58,7 @@ export function mapAnketCevapOzetFromApi(raw: unknown): AnketCevapOzetItem | nul
   const baslikId = Number.isFinite(baslikIdRaw) && baslikIdRaw > 0 ? baslikIdRaw : undefined
 
   return {
-    id: getAnketCevapRowId(ekiciId, sablonId),
+    id: getAnketCevapRowId(ekiciId, sablonId, baslikId),
     ekiciId,
     baslikId,
     sablonId,
@@ -67,6 +67,9 @@ export function mapAnketCevapOzetFromApi(raw: unknown): AnketCevapOzetItem | nul
     mintikaAdi: String(pick(row, 'mintikaAdi', 'MintikaAdi') ?? ''),
     baslikAdi: String(pick(row, 'baslikAdi', 'BaslikAdi') ?? ''),
     sablonAdi: String(pick(row, 'sablonAdi', 'SablonAdi') ?? ''),
+    kullaniciAdi: String(
+      pick(row, 'kullaniciAdi', 'KullaniciAdi', 'kullaniciUserName', 'KullaniciUserName', 'userName', 'UserName') ?? '',
+    ) || undefined,
     sonIslemTarihi: String(pick(row, 'sonIslemTarihi', 'SonIslemTarihi') ?? ''),
     yanitlananSoruSayisi: Number(pick(row, 'yanitlananSoruSayisi', 'YanitlananSoruSayisi') ?? 0),
     yanitlanmayanSoruSayisi: Number(

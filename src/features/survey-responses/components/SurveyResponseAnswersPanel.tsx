@@ -1,126 +1,94 @@
-import { cn } from '@/lib/utils/cn'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { Skeleton } from '@/components/feedback/Skeleton'
+import { cn } from '@/lib/utils/cn'
 import { useSurveyResponseDetail } from '../hooks/use-survey-response-detail'
-import type { SoruCevapDisplay } from '../types/survey-response.types'
 import { UNANSWERED_ANSWER_LABEL } from '../types/survey-response.types'
-import { buildSoruCevapTree } from '../utils/map-anket-cevap'
+import { buildSoruCevapTree, flattenSoruCevapTree } from '../utils/map-anket-cevap'
 
 interface SurveyResponseAnswersPanelProps {
   ekiciId: string
   sablonId: number
+  baslikId?: number
+  kategoriAdi?: string
   enabled: boolean
-}
-
-function SoruCevapBlock({
-  soru,
-  depth,
-  rowKey,
-}: {
-  soru: SoruCevapDisplay
-  depth: number
-  rowKey: string
-}) {
-  const isChild = depth > 0
-
-  return (
-    <div
-      className={cn(
-        isChild && 'ml-4 border-l-2 border-primary-300/60 pl-4',
-        !isChild && 'border-b border-border/50 pb-3',
-      )}
-    >
-      {isChild ? (
-        <p className="text-xs font-medium uppercase tracking-wide text-muted">Bağlı soru</p>
-      ) : (
-        <p className="text-xs font-medium text-primary-600">Soru {soru.sira}</p>
-      )}
-      <p className={cn('text-sm text-foreground', isChild ? 'mt-1' : 'mt-0.5')}>{soru.soruMetni}</p>
-      {soru.altSoruMetni && (
-        <p className="mt-0.5 text-xs text-muted">{soru.altSoruMetni}</p>
-      )}
-      <p
-        className={cn(
-          'mt-2 rounded-md px-3 py-2 text-sm',
-          !soru.yanitlandi ? 'bg-amber-500/10 text-amber-900' : 'bg-primary-500/5 text-foreground',
-          isChild && 'text-[0.8125rem]',
-        )}
-      >
-        <span className="font-medium text-muted">Cevap: </span>
-        {!soru.yanitlandi ? UNANSWERED_ANSWER_LABEL : soru.cevapMetni}
-      </p>
-
-      {soru.children.length > 0 && (
-        <div className="mt-3 space-y-3">
-          {soru.children.map((child) => (
-            <SoruCevapBlock
-              key={`${rowKey}-${child.soruId}`}
-              soru={child}
-              depth={depth + 1}
-              rowKey={`${rowKey}-${child.soruId}`}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
 }
 
 export function SurveyResponseAnswersPanel({
   ekiciId,
   sablonId,
+  baslikId,
+  kategoriAdi = 'Genel',
   enabled,
 }: SurveyResponseAnswersPanelProps) {
-  const detailQuery = useSurveyResponseDetail(ekiciId, sablonId, enabled)
+  const detailQuery = useSurveyResponseDetail(ekiciId, sablonId, enabled, baslikId)
 
   if (detailQuery.isLoading) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-4 w-64" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
+      <div className="space-y-2 px-4 py-3">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
       </div>
     )
   }
 
   if (detailQuery.isError) {
     return (
-      <ErrorState
-        error={detailQuery.error}
-        title="Sorular yüklenemedi"
-        onRetry={() => void detailQuery.refetch()}
-        compact
-      />
+      <div className="px-4 py-3">
+        <ErrorState
+          error={detailQuery.error}
+          title="Sorular yüklenemedi"
+          onRetry={() => void detailQuery.refetch()}
+          compact
+        />
+      </div>
     )
   }
 
   const detail = detailQuery.data
   if (!detail) {
-    return <p className="text-sm text-muted">Gösterilecek soru yok.</p>
+    return <p className="px-4 py-3 text-sm text-muted">Gösterilecek soru yok.</p>
   }
 
-  const soruTree = buildSoruCevapTree(detail.sorular)
-  const toplamSoru = detail.sorular.length
+  const rows = flattenSoruCevapTree(buildSoruCevapTree(detail.sorular), kategoriAdi)
+
+  if (rows.length === 0) {
+    return <p className="px-4 py-3 text-sm text-muted">Gösterilecek soru yok.</p>
+  }
 
   return (
-    <div>
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
-        SORULAR VE CEVAPLAR ({toplamSoru} SORU, {detail.yanitlanmayanSoruSayisi} YANITLANMADI)
-      </p>
-      {soruTree.length === 0 ? (
-        <p className="text-sm text-muted">Gösterilecek soru yok.</p>
-      ) : (
-        <div className="space-y-3">
-          {soruTree.map((soru) => (
-            <SoruCevapBlock
-              key={`${ekiciId}-${sablonId}-${soru.soruId}`}
-              soru={soru}
-              depth={0}
-              rowKey={`${ekiciId}-${sablonId}-${soru.soruId}`}
-            />
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+        <thead>
+          <tr className="border-b border-border/60">
+            <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted">
+              KATEGORİ
+            </th>
+            <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted">
+              SORU
+            </th>
+            <th className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted">
+              CEVAP
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={`${ekiciId}-${sablonId}-${row.soruId}`} className="border-b border-border/40">
+              <td className="px-4 py-3 align-top text-foreground">{row.kategori}</td>
+              <td className="px-4 py-3 align-top font-semibold text-foreground">{row.soruMetni}</td>
+              <td
+                className={cn(
+                  'px-4 py-3 align-top text-foreground',
+                  !row.yanitlandi && 'text-amber-800',
+                )}
+              >
+                {row.yanitlandi ? row.cevapMetni : UNANSWERED_ANSWER_LABEL}
+              </td>
+            </tr>
           ))}
-        </div>
-      )}
+        </tbody>
+      </table>
     </div>
   )
 }

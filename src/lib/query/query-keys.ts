@@ -31,13 +31,15 @@ export const queryKeys = {
   surveyResponses: {
     cografiFiltreOptions: ['survey-responses', 'cografi-filtre-options'] as const,
     all: (params?: object) => ['survey-responses', params ?? {}] as const,
-    detail: (ekiciId: string, sablonId: number) =>
-      ['survey-responses', 'detail', ekiciId, sablonId] as const,
+    detail: (ekiciId: string, sablonId: number, baslikId?: number) =>
+      ['survey-responses', 'detail', ekiciId, sablonId, baslikId ?? null] as const,
   },
   surveyFill: {
     ekiciler: ['survey-fill', 'ekiciler'] as const,
     sablonlar: (baslikId: number) => ['survey-fill', 'sablonlar', baslikId] as const,
     oturum: (params: { baslikId: number; sablonId: number; ekiciId: string }) =>
       ['survey-fill', 'oturum', params] as const,
+    altSecenekler: (secenekGrupId: number) =>
+      ['survey-fill', 'alt-secenekler', secenekGrupId] as const,
   },
 } as const
