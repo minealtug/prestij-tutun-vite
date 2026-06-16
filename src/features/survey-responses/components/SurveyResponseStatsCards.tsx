@@ -66,7 +66,6 @@ export function SurveyResponseStatsCards({
           value={displayCount(stats.kayitSayisi, isLoading)}
           icon={ClipboardList}
           variant="default"
-          trend="Filtreye uyan ekici–anket satırı"
           className="!rounded-none !border !border-slate-400/35 bg-gradient-to-br from-slate-500/6 to-slate-500/4"
           iconContainerClassName="rounded-none"
         />

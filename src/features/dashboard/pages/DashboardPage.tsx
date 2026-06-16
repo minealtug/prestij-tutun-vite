@@ -92,7 +92,7 @@ export function DashboardPage() {
           {permissionMessage}
         </div>
       )}
-      <section className="gradient-brand rounded-2xl px-6 py-5 shadow-lg md:px-8 md:py-6">
+      <section className="gradient-brand rounded-md px-6 py-5 shadow-lg md:px-8 md:py-6">
         <p className="text-xs font-medium uppercase tracking-wider text-white/75">
           Dashboard Özeti
         </p>
