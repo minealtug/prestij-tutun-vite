@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search, Shield, Trash2, UserPlus } from 'lucide-react'
+import { Plus, Shield, Trash2, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -49,7 +49,6 @@ export function YetkilendirmePage() {
   const addDepartmanRolYetki = useAddDepartmanRolYetki()
   const addUserRolYetki = useAddUserRolYetki()
 
-  const [search, setSearch] = useState('')
   const [yetkiFilter, setYetkiFilter] = useState<YetkiFilter>('all')
   const [menuModalOpen, setMenuModalOpen] = useState(false)
   const [assignModalOpen, setAssignModalOpen] = useState(false)
@@ -67,16 +66,11 @@ export function YetkilendirmePage() {
 
   const filteredMenus = useMemo(() => {
     const items = menusQuery.data ?? []
-    const query = search.trim().toLowerCase()
     return items.filter((menu) => {
       if (yetkiFilter !== 'all' && menu.yetkiAdi !== yetkiFilter) return false
-      if (!query) return true
-      return [menu.menuAdi, menu.menuUrl, menu.yetkiAdi]
-        .join(' ')
-        .toLowerCase()
-        .includes(query)
+      return true
     })
-  }, [menusQuery.data, search, yetkiFilter])
+  }, [menusQuery.data, yetkiFilter])
 
   const departmanOptions = useMemo(
     () => buildDepartmanAdiOptions(departmansQuery.data ?? []),
@@ -194,8 +188,8 @@ export function YetkilendirmePage() {
       header: 'Menü',
       render: (row) => (
         <div>
-          <p className="font-medium text-foreground">{row.menuAdi}</p>
-          <p className="text-xs text-muted">{row.menuUrl}</p>
+          <p className="text-xs font-medium leading-snug text-foreground">{row.menuAdi}</p>
+          <p className="text-[11px] leading-snug text-muted">{row.menuUrl}</p>
         </div>
       ),
     },
@@ -217,8 +211,8 @@ export function YetkilendirmePage() {
             normalizeUrl(m.menuUrl) === normalizeUrl(row.menuUrl) && m.yetkiAdi !== row.yetkiAdi,
         )
         return (
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => openAssignModal(row)}>
+          <div className="flex flex-wrap gap-1">
+            <Button size="sm" variant="outline" className="!h-7 px-2 text-xs" onClick={() => openAssignModal(row)}>
               <UserPlus className="h-3.5 w-3.5" />
               Ata
             </Button>
@@ -226,6 +220,7 @@ export function YetkilendirmePage() {
               <Button
                 size="sm"
                 variant="outline"
+                className="!h-7 px-2 text-xs"
                 onClick={() => void handleAddComplementaryYetki(row)}
                 loading={createYetki.isPending || createMenu.isPending}
               >
@@ -236,6 +231,7 @@ export function YetkilendirmePage() {
             <Button
               size="sm"
               variant="ghost"
+              className="!h-7 !w-7 !p-0"
               onClick={() => handleDeleteMenu(row)}
               loading={deleteMenu.isPending}
             >
@@ -281,16 +277,7 @@ export function YetkilendirmePage() {
       </div>
 
       <Card>
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <Input
-              className="pl-9"
-              placeholder="Menü ara…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+        <div className="mb-4 w-full">
           <Select
             label="Yetki filtresi"
             value={yetkiFilter}
@@ -310,6 +297,10 @@ export function YetkilendirmePage() {
           isLoading={menusQuery.isLoading || yetkilerQuery.isLoading}
           emptyTitle="Menü kaydı yok"
           emptyMessage="Yeni menü ekleyerek başlayın."
+          variant="plain"
+          compact
+          horizontalScroll={false}
+          className="!rounded-none !border-0"
           pagination={{ pageSize: 10, pageSizeOptions: [10, 25, 50] }}
         />
       </Card>
