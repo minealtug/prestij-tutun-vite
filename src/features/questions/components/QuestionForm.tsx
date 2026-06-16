@@ -249,14 +249,14 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
           </p>
         )}
 
-        <div className="flex flex-wrap gap-3 border-t border-border pt-4">
+        <div className="flex flex-wrap justify-end gap-3 border-t border-border pt-4">
           <Button
             type="submit"
             disabled={readOnly}
             loading={createQuestion.isPending || createLinkedQuestionWithMigrate.isPending}
           >
             <Save className="h-4 w-4" />
-            Hemen Kaydet
+         Kaydet
           </Button>
         </div>
       </form>

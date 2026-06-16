@@ -65,16 +65,15 @@ export function QuestionsTable({
     {
       key: 'baslikAdi',
       header: 'BAŞLIK',
-      className: 'w-44',
+      className: 'w-32',
       render: (row) => row.baslikAdi ?? '-',
     },
     {
       key: 'soruMetni',
       header: 'SORU METNİ',
+      className: 'w-[60%] min-w-[360px] whitespace-normal',
       render: (row) => (
-        <span className="line-clamp-2 max-w-xs" title={row.soruMetni}>
-          {row.soruMetni}
-        </span>
+        <span className="whitespace-normal break-words">{row.soruMetni}</span>
       ),
     },
     {
@@ -199,6 +198,8 @@ export function QuestionsTable({
           keyExtractor={(row) => `${row.kaynak ?? 'unknown'}-${row.id}`}
           isLoading={isLoading}
           emptyMessage="Henüz soru yok."
+          horizontalScroll={false}
+          className="!rounded-md"
           pagination={{ pageSize: 25, pageSizeOptions: [10, 25, 50, 100] }}
         />
       )}

@@ -389,7 +389,6 @@ export function SurveyFillForm({
           </span>{' '}
           soru
           <span className="mx-2 text-border">·</span>
-          <span className="text-red-500">*</span> zorunlu alan
         </p>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => setSessionEkiciId(null)}>

@@ -71,12 +71,15 @@ export function SurveyFillQuestionField({
           )}
         </div>
         {question.zorunlu && (
-          <span
-            className="shrink-0 text-lg font-semibold leading-none text-red-500"
-            title="Zorunlu soru"
-            aria-label="Zorunlu soru"
-          >
-            *
+          <span className="shrink-0 whitespace-nowrap text-xs font-medium text-red-600">
+            <span
+              className="mr-1 text-lg font-semibold leading-none text-red-500"
+              title="Zorunlu soru"
+              aria-label="Zorunlu soru"
+            >
+              *
+            </span>
+            Zorunlu soru
           </span>
         )}
       </div>

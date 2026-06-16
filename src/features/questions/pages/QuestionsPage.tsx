@@ -143,15 +143,13 @@ export function QuestionsPage() {
     <PageContainer>
       {!isDefinitionsPage && (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-bold text-foreground">Soru Ekleme</h2>
-            <p className="text-sm text-muted">Anket sorularını oluşturun ve yönetin</p>
-          </div>
+          
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               onClick={() => setSurveyModalOpen(true)}
               disabled={!canEdit}
+              className="border-[var(--brand-teal)] bg-[var(--brand-teal)] text-white hover:border-[var(--brand-teal-dark)] hover:bg-[var(--brand-teal-dark)] focus-visible:ring-[var(--brand-teal)]"
             >
               <ClipboardList className="h-4 w-4" />
               Yeni Anket Ekle
@@ -163,33 +161,29 @@ export function QuestionsPage() {
       {!isDefinitionsPage && <QuestionForm readOnly={!canEdit} />}
 
       {isDefinitionsPage && (
-        <Card>
-          <div className="max-w-md">
-            <Select
-              label="Anket"
-              value={selectedSurveyId > 0 ? String(selectedSurveyId) : ''}
-              onChange={(e) => setSelectedSurveyId(Number(e.target.value) || 0)}
-              options={[{ key: 'placeholder', value: '', label: 'Anket seçin' }, ...surveySelectOptions]}
-            />
-          </div>
-        </Card>
+        <div className="w-full">
+          <Select
+            label="Anket"
+            value={selectedSurveyId > 0 ? String(selectedSurveyId) : ''}
+            onChange={(e) => setSelectedSurveyId(Number(e.target.value) || 0)}
+            options={[{ key: 'placeholder', value: '', label: 'Anket seçin' }, ...surveySelectOptions]}
+          />
+        </div>
       )}
 
       {isDefinitionsPage && (
-        <Card>
-          <QuestionsTable
-            data={currentQuestions}
-            isLoading={isDefinitionsLoading}
-            isError={questionsQuery.isError && Boolean(getDefinitionsError())}
-            error={getDefinitionsError()}
-            onRefresh={refreshQuestions}
-            onEdit={canEdit ? openEditModal : undefined}
-            onSetPassive={canEdit ? handleSetPassive : undefined}
-            onDelete={canEdit ? handleDelete : undefined}
-            isUpdating={isMutating}
-            isDeleting={deleteQuestion.isPending}
-          />
-        </Card>
+        <QuestionsTable
+          data={currentQuestions}
+          isLoading={isDefinitionsLoading}
+          isError={questionsQuery.isError && Boolean(getDefinitionsError())}
+          error={getDefinitionsError()}
+          onRefresh={refreshQuestions}
+          onEdit={canEdit ? openEditModal : undefined}
+          onSetPassive={canEdit ? handleSetPassive : undefined}
+          onDelete={canEdit ? handleDelete : undefined}
+          isUpdating={isMutating}
+          isDeleting={deleteQuestion.isPending}
+        />
       )}
 
       {!isDefinitionsPage && (

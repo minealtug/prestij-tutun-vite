@@ -92,12 +92,7 @@ export function SurveyFillPage() {
 
   return (
     <PageContainer>
-      <div>
-        <h2 className="text-xl font-bold text-foreground">Anket Doldurma Ekranı</h2>
-        <p className="text-sm text-muted">
-          Şablon seçin, ekici belirleyin ve soruları sırayla yanıtlayın
-        </p>
-      </div>
+ 
 
       <Card className="overflow-hidden !p-0" interactive={false}>
         <div className="grid gap-4 p-5">
