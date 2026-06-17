@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQueries } from '@tanstack/react-query'
-import { Plus, Shield, Trash2, UserPlus } from 'lucide-react'
+import { ArrowLeft, Check, Plus, Shield, Trash2, UserPlus, Users, UserRoundCheck } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -8,8 +8,6 @@ import { Modal } from '@/components/ui/Modal'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { Select } from '@/components/ui/Select'
 import { getAssignableMenuUrlOptions } from '@/config/navigation'
-import { resolveDepartmanId } from '@/features/users/utils/resolve-departman-id'
-import { buildDepartmanAdiOptions } from '../utils/departman-options'
 import { Table, type TableColumn } from '@/components/ui/Table'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { getErrorMessage } from '@/lib/api/api-error'
@@ -23,11 +21,13 @@ import {
   useCreateMenu,
   useCreateYetki,
   useDeleteMenu,
+  useDeleteDepartmanRolYetki,
+  useDeleteUserRolYetki,
   usePermissionDepartmans,
   usePermissionMenus,
   usePermissionYetkiler,
 } from '../hooks/use-menu-yonetim'
-import type { MenuDto } from '../types/permission.types'
+import type { MenuAtamaDto, MenuDto } from '../types/permission.types'
 import { YETKI_OKUMA, YETKI_YAZMA } from '../types/permission.types'
 import { normalizeUrl } from '../utils/permission-logic'
 
@@ -51,8 +51,11 @@ export function YetkilendirmePage() {
   const deleteMenu = useDeleteMenu()
   const addDepartmanRolYetki = useAddDepartmanRolYetki()
   const addUserRolYetki = useAddUserRolYetki()
+  const deleteDepartmanRolYetki = useDeleteDepartmanRolYetki()
+  const deleteUserRolYetki = useDeleteUserRolYetki()
 
   const [yetkiFilter, setYetkiFilter] = useState<YetkiFilter>('all')
+  const [searchText, setSearchText] = useState('')
   const [menuModalOpen, setMenuModalOpen] = useState(false)
   const [assignModalOpen, setAssignModalOpen] = useState(false)
   const [selectedMenu, setSelectedMenu] = useState<MenuDto | null>(null)
@@ -61,22 +64,33 @@ export function YetkilendirmePage() {
   const [menuUrl, setMenuUrl] = useState('')
   const [yetkiTuru, setYetkiTuru] = useState(YETKI_OKUMA)
 
-  const [assignType, setAssignType] = useState<'departman' | 'user'>('departman')
-  const [assignDepartmanAdi, setAssignDepartmanAdi] = useState('')
-  const [assignUserId, setAssignUserId] = useState('')
+  const [assignType, setAssignType] = useState<'departman' | 'user' | null>(null)
+  const [assignStep, setAssignStep] = useState<'type' | 'list'>('type')
+  const [selectedDepartmanIds, setSelectedDepartmanIds] = useState<number[]>([])
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([])
+  const [initialDepartmanIds, setInitialDepartmanIds] = useState<number[]>([])
+  const [initialUserIds, setInitialUserIds] = useState<number[]>([])
   const [assignError, setAssignError] = useState('')
-  const [isResolvingDepartman, setIsResolvingDepartman] = useState(false)
 
   const filteredMenus = useMemo(() => {
     const items = menusQuery.data ?? []
+    const search = searchText.trim().toLocaleLowerCase('tr-TR')
     return items.filter((menu) => {
       if (yetkiFilter !== 'all' && menu.yetkiAdi !== yetkiFilter) return false
+      if (search) {
+        const menuAdi = menu.menuAdi.toLocaleLowerCase('tr-TR')
+        const menuUrl = menu.menuUrl.toLocaleLowerCase('tr-TR')
+        if (!menuAdi.includes(search) && !menuUrl.includes(search)) return false
+      }
       return true
     })
-  }, [menusQuery.data, yetkiFilter])
+  }, [menusQuery.data, yetkiFilter, searchText])
 
-  const departmanOptions = useMemo(
-    () => buildDepartmanAdiOptions(departmansQuery.data ?? []),
+  const departmanSecimList = useMemo(
+    () =>
+      (departmansQuery.data ?? [])
+        .filter((d) => d.aktif && d.id != null && d.id > 0)
+        .map((d) => ({ id: d.id as number, label: d.adi })),
     [departmansQuery.data],
   )
 
@@ -97,6 +111,14 @@ export function YetkilendirmePage() {
     [usersQuery.data],
   )
 
+  const userSecimList = useMemo(
+    () =>
+      (usersQuery.data ?? [])
+        .filter((u) => u.aktif)
+        .map((u) => ({ id: u.id, label: u.fullName || u.userName })),
+    [usersQuery.data],
+  )
+
   const uniqueMenuUrls = useMemo(
     () =>
       [...new Set((menusQuery.data ?? []).map((menu) => normalizeUrl(menu.menuUrl)))].filter(Boolean),
@@ -111,38 +133,69 @@ export function YetkilendirmePage() {
     })),
   })
 
-  const menuAtamaMap = useMemo(() => {
-    const map = new Map<string, string[]>()
+  const menuAtamaDetailMap = useMemo(() => {
+    const map = new Map<string, MenuAtamaDto[]>()
     for (let index = 0; index < menuAtamaQueries.length; index++) {
       const query = menuAtamaQueries[index]
       const menuUrl = uniqueMenuUrls[index]
       for (const atama of query.data ?? []) {
-        const label = atama.departmanAdi ?? atama.userAdi
-        if (!label) continue
         const key =
           atama.yetkiId && atama.yetkiId > 0
             ? `yetki:${atama.yetkiId}`
             : `url:${normalizeUrl(atama.menuUrl || menuUrl)}`
         const existing = map.get(key) ?? []
-        if (!existing.includes(label)) existing.push(label)
+        existing.push(atama)
         map.set(key, existing)
       }
     }
     return map
   }, [menuAtamaQueries, uniqueMenuUrls])
 
+  const menuAtamaMap = useMemo(() => {
+    const map = new Map<string, { departmanlar: string[]; kullanicilar: string[] }>()
+    for (const [key, items] of menuAtamaDetailMap.entries()) {
+      const departmanlar = [...new Set(items.map((i) => i.departmanAdi).filter(Boolean) as string[])]
+      const kullanicilar = [...new Set(items.map((i) => i.userAdi).filter(Boolean) as string[])]
+      map.set(key, { departmanlar, kullanicilar })
+    }
+    return map
+  }, [menuAtamaDetailMap])
+
   const menuAtamalariLoading =
     uniqueMenuUrls.length > 0 &&
     menuAtamaQueries.some((query) => query.isLoading || query.isFetching)
 
-  const isAssignSubmitDisabled =
-    assignType === 'departman' ? !assignDepartmanAdi.trim() : !assignUserId
+  const isAssignSubmitDisabled = !assignType
+
+  const getAtamalarForMenu = (menu: MenuDto): MenuAtamaDto[] => {
+    const key = `yetki:${menu.yetkiId}`
+    const fallbackKey = `url:${normalizeUrl(menu.menuUrl)}`
+    return menuAtamaDetailMap.get(key) ?? menuAtamaDetailMap.get(fallbackKey) ?? []
+  }
 
   const openAssignModal = (menu: MenuDto) => {
+    const atamalar = getAtamalarForMenu(menu)
     setSelectedMenu(menu)
-    setAssignType('departman')
-    setAssignDepartmanAdi('')
-    setAssignUserId('')
+    setAssignType(null)
+    setAssignStep('type')
+    const departmanIds = [
+      ...new Set(
+        atamalar
+          .map((a) => a.departmanId)
+          .filter((id): id is number => typeof id === 'number' && id > 0),
+      ),
+    ]
+    const userIds = [
+      ...new Set(
+        atamalar
+          .map((a) => a.userId)
+          .filter((id): id is number => typeof id === 'number' && id > 0),
+      ),
+    ]
+    setInitialDepartmanIds(departmanIds)
+    setInitialUserIds(userIds)
+    setSelectedDepartmanIds(departmanIds)
+    setSelectedUserIds(userIds)
     setAssignError('')
     setAssignModalOpen(true)
   }
@@ -179,43 +232,39 @@ export function YetkilendirmePage() {
   }
 
   const handleAssign = async () => {
-    if (!selectedMenu) return
+    if (!selectedMenu || !assignType) return
     setAssignError('')
 
     if (assignType === 'departman') {
-      const adi = assignDepartmanAdi.trim()
-      if (!adi) return
-
-      setIsResolvingDepartman(true)
       try {
-        const departmanId = await resolveDepartmanId(adi)
-        if (!departmanId) {
-          setAssignError('Departman kaydı oluşturulamadı. Lütfen tekrar deneyin.')
-          return
+        const toAdd = selectedDepartmanIds.filter((id) => !initialDepartmanIds.includes(id))
+        const toDelete = initialDepartmanIds.filter((id) => !selectedDepartmanIds.includes(id))
+        for (const departmanId of toAdd) {
+          await addDepartmanRolYetki.mutateAsync({ departmanId, yetkiId: selectedMenu.yetkiId })
         }
-
-        await addDepartmanRolYetki.mutateAsync({
-          departmanId,
-          yetkiId: selectedMenu.yetkiId,
-        })
+        for (const departmanId of toDelete) {
+          await deleteDepartmanRolYetki.mutateAsync({ departmanId, yetkiId: selectedMenu.yetkiId })
+        }
         setAssignModalOpen(false)
       } catch (error) {
         setAssignError(getErrorMessage(error))
-      } finally {
-        setIsResolvingDepartman(false)
       }
       return
     }
 
-    const userId = Number(assignUserId)
-    if (!userId) return
-    addUserRolYetki.mutate(
-      { userId, yetkiId: selectedMenu.yetkiId },
-      {
-        onSuccess: () => setAssignModalOpen(false),
-        onError: (error) => setAssignError(getErrorMessage(error)),
-      },
-    )
+    try {
+      const toAdd = selectedUserIds.filter((id) => !initialUserIds.includes(id))
+      const toDelete = initialUserIds.filter((id) => !selectedUserIds.includes(id))
+      for (const userId of toAdd) {
+        await addUserRolYetki.mutateAsync({ userId, yetkiId: selectedMenu.yetkiId })
+      }
+      for (const userId of toDelete) {
+        await deleteUserRolYetki.mutateAsync({ userId, yetkiId: selectedMenu.yetkiId })
+      }
+      setAssignModalOpen(false)
+    } catch (error) {
+      setAssignError(getErrorMessage(error))
+    }
   }
 
   const handleDeleteMenu = (menu: MenuDto) => {
@@ -236,81 +285,99 @@ export function YetkilendirmePage() {
     },
     {
       key: 'yetki',
-      header: 'Yetki Türü',
-      render: (row) => (
-        <span className="rounded-full bg-primary-500/10 px-2 py-0.5 text-xs font-medium text-primary-700">
-          {yetkiLabel(row.yetkiAdi)}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      header: 'İşlemler',
+      header: 'Yetki',
+      className: 'min-w-[220px] w-[220px]',
       render: (row) => {
         const hasOther = (menusQuery.data ?? []).some(
           (m) =>
             normalizeUrl(m.menuUrl) === normalizeUrl(row.menuUrl) && m.yetkiAdi !== row.yetkiAdi,
         )
+
         return (
-          <div className="flex flex-wrap gap-1">
-            <Button size="sm" variant="outline" className="!h-7 px-2 text-xs" onClick={() => openAssignModal(row)}>
-              <UserPlus className="h-3.5 w-3.5" />
-              Ata
-            </Button>
+          <div className="flex min-w-[140px] flex-col items-start gap-2 py-1">
+            <span className="text-xs font-medium text-foreground">{yetkiLabel(row.yetkiAdi)}</span>
             {!hasOther && (
               <Button
                 size="sm"
                 variant="outline"
-                className="!h-7 px-2 text-xs"
+                className="!h-6 !rounded-none border-green-600 bg-green-600 px-2 text-[11px] text-white hover:bg-green-700"
                 onClick={() => void handleAddComplementaryYetki(row)}
                 loading={createYetki.isPending || createMenu.isPending}
               >
-                <Plus className="h-3.5 w-3.5" />
-                {row.yetkiAdi === YETKI_OKUMA ? 'Düzenleme Ekle' : 'Görüntüleme Ekle'}
+                <Plus className="h-3 w-3" />
+                {row.yetkiAdi === YETKI_OKUMA ? 'Düzenleme' : 'Görüntüleme'}
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="ghost"
-              className="!h-7 !w-7 !p-0"
-              onClick={() => handleDeleteMenu(row)}
-              loading={deleteMenu.isPending}
-            >
-              <Trash2 className="h-3.5 w-3.5 text-red-600" />
-            </Button>
           </div>
         )
       },
     },
     {
-      key: 'atananlar',
-      header: 'Kimlere Atandı',
+      key: 'gruplar',
+      header: 'Yetkili Gruplar',
       render: (row) => {
         const key = `yetki:${row.yetkiId}`
         const fallbackKey = `url:${normalizeUrl(row.menuUrl)}`
-        const atananlar = menuAtamaMap.get(key) ?? menuAtamaMap.get(fallbackKey) ?? []
-
-        if (menuAtamalariLoading) {
-          return <span className="text-xs text-muted">Yükleniyor…</span>
-        }
-
-        if (atananlar.length === 0) {
-          return <span className="text-xs text-muted">Atama yok</span>
-        }
+        const atama = menuAtamaMap.get(key) ?? menuAtamaMap.get(fallbackKey)
 
         return (
-          <div className="flex max-w-[360px] flex-wrap gap-1">
-            {atananlar.map((label) => (
-              <span
-                key={`${row.id}-${label}`}
-                className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-700"
-              >
-                {label}
-              </span>
-            ))}
+          <div className="max-w-[260px] text-xs leading-5 text-foreground">
+            {menuAtamalariLoading ? (
+              <span className="text-xs text-muted">Yükleniyor…</span>
+            ) : atama?.departmanlar.length ? (
+              atama.departmanlar.join(', ')
+            ) : (
+              <span className="text-xs text-muted">-</span>
+            )}
           </div>
         )
       },
+    },
+    {
+      key: 'kullanicilar',
+      header: 'Yetkili Personeller',
+      render: (row) => {
+        const key = `yetki:${row.yetkiId}`
+        const fallbackKey = `url:${normalizeUrl(row.menuUrl)}`
+        const atama = menuAtamaMap.get(key) ?? menuAtamaMap.get(fallbackKey)
+
+        return (
+          <div className="max-w-[260px] text-xs leading-5 text-foreground">
+            {menuAtamalariLoading ? (
+              <span className="text-xs text-muted">Yükleniyor…</span>
+            ) : atama?.kullanicilar.length ? (
+              atama.kullanicilar.join(', ')
+            ) : (
+              <span className="text-xs text-muted">-</span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'actions',
+      header: 'İşlemler',
+      render: (row) => (
+        <div className="flex flex-wrap gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="!h-7 !rounded-none border-green-600 bg-green-600 px-2 text-xs text-white hover:bg-green-700"
+            onClick={() => openAssignModal(row)}
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="!h-7 !w-7 !rounded-none !bg-red-500 !p-0 hover:!bg-red-600"
+            onClick={() => handleDeleteMenu(row)}
+            loading={deleteMenu.isPending}
+          >
+            <Trash2 className="h-3.5 w-3.5 text-white" />
+          </Button>
+        </div>
+      ),
     },
   ]
 
@@ -347,18 +414,32 @@ export function YetkilendirmePage() {
         </Button>
       </div>
 
-      <Card>
-        <div className="mb-4 w-full">
-          <Select
-            label="Yetki filtresi"
-            value={yetkiFilter}
-            onChange={(e) => setYetkiFilter(e.target.value as YetkiFilter)}
-            options={[
+      <Card className="!rounded-none">
+        <div className="mb-4 flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="w-full max-w-md">
+            <Input
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Menü ara..."
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
               { value: 'all', label: 'Tümü' },
               { value: YETKI_OKUMA, label: 'Görüntüleme' },
               { value: YETKI_YAZMA, label: 'Düzenleme' },
-            ]}
-          />
+            ].map((item) => (
+              <Button
+                key={item.value}
+                size="sm"
+                variant={yetkiFilter === item.value ? 'primary' : 'outline'}
+                className="!rounded-none"
+                onClick={() => setYetkiFilter(item.value as YetkiFilter)}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </div>
         </div>
 
         <Table
@@ -370,7 +451,7 @@ export function YetkilendirmePage() {
           emptyMessage="Yeni menü ekleyerek başlayın."
           variant="plain"
           compact
-          horizontalScroll={false}
+          horizontalScroll
           className="!rounded-none !border-0"
           pagination={{ pageSize: 10, pageSizeOptions: [10, 25, 50] }}
         />
@@ -439,7 +520,13 @@ export function YetkilendirmePage() {
       <Modal
         open={assignModalOpen}
         onClose={() => setAssignModalOpen(false)}
-        title="Yetki Ata"
+        title={
+          assignStep === 'type'
+            ? 'Yetkilendirme Tipi'
+            : assignType === 'departman'
+              ? 'Grup Yetkilendirme'
+              : 'Personel Yetkilendirme'
+        }
         description={
           selectedMenu
             ? `${selectedMenu.menuAdi} — ${yetkiLabel(selectedMenu.yetkiAdi)}`
@@ -447,63 +534,125 @@ export function YetkilendirmePage() {
         }
         footer={
           <div className="flex justify-end gap-2">
+            {assignStep === 'list' && (
+              <Button variant="outline" onClick={() => setAssignStep('type')}>
+                <ArrowLeft className="h-4 w-4" />
+                Geri
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setAssignModalOpen(false)}>
               İptal
             </Button>
-            <Button
-              onClick={() => void handleAssign()}
-              loading={
-                isResolvingDepartman ||
-                addDepartmanRolYetki.isPending ||
-                addUserRolYetki.isPending
-              }
-              disabled={isAssignSubmitDisabled}
-            >
-              Ata
-            </Button>
+            {assignStep === 'list' && (
+              <Button
+                onClick={() => void handleAssign()}
+                loading={
+                  addDepartmanRolYetki.isPending ||
+                  addUserRolYetki.isPending ||
+                  deleteDepartmanRolYetki.isPending ||
+                  deleteUserRolYetki.isPending
+                }
+              >
+                Kaydet
+              </Button>
+            )}
           </div>
         }
       >
         <div className="space-y-4">
-          <SearchableSelect
-            label="Atama Türü"
-            value={assignType}
-            onChange={(value) => {
-              setAssignType(value as 'departman' | 'user')
-              setAssignError('')
-            }}
-            options={[
-              { value: 'departman', label: 'Departman' },
-              { value: 'user', label: 'Kullanıcı' },
-            ]}
-            placeholder="Atama türü seçin..."
-          />
-          {assignType === 'departman' ? (
-            <SearchableSelect
-              label="Departman"
-              value={assignDepartmanAdi}
-              onChange={setAssignDepartmanAdi}
-              options={departmanOptions}
-              placeholder="Departman ara veya seç..."
-              emptyMessage="Departman bulunamadı"
-              disabled={departmansQuery.isLoading}
-            />
+          {assignStep === 'type' ? (
+            <div className="space-y-3">
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 border border-border p-4 text-left hover:bg-muted/30"
+                onClick={() => {
+                  setAssignType('departman')
+                  setAssignStep('list')
+                  setAssignError('')
+                }}
+              >
+                <Users className="h-5 w-5 text-primary-600" />
+                <div>
+                  <p className="font-semibold text-foreground">Grup Yetkilendirme</p>
+                  <p className="text-sm text-muted">Bu menüyü görebilecek grupları seçin</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 border border-border p-4 text-left hover:bg-muted/30"
+                onClick={() => {
+                  setAssignType('user')
+                  setAssignStep('list')
+                  setAssignError('')
+                }}
+              >
+                <UserRoundCheck className="h-5 w-5 text-primary-600" />
+                <div>
+                  <p className="font-semibold text-foreground">Personel Yetkilendirme</p>
+                  <p className="text-sm text-muted">Bu menüyü görebilecek personelleri seçin</p>
+                </div>
+              </button>
+            </div>
+          ) : assignType === 'departman' ? (
+            <div className="space-y-2">
+              <p className="text-sm text-muted">Bu menüyü görebilecek grupları seçin</p>
+              <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                {departmanSecimList.map((item) => {
+                  const checked = selectedDepartmanIds.includes(item.id)
+                  return (
+                    <label
+                      key={item.id}
+                      className="flex cursor-pointer items-center gap-3 border border-border px-3 py-2 hover:bg-muted/20"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          setSelectedDepartmanIds((prev) =>
+                            e.target.checked ? [...prev, item.id] : prev.filter((id) => id !== item.id),
+                          )
+                        }}
+                      />
+                      <span className="text-sm text-foreground">{item.label}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-muted">
+                <Check className="mr-1 inline h-3.5 w-3.5 text-green-600" />
+                {selectedDepartmanIds.length} grup seçildi
+              </p>
+            </div>
           ) : (
-            <SearchableSelect
-              label="Kullanıcı"
-              value={assignUserId}
-              onChange={setAssignUserId}
-              options={userOptions}
-              placeholder="Kullanıcı ara veya seç..."
-              emptyMessage="Kullanıcı bulunamadı"
-              disabled={usersQuery.isLoading}
-            />
-          )}
-          {assignType === 'departman' && departmansQuery.isLoading && (
-            <p className="text-sm text-muted">Departmanlar yükleniyor…</p>
-          )}
-          {assignType === 'user' && usersQuery.isLoading && (
-            <p className="text-sm text-muted">Kullanıcılar yükleniyor…</p>
+            <div className="space-y-2">
+              <p className="text-sm text-muted">Bu menüyü görebilecek personelleri seçin</p>
+              <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                {userSecimList.map((item) => {
+                  const checked = selectedUserIds.includes(item.id)
+                  return (
+                    <label
+                      key={item.id}
+                      className="flex cursor-pointer items-center gap-3 border border-border px-3 py-2 hover:bg-muted/20"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          setSelectedUserIds((prev) =>
+                            e.target.checked ? [...prev, item.id] : prev.filter((id) => id !== item.id),
+                          )
+                        }}
+                      />
+                      <span className="text-sm text-foreground">{item.label}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-muted">
+                <Check className="mr-1 inline h-3.5 w-3.5 text-green-600" />
+                {selectedUserIds.length} personel seçildi
+              </p>
+            </div>
           )}
           {assignError && (
             <p className="text-sm text-red-600" role="alert">

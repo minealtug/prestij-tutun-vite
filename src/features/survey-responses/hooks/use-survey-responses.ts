@@ -13,3 +13,11 @@ export function useSurveyResponses(params?: SurveyResponsesQueryParams) {
     enabled: hasAnySurveyFilter(params),
   })
 }
+
+export function useMySurveyResponses(kullaniciId?: string) {
+  return useQuery({
+    queryKey: queryKeys.surveyResponses.mine(kullaniciId ?? ''),
+    queryFn: () => surveyResponsesApi.getMyList(kullaniciId ?? ''),
+    enabled: Boolean(kullaniciId),
+  })
+}

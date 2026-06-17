@@ -69,6 +69,7 @@ export const sidebarSections: NavSection[] = [
       { to: '/soru-yonetimi', label: 'Soru Ekleme', icon: FileQuestion },
       { to: '/anket-doldurma', label: 'Anket Doldurma Ekranı', icon: ClipboardPen },
       { to: '/anket-cevaplari', label: 'Cevaplanan Anketler', icon: MessageSquareReply },
+      { to: '/cevapladigim-anketler', label: 'Cevapladığım Anketler', icon: MessageSquareReply },
       { to: '/raporlar', label: 'Raporlar', icon: BarChart3 },
       {
         label: 'Tanımlamalar',
@@ -94,6 +95,7 @@ export const pageTitles: Record<string, string> = {
   '/soru-yonetimi': 'Soru Ekleme',
   '/anket-doldurma': 'Anket Doldurma Ekranı',
   '/anket-cevaplari': 'Cevaplanan Anketler',
+  '/cevapladigim-anketler': 'Cevapladığım Anketler',
   '/raporlar': 'Raporlar',
   '/tanimlamalar': 'Tanımlamalar',
   '/tanimlamalar/soru-tanimlamalari': 'Tanımlı Sorular',

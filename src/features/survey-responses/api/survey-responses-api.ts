@@ -123,6 +123,17 @@ export const surveyResponsesApi = {
       () => devResponsesStore.getList(params),
     ),
 
+  getMyList: async (kullaniciId: string): Promise<AnketCevapOzetItem[]> =>
+    withDevFallback(
+      async () => {
+        const items = await apiClient.get<unknown[]>(
+          `/api/AnketCevap/kullanici/${encodeURIComponent(kullaniciId)}`,
+        )
+        return mapAndFilterAnketCevapItems(items, {})
+      },
+      () => devResponsesStore.getList({}),
+    ),
+
   getDetail: (ekiciId: string, sablonId: number, baslikId?: number) =>
     withDevFallback(
       async (): Promise<AnketCevapDetayDto> => {
