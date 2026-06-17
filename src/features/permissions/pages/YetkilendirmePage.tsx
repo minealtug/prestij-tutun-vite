@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import { Plus, Shield, Trash2, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -12,8 +13,10 @@ import { buildDepartmanAdiOptions } from '../utils/departman-options'
 import { Table, type TableColumn } from '@/components/ui/Table'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { getErrorMessage } from '@/lib/api/api-error'
+import { queryKeys } from '@/lib/query/query-keys'
 import { useUsers } from '@/features/users/hooks/use-users'
 import { useRequirePagePermission } from '../hooks/use-require-page-permission'
+import { permissionsApi } from '../api/permissions-api'
 import {
   useAddDepartmanRolYetki,
   useAddUserRolYetki,
@@ -93,6 +96,44 @@ export function YetkilendirmePage() {
         .map((u) => ({ value: String(u.id), label: `${u.fullName} (${u.userName})` })),
     [usersQuery.data],
   )
+
+  const uniqueMenuUrls = useMemo(
+    () =>
+      [...new Set((menusQuery.data ?? []).map((menu) => normalizeUrl(menu.menuUrl)))].filter(Boolean),
+    [menusQuery.data],
+  )
+
+  const menuAtamaQueries = useQueries({
+    queries: uniqueMenuUrls.map((menuUrl) => ({
+      queryKey: queryKeys.permissions.menuAtamalari(menuUrl),
+      queryFn: () => permissionsApi.getMenuAtamalari(menuUrl),
+      enabled: Boolean(menuUrl),
+    })),
+  })
+
+  const menuAtamaMap = useMemo(() => {
+    const map = new Map<string, string[]>()
+    for (let index = 0; index < menuAtamaQueries.length; index++) {
+      const query = menuAtamaQueries[index]
+      const menuUrl = uniqueMenuUrls[index]
+      for (const atama of query.data ?? []) {
+        const label = atama.departmanAdi ?? atama.userAdi
+        if (!label) continue
+        const key =
+          atama.yetkiId && atama.yetkiId > 0
+            ? `yetki:${atama.yetkiId}`
+            : `url:${normalizeUrl(atama.menuUrl || menuUrl)}`
+        const existing = map.get(key) ?? []
+        if (!existing.includes(label)) existing.push(label)
+        map.set(key, existing)
+      }
+    }
+    return map
+  }, [menuAtamaQueries, uniqueMenuUrls])
+
+  const menuAtamalariLoading =
+    uniqueMenuUrls.length > 0 &&
+    menuAtamaQueries.some((query) => query.isLoading || query.isFetching)
 
   const isAssignSubmitDisabled =
     assignType === 'departman' ? !assignDepartmanAdi.trim() : !assignUserId
@@ -237,6 +278,36 @@ export function YetkilendirmePage() {
             >
               <Trash2 className="h-3.5 w-3.5 text-red-600" />
             </Button>
+          </div>
+        )
+      },
+    },
+    {
+      key: 'atananlar',
+      header: 'Kimlere Atandı',
+      render: (row) => {
+        const key = `yetki:${row.yetkiId}`
+        const fallbackKey = `url:${normalizeUrl(row.menuUrl)}`
+        const atananlar = menuAtamaMap.get(key) ?? menuAtamaMap.get(fallbackKey) ?? []
+
+        if (menuAtamalariLoading) {
+          return <span className="text-xs text-muted">Yükleniyor…</span>
+        }
+
+        if (atananlar.length === 0) {
+          return <span className="text-xs text-muted">Atama yok</span>
+        }
+
+        return (
+          <div className="flex max-w-[360px] flex-wrap gap-1">
+            {atananlar.map((label) => (
+              <span
+                key={`${row.id}-${label}`}
+                className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-700"
+              >
+                {label}
+              </span>
+            ))}
           </div>
         )
       },

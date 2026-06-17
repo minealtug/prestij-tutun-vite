@@ -27,6 +27,7 @@ export const queryKeys = {
     menus: ['permissions', 'menus'] as const,
     yetkiler: ['permissions', 'yetkiler'] as const,
     departmans: ['permissions', 'departmans'] as const,
+    menuAtamalari: (menuUrl: string) => ['permissions', 'menu-atamalari', menuUrl] as const,
   },
   surveyResponses: {
     cografiFiltreOptions: ['survey-responses', 'cografi-filtre-options'] as const,

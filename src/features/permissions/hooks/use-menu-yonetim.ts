@@ -30,6 +30,14 @@ export function usePermissionDepartmans() {
   })
 }
 
+export function usePermissionMenuAtamalari(menuUrl: string) {
+  return useQuery({
+    queryKey: queryKeys.permissions.menuAtamalari(menuUrl),
+    queryFn: () => permissionsApi.getMenuAtamalari(menuUrl),
+    enabled: Boolean(menuUrl),
+  })
+}
+
 function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
   void queryClient.invalidateQueries({ queryKey: ['permissions'] })
 }

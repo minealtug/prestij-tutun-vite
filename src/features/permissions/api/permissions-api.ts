@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/api/api-client'
 import type {
   AddMenuPayload,
   AddYetkiPayload,
+  MenuAtamaDto,
   MenuDto,
   RolYetkiDto,
   UpdateMenuPayload,
@@ -9,6 +10,7 @@ import type {
 } from '../types/permission.types'
 import {
   mapDepartmansFromApi,
+  mapMenuAtamalarFromApi,
   mapMenusFromApi,
   mapYetkilerFromApi,
 } from '../utils/normalize-permission-api'
@@ -46,6 +48,11 @@ export const permissionsApi = {
   },
 
   getDepartmans: async () => mapDepartmansFromApi(await apiClient.get<unknown[]>('/api/Departman')),
+
+  getMenuAtamalari: async (menuUrl: string): Promise<MenuAtamaDto[]> =>
+    mapMenuAtamalarFromApi(
+      await apiClient.get<unknown[]>('/api/RolYetki/menu', { menuUrl }),
+    ),
 
   getAssignedYetkiIds: async (): Promise<number[]> => {
     const raw = await apiClient.get<unknown>('/api/RolYetki/assigned-yetkiler')

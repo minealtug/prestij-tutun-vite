@@ -1,4 +1,4 @@
-import type { DepartmanDto, MenuDto, RolYetkiDto, YetkiDto } from '../types/permission.types'
+import type { DepartmanDto, MenuAtamaDto, MenuDto, RolYetkiDto, YetkiDto } from '../types/permission.types'
 
 function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
   for (const key of keys) {
@@ -93,4 +93,53 @@ export function mapRolYetkiFromApi(raw: unknown): RolYetkiDto | null {
 export function mapRolYetkilerFromApi(raw: unknown): RolYetkiDto[] {
   if (!Array.isArray(raw)) return []
   return raw.map(mapRolYetkiFromApi).filter((item): item is RolYetkiDto => item !== null)
+}
+
+export function mapMenuAtamaFromApi(raw: unknown): MenuAtamaDto | null {
+  const row = asRecord(raw)
+
+  const menuIdRaw = pick(row, 'menuId', 'MenuId', 'id', 'Id')
+  const yetkiIdRaw = pick(row, 'yetkiId', 'YetkiId')
+  const departmanIdRaw = pick(row, 'departmanId', 'DepartmanId')
+  const userIdRaw = pick(row, 'userId', 'UserId')
+
+  const menuId =
+    menuIdRaw == null ? null : Number.isFinite(Number(menuIdRaw)) ? Number(menuIdRaw) : null
+  const yetkiId =
+    yetkiIdRaw == null ? null : Number.isFinite(Number(yetkiIdRaw)) ? Number(yetkiIdRaw) : null
+
+  const menuAdi = String(pick(row, 'menuAdi', 'MenuAdi') ?? '').trim()
+  const menuUrl = String(pick(row, 'menuUrl', 'MenuUrl') ?? '').trim()
+  if (!menuAdi && !menuUrl && !menuId && !yetkiId) return null
+
+  return {
+    menuId,
+    menuAdi,
+    menuUrl,
+    yetkiId,
+    yetkiTuru: String(pick(row, 'yetkiTuru', 'YetkiTuru') ?? '').trim() || null,
+    departmanId:
+      departmanIdRaw == null ? null : Number.isFinite(Number(departmanIdRaw)) ? Number(departmanIdRaw) : null,
+    departmanAdi: String(pick(row, 'departmanAdi', 'DepartmanAdi') ?? '').trim() || null,
+    userId: userIdRaw == null ? null : Number.isFinite(Number(userIdRaw)) ? Number(userIdRaw) : null,
+    userAdi:
+      String(
+        pick(
+          row,
+          'fullName',
+          'FullName',
+          'userAdi',
+          'UserAdi',
+          'kullaniciAdi',
+          'KullaniciAdi',
+          'adSoyad',
+          'AdSoyad',
+        ) ?? '',
+      ).trim() || null,
+  }
+}
+
+export function mapMenuAtamalarFromApi(raw: unknown): MenuAtamaDto[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map(mapMenuAtamaFromApi).filter((item): item is MenuAtamaDto => item !== null)
 }

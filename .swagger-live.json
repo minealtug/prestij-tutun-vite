@@ -1,0 +1,2533 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "PrestijTutun.API",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/AnketBaslik": {
+      "get": {
+        "tags": [
+          "AnketBaslik"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AnketBaslik"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketBaslikModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketBaslikModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketBaslikModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketBaslik/{baslikId}/sorular": {
+      "get": {
+        "tags": [
+          "AnketBaslik"
+        ],
+        "parameters": [
+          {
+            "name": "baslikId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketBaslik/{id}": {
+      "put": {
+        "tags": [
+          "AnketBaslik"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketBaslikModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketBaslikModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketBaslikModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AnketBaslik"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketCevap": {
+      "get": {
+        "tags": [
+          "AnketCevap"
+        ],
+        "parameters": [
+          {
+            "name": "menseiId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "bolgeId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "mintikaId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "alimNoktasiId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "koyId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnketCevapOzetItem"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnketCevapOzetItem"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnketCevapOzetItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/AnketCevap/ekici/{ekiciId}/sablon/{sablonId}": {
+      "get": {
+        "tags": [
+          "AnketCevap"
+        ],
+        "parameters": [
+          {
+            "name": "ekiciId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sablonId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EkiciYanitlanmayanSorularResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EkiciYanitlanmayanSorularResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EkiciYanitlanmayanSorularResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/AnketCevapGirdiTip": {
+      "get": {
+        "tags": [
+          "AnketCevapGirdiTip"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AnketCevapGirdiTip"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketCevapGirdiTipModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketCevapGirdiTipModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketCevapGirdiTipModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketCevapGirdiTip/{id}": {
+      "put": {
+        "tags": [
+          "AnketCevapGirdiTip"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketCevapGirdiTipModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketCevapGirdiTipModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketCevapGirdiTipModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AnketCevapGirdiTip"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketSoru": {
+      "get": {
+        "tags": [
+          "AnketSoru"
+        ],
+        "parameters": [
+          {
+            "name": "baslikId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AnketSoru"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketSoruModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketSoruModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketSoruModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketSoru/{id}": {
+      "put": {
+        "tags": [
+          "AnketSoru"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketSoruModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketSoruModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketSoruModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AnketSoru"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketSoru/{id}/aktif": {
+      "patch": {
+        "tags": [
+          "AnketSoru"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "aktif",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketSoruBaglanti": {
+      "get": {
+        "tags": [
+          "AnketSoruBaglanti"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AnketSoruBaglanti"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketSoruBaglantiModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketSoruBaglantiModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAnketSoruBaglantiModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketSoruBaglanti/migrate-and-add-linked": {
+      "post": {
+        "tags": [
+          "AnketSoruBaglanti"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddBagliSoruMigrationModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddBagliSoruMigrationModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddBagliSoruMigrationModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketSoruBaglanti/{id}": {
+      "put": {
+        "tags": [
+          "AnketSoruBaglanti"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketSoruBaglantiModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketSoruBaglantiModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnketSoruBaglantiModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AnketSoruBaglanti"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketYanit/sablonlar": {
+      "get": {
+        "tags": [
+          "AnketYanit"
+        ],
+        "parameters": [
+          {
+            "name": "baslikId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketYanit/oturum": {
+      "get": {
+        "tags": [
+          "AnketYanit"
+        ],
+        "parameters": [
+          {
+            "name": "baslikId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sablonId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ekiciId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketYanit/tamamlanabilir": {
+      "get": {
+        "tags": [
+          "AnketYanit"
+        ],
+        "parameters": [
+          {
+            "name": "baslikId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sablonId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ekiciId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/AnketYanit/cevap": {
+      "post": {
+        "tags": [
+          "AnketYanit"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAnketCevapModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAnketCevapModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAnketCevapModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Auth/change-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/CografiFiltre/options": {
+      "get": {
+        "tags": [
+          "CografiFiltre"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Departman": {
+      "get": {
+        "tags": [
+          "Departman"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Departman"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddDepartmanModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddDepartmanModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddDepartmanModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Departman/{id}": {
+      "put": {
+        "tags": [
+          "Departman"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDepartmanModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDepartmanModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDepartmanModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Ekici": {
+      "get": {
+        "tags": [
+          "Ekici"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Menu": {
+      "get": {
+        "tags": [
+          "Menu"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Menu"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMenuModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMenuModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMenuModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Menu/{id}": {
+      "delete": {
+        "tags": [
+          "Menu"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Menu"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMenuModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMenuModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMenuModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/RolYetki/assigned-yetkiler": {
+      "get": {
+        "tags": [
+          "RolYetki"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/RolYetki/departman": {
+      "post": {
+        "tags": [
+          "RolYetki"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddRolYetkiModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddRolYetkiModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddRolYetkiModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "RolYetki"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRolYetkiModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRolYetkiModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRolYetkiModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/RolYetki/user": {
+      "post": {
+        "tags": [
+          "RolYetki"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserRolYetkiModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserRolYetkiModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserRolYetkiModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "RolYetki"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRolYetkiModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRolYetkiModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRolYetkiModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/RolYetki/departman/{departmanId}/{yetkiId}": {
+      "delete": {
+        "tags": [
+          "RolYetki"
+        ],
+        "parameters": [
+          {
+            "name": "departmanId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "yetkiId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/RolYetki/user/{userId}/{yetkiId}": {
+      "delete": {
+        "tags": [
+          "RolYetki"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "yetkiId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/User": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/User/{id}": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/UserType": {
+      "get": {
+        "tags": [
+          "UserType"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "UserType"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserTypeModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserTypeModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserTypeModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/UserType/{id}": {
+      "get": {
+        "tags": [
+          "UserType"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "UserType"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserTypeModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserTypeModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserTypeModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "UserType"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Yetki": {
+      "get": {
+        "tags": [
+          "Yetki"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Yetki"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddYetkiModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddYetkiModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddYetkiModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Yetki/{id}": {
+      "put": {
+        "tags": [
+          "Yetki"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateYetkiModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateYetkiModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateYetkiModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Yetki"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddAnketBaslikModel": {
+        "type": "object",
+        "properties": {
+          "adi": {
+            "type": "string",
+            "nullable": true
+          },
+          "aciklama": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddAnketCevapGirdiTipModel": {
+        "type": "object",
+        "properties": {
+          "adi": {
+            "type": "string",
+            "nullable": true
+          },
+          "siraNo": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddAnketSoruBaglantiModel": {
+        "type": "object",
+        "properties": {
+          "soruId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bagliSoruId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bagliAltSecenekId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddAnketSoruModel": {
+        "type": "object",
+        "properties": {
+          "baslikId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cevapGirdiTipId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "soruMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "altSoruMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "zorunlu": {
+            "type": "boolean"
+          },
+          "aktif": {
+            "type": "boolean"
+          },
+          "secenekGrupId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bagliSoru": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddBagliSoruMigrationModel": {
+        "type": "object",
+        "properties": {
+          "parentLegacyQuestionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bagliLegacyAltSecenekId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "cevapGirdiTipId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "soruMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "altSoruMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "zorunlu": {
+            "type": "boolean"
+          },
+          "aktif": {
+            "type": "boolean"
+          },
+          "secenekGrupId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bagliSoru": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddDepartmanModel": {
+        "type": "object",
+        "properties": {
+          "adi": {
+            "type": "string",
+            "nullable": true
+          },
+          "aktif": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddMenuModel": {
+        "type": "object",
+        "properties": {
+          "yetkiId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "menuAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "menuUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddRolYetkiModel": {
+        "type": "object",
+        "properties": {
+          "departmanId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "yetkiId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddUserModel": {
+        "type": "object",
+        "properties": {
+          "userName": {
+            "type": "string",
+            "nullable": true
+          },
+          "fullName": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          },
+          "insuranceNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "userTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "admin": {
+            "type": "boolean"
+          },
+          "aktif": {
+            "type": "boolean"
+          },
+          "lokasyon": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmanId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "supervisorUserId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "mintikaId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "uretimMerkeziYetki": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "tel": {
+            "type": "string",
+            "nullable": true
+          },
+          "icraOdemeUyari": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddUserRolYetkiModel": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "yetkiId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddUserTypeModel": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddYetkiModel": {
+        "type": "object",
+        "properties": {
+          "yetkiTuru": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AnketCevapListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "soruId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "soruMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "ekiciId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ekiciAd": {
+            "type": "string",
+            "nullable": true
+          },
+          "ekiciSoyad": {
+            "type": "string",
+            "nullable": true
+          },
+          "sablonId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sablonAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "mintikaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "mintikaAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "kullaniciId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "islemTarihi": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cevapAltSecenekId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "cevapAltSecenekAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "cevapText": {
+            "type": "string",
+            "nullable": true
+          },
+          "cevapNumeric": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "cevapDatetime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "birimId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "cevapGosterimMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "kaynak": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AnketCevapOzetItem": {
+        "type": "object",
+        "properties": {
+          "ekiciId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ekiciAd": {
+            "type": "string",
+            "nullable": true
+          },
+          "ekiciSoyad": {
+            "type": "string",
+            "nullable": true
+          },
+          "mintikaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "mintikaAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "sablonId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sablonAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "baslikId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "baslikAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "sonIslemTarihi": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "kullaniciId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "kullaniciAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "yanitlananSoruSayisi": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "yanitlanmayanSoruSayisi": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AnketSoruDurumItem": {
+        "type": "object",
+        "properties": {
+          "sira": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "soruId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "soruMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "altSoruMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "zorunlu": {
+            "type": "boolean"
+          },
+          "bagliSoru": {
+            "type": "boolean"
+          },
+          "bagliOlduguSoruId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "gorunur": {
+            "type": "boolean"
+          },
+          "yanitlandi": {
+            "type": "boolean"
+          },
+          "cevap": {
+            "$ref": "#/components/schemas/AnketCevapListItem"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AnketSoruListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "baslikId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "baslikAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "cevapGirdiTipId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "cevapGirdiTipAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "soruMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "altSoruMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "zorunlu": {
+            "type": "boolean"
+          },
+          "aktif": {
+            "type": "boolean"
+          },
+          "secenekGrupId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bagliSoru": {
+            "type": "boolean"
+          },
+          "bagliOlduguSoruId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bagliAltSecenekId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bagliOlduguSoru": {
+            "$ref": "#/components/schemas/AnketSoruListItem"
+          },
+          "kaynak": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "nullable": true
+          },
+          "newPassword": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EkiciYanitlanmayanSorularResponse": {
+        "type": "object",
+        "properties": {
+          "ekiciId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ekiciAd": {
+            "type": "string",
+            "nullable": true
+          },
+          "ekiciSoyad": {
+            "type": "string",
+            "nullable": true
+          },
+          "mintikaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "mintikaAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "sablonId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sablonAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "baslikId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "baslikAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "sonIslemTarihi": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "yanitlananSoruSayisi": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "yanitlanmayanSoruSayisi": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sorular": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnketSoruDurumItem"
+            },
+            "nullable": true
+          },
+          "yanitlananSorular": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnketCevapListItem"
+            },
+            "nullable": true
+          },
+          "yanitlanmayanSorular": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnketSoruListItem"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "userName": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaveAnketCevapModel": {
+        "type": "object",
+        "properties": {
+          "ekiciId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sablonId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "baslikId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "soruId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "mintikaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cevapAltSecenekId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "cevapText": {
+            "type": "string",
+            "nullable": true
+          },
+          "cevapNumeric": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "cevapDatetime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "birimId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateAnketBaslikModel": {
+        "type": "object",
+        "properties": {
+          "adi": {
+            "type": "string",
+            "nullable": true
+          },
+          "aciklama": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateAnketCevapGirdiTipModel": {
+        "type": "object",
+        "properties": {
+          "adi": {
+            "type": "string",
+            "nullable": true
+          },
+          "siraNo": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateAnketSoruBaglantiModel": {
+        "type": "object",
+        "properties": {
+          "soruId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bagliSoruId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bagliAltSecenekId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateAnketSoruModel": {
+        "type": "object",
+        "properties": {
+          "baslikId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cevapGirdiTipId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "soruMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "altSoruMetni": {
+            "type": "string",
+            "nullable": true
+          },
+          "zorunlu": {
+            "type": "boolean"
+          },
+          "aktif": {
+            "type": "boolean"
+          },
+          "secenekGrupId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bagliSoru": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateDepartmanModel": {
+        "type": "object",
+        "properties": {
+          "adi": {
+            "type": "string",
+            "nullable": true
+          },
+          "aktif": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateMenuModel": {
+        "type": "object",
+        "properties": {
+          "yetkiId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "menuAdi": {
+            "type": "string",
+            "nullable": true
+          },
+          "menuUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateRolYetkiModel": {
+        "type": "object",
+        "properties": {
+          "departmanId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "yetkiIdler": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateUserModel": {
+        "type": "object",
+        "properties": {
+          "userName": {
+            "type": "string",
+            "nullable": true
+          },
+          "fullName": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          },
+          "insuranceNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "userTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "admin": {
+            "type": "boolean"
+          },
+          "aktif": {
+            "type": "boolean"
+          },
+          "lokasyon": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmanId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "supervisorUserId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "mintikaId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "uretimMerkeziYetki": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "tel": {
+            "type": "string",
+            "nullable": true
+          },
+          "icraOdemeUyari": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateUserRolYetkiModel": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "yetkiIdler": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateUserTypeModel": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateYetkiModel": {
+        "type": "object",
+        "properties": {
+          "yetkiTuru": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "JWT Authorization header. Ornek: Bearer {token}",
+        "scheme": "Bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "Bearer": [ ]
+    }
+  ]
+}

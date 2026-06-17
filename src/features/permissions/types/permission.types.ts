@@ -31,6 +31,18 @@ export interface RolYetkiDto {
   kaynak?: string
 }
 
+export interface MenuAtamaDto {
+  menuId: number | null
+  menuAdi: string
+  menuUrl: string
+  yetkiId: number | null
+  yetkiTuru: string | null
+  departmanId: number | null
+  departmanAdi: string | null
+  userId: number | null
+  userAdi: string | null
+}
+
 export interface MenuPermissionEntry {
   yetkiId: number
   yetkiTuru: string
