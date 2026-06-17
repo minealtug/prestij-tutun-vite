@@ -1,4 +1,4 @@
-import { RefreshCw, Pencil, Ban, Trash2 } from 'lucide-react'
+import { Pencil, Ban, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Table, type TableColumn } from '@/components/ui/Table'
 import { ErrorState } from '@/components/feedback/ErrorState'
@@ -179,14 +179,6 @@ export function QuestionsTable({
 
   return (
     <div className="app-table-shell">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#ececec] px-4 py-3">
-        <h3 className="text-lg font-semibold text-foreground">Sorular</h3>
-        <Button variant="outline" size="sm" onClick={onRefresh}>
-          <RefreshCw className="h-4 w-4" />
-          Yenile
-        </Button>
-      </div>
-
       {isError ? (
         <div className="p-4">
           <ErrorState

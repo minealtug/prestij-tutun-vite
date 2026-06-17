@@ -27,7 +27,7 @@ export function LoginPage() {
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Kullanıcı adı"
+            label="Kullanıcı adı:"
             type="text"
             autoComplete="username"
             required
@@ -36,7 +36,7 @@ export function LoginPage() {
             placeholder="kullanici.adi"
           />
           <Input
-            label="Şifre"
+            label="Şifre:"
             type="password"
             autoComplete="current-password"
             required
@@ -66,14 +66,6 @@ export function LoginPage() {
           </Button>
         </form>
 
-        {devAuth ? (
-          <div className="mt-4 rounded-lg border border-accent-500/40 bg-accent-500/10 px-3 py-2 text-center text-xs text-foreground">
-            <p className="font-medium">Geliştirme ortamı — örnek kullanıcı</p>
-            <p className="mt-1 text-muted">
-              {DEV_TEST_CREDENTIALS.userName} / {DEV_TEST_CREDENTIALS.password}
-            </p>
-          </div>
-        ) : null}
       </Card>
     </div>
   )

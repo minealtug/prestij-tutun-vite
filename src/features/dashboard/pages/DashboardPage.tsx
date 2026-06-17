@@ -93,9 +93,6 @@ export function DashboardPage() {
         </div>
       )}
       <section className="gradient-brand rounded-md px-6 py-5 shadow-lg md:px-8 md:py-6">
-        <p className="text-xs font-medium uppercase tracking-wider text-white/75">
-          Dashboard Özeti
-        </p>
         <h1 className="mt-1 text-xl font-semibold tracking-tight text-white md:text-2xl">
           {greeting}, {displayName}
         </h1>
@@ -138,34 +135,34 @@ export function DashboardPage() {
         {surveysQuery.isLoading || questionsQuery.isLoading ? (
           <p className="text-sm text-muted">Veriler yükleniyor…</p>
         ) : recentItems.length > 0 ? (
-          <div className="space-y-4">
-            <ul className="space-y-3">
+          <div className="space-y-3">
+            <ul className="space-y-2">
               {pagedRecentItems.map((item) => (
                 <li
                   key={item.id}
-                  className="flex items-start gap-4 rounded-xl border border-border/80 bg-surface-elevated/70 px-4 py-3"
+                  className="flex items-start gap-3 rounded-lg border border-border/80 bg-surface-elevated/70 px-3 py-2"
                 >
                   <div
-                    className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                    className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                       item.type === 'survey'
                         ? 'bg-primary-500/10 text-primary-600'
                         : 'bg-accent-500/15 text-accent-600'
                     }`}
                   >
                     {item.type === 'survey' ? (
-                      <ListChecks className="h-5 w-5" />
+                      <ListChecks className="h-4 w-4" />
                     ) : (
-                      <CircleHelp className="h-5 w-5" />
+                      <CircleHelp className="h-4 w-4" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium text-foreground">{item.action}</p>
+                      <p className="text-sm font-medium text-foreground">{item.action}</p>
                       <span className="rounded-full bg-foreground/5 px-2 py-0.5 text-[11px] font-medium text-muted">
                         {item.type === 'survey' ? 'Anket' : 'Soru'}
                       </span>
                     </div>
-                    <p className="mt-1 line-clamp-2 text-sm text-muted">{item.description}</p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted">{item.description}</p>
                   </div>
                 </li>
               ))}

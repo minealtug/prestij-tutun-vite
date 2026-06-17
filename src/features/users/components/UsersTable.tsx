@@ -197,7 +197,7 @@ export function UsersTable({
   }
 
   return (
-    <div className="w-full border-t border-border">
+    <div className="w-full">
       <Table
         columns={columns}
         data={data}

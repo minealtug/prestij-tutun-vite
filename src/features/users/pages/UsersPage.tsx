@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { Search, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Card } from '@/components/ui/Card'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { CreateUserModal } from '../components/CreateUserModal'
@@ -58,7 +57,6 @@ export function UsersPage() {
   return (
     <PageContainer>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-       
         <Button
           onClick={() => setCreateModalOpen(true)}
           className="w-full sm:w-auto"
@@ -69,17 +67,22 @@ export function UsersPage() {
         </Button>
       </div>
 
-      <Card className="overflow-hidden !p-0" interactive={false}>
-        <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-end">
-          <div className="relative min-w-0 flex-1">
+      <div className="app-table-shell !rounded-md">
+        <div className="flex flex-col gap-3 border-b border-[#ececec] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative min-w-0 flex-1 sm:max-w-lg">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <Input
-              className="pl-9"
+              className="!h-9 pl-9"
               placeholder="Ad, kullanıcı adı, departman, e-posta..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          {usersQuery.data && (
+            <p className="shrink-0 text-xs text-muted">
+              Gösterilen: {filteredUsers.length} / {usersQuery.data.length} kayıt
+            </p>
+          )}
         </div>
 
         <UsersTable
@@ -90,13 +93,7 @@ export function UsersPage() {
           onRefresh={() => void usersQuery.refetch()}
           onEdit={canEdit ? (user) => setEditingUser(user) : undefined}
         />
-
-        {usersQuery.data && (
-          <p className="border-t border-border px-5 py-3 text-xs text-muted">
-            Gösterilen: {filteredUsers.length} / {usersQuery.data.length} kayıt
-          </p>
-        )}
-      </Card>
+      </div>
 
       <CreateUserModal open={createModalOpen} onClose={() => setCreateModalOpen(false)} />
       <EditUserModal
