@@ -19,7 +19,6 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
   const setPermissions = usePermissionsStore((s) => s.setPermissions)
   const setLoading = usePermissionsStore((s) => s.setLoading)
   const clear = usePermissionsStore((s) => s.clear)
-  const hydrateFromCache = usePermissionsStore((s) => s.hydrateFromCache)
   const reloadToken = usePermissionsStore((s) => s.reloadToken)
 
   useEffect(() => {
@@ -27,8 +26,6 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
       clear()
       return
     }
-
-    hydrateFromCache()
 
     let cancelled = false
 
@@ -49,7 +46,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
         if (cancelled) return
 
         updateUser(mapAuthMeUserToSession(me.user))
-        setPermissions(me.yetkiIds, menuMap, assignedIds, {
+        setPermissions(me.yetkiIds, menuMap, me.permissions, assignedIds, {
           touchAssignedAt: shouldFetchAssigned,
         })
       } catch {
@@ -67,7 +64,6 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     userId,
     reloadToken,
     clear,
-    hydrateFromCache,
     setLoading,
     setPermissions,
     updateUser,

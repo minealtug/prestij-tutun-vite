@@ -10,16 +10,13 @@ const APP_NAME = 'AGRIVION'
 
 function isItemVisible(item: NavItem, hasReadPermission: (url: string) => boolean, isAdmin: boolean) {
   if (item.to && isAdminOnlyPath(item.to)) return isAdmin
-  if (item.to === '/') return true
 
   if (item.children?.length) {
-    return item.children.some(
-      (child) => child.to && (child.to === '/' || hasReadPermission(child.to)),
-    )
+    return item.children.some((child) => child.to && hasReadPermission(child.to))
   }
 
   if (item.to) return hasReadPermission(item.to)
-  return true
+  return false
 }
 
 function filterNavItems(
@@ -34,7 +31,7 @@ function filterNavItems(
         ? {
             ...item,
             children: item.children.filter(
-              (child) => !child.to || child.to === '/' || hasReadPermission(child.to),
+              (child) => child.to && hasReadPermission(child.to),
             ),
           }
         : item,
@@ -48,16 +45,16 @@ export function Sidebar() {
   const { hasReadPermission, isAdmin, loading } = usePermissions()
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ Tanımlamalar: true })
 
-  const visibleSections = useMemo(
-    () =>
-      sidebarSections
-        .map((section) => ({
-          ...section,
-          items: filterNavItems(section.items, hasReadPermission, isAdmin),
-        }))
-        .filter((section) => section.items.length > 0),
-    [hasReadPermission, isAdmin],
-  )
+  const visibleSections = useMemo(() => {
+    if (loading) return []
+
+    return sidebarSections
+      .map((section) => ({
+        ...section,
+        items: filterNavItems(section.items, hasReadPermission, isAdmin),
+      }))
+      .filter((section) => section.items.length > 0)
+  }, [hasReadPermission, isAdmin, loading])
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(

@@ -1,4 +1,5 @@
 import type { AuthMeResponse, AuthUserDto, LoginResponse } from '../types/auth.types'
+import { mapAllowedMenuUrlsFromApi } from '@/features/permissions/utils/permission-logic'
 import { parseApiExpiresAtMs } from './token-expiry'
 
 function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
@@ -83,7 +84,7 @@ export function normalizeAuthMeResponse(raw: unknown): AuthMeResponse {
       aktif: Boolean(pick(userRaw, 'aktif', 'Aktif') ?? true),
       admin: Boolean(pick(userRaw, 'admin', 'Admin') ?? false),
     },
-    permissions: permissionsRaw.map((item) => String(item)),
+    permissions: mapAllowedMenuUrlsFromApi(permissionsRaw),
     yetkiIds: mapYetkiIdsFromApi(yetkiIdsRaw),
   }
 }

@@ -3,34 +3,12 @@ import type { MenuPermissionMap } from '../types/permission.types'
 
 const USER_KEY = 'prestij-user-permissions'
 const MENU_KEY = 'prestij-menu-permissions'
+const ALLOWED_URLS_KEY = 'prestij-allowed-menu-urls'
 const ASSIGNED_KEY = 'prestij-assigned-permissions'
 const ASSIGNED_AT_KEY = 'prestij-assigned-permissions-at'
 
 /** Atanmış yetki listesi bu süre boyunca yeniden taranmaz (ms). */
 const ASSIGNED_CACHE_TTL_MS = 30 * 60 * 1000
-
-function readNumberArray(key: string): number[] {
-  try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed.map(Number).filter((n) => Number.isFinite(n))
-  } catch {
-    return []
-  }
-}
-
-function readMenuMap(key: string): MenuPermissionMap {
-  try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return {}
-    const parsed = JSON.parse(raw) as unknown
-    return parsed && typeof parsed === 'object' ? (parsed as MenuPermissionMap) : {}
-  } catch {
-    return {}
-  }
-}
 
 function readAssignedFetchedAt(): number | null {
   const raw = localStorage.getItem(ASSIGNED_AT_KEY)
@@ -48,11 +26,13 @@ export function isAssignedCacheFresh(): boolean {
 function writeCache(
   userPermissions: number[],
   menuPermissions: MenuPermissionMap,
+  allowedMenuUrls: string[],
   assignedPermissions: number[],
   options?: { touchAssignedAt?: boolean },
 ) {
   localStorage.setItem(USER_KEY, JSON.stringify(userPermissions))
   localStorage.setItem(MENU_KEY, JSON.stringify(menuPermissions))
+  localStorage.setItem(ALLOWED_URLS_KEY, JSON.stringify(allowedMenuUrls))
   localStorage.setItem(ASSIGNED_KEY, JSON.stringify(assignedPermissions))
   if (options?.touchAssignedAt !== false) {
     localStorage.setItem(ASSIGNED_AT_KEY, String(Date.now()))
@@ -62,6 +42,7 @@ function writeCache(
 function clearCache() {
   localStorage.removeItem(USER_KEY)
   localStorage.removeItem(MENU_KEY)
+  localStorage.removeItem(ALLOWED_URLS_KEY)
   localStorage.removeItem(ASSIGNED_KEY)
   localStorage.removeItem(ASSIGNED_AT_KEY)
 }
@@ -74,6 +55,7 @@ export function invalidateAssignedCache() {
 interface PermissionsState {
   userPermissions: number[]
   menuPermissions: MenuPermissionMap
+  allowedMenuUrls: string[]
   assignedPermissions: number[]
   loading: boolean
   initialized: boolean
@@ -82,45 +64,45 @@ interface PermissionsState {
   setPermissions: (
     userPermissions: number[],
     menuPermissions: MenuPermissionMap,
+    allowedMenuUrls: string[],
     assignedPermissions: number[],
     options?: { touchAssignedAt?: boolean },
   ) => void
-  hydrateFromCache: () => void
   requestReload: () => void
   clear: () => void
 }
 
 export const usePermissionsStore = create<PermissionsState>((set) => ({
-  userPermissions: readNumberArray(USER_KEY),
-  menuPermissions: readMenuMap(MENU_KEY),
-  assignedPermissions: readNumberArray(ASSIGNED_KEY),
+  userPermissions: [],
+  menuPermissions: {},
+  allowedMenuUrls: [],
+  assignedPermissions: [],
   loading: false,
   initialized: false,
   reloadToken: 0,
-  setLoading: (loading) => set({ loading }),
-  setPermissions: (userPermissions, menuPermissions, assignedPermissions, options) => {
-    writeCache(userPermissions, menuPermissions, assignedPermissions, options)
+  setLoading: (loading) =>
+    set((state) => ({
+      loading,
+      initialized: loading ? false : state.initialized,
+    })),
+  setPermissions: (userPermissions, menuPermissions, allowedMenuUrls, assignedPermissions, options) => {
+    writeCache(userPermissions, menuPermissions, allowedMenuUrls, assignedPermissions, options)
     set({
       userPermissions,
       menuPermissions,
+      allowedMenuUrls,
       assignedPermissions,
       initialized: true,
       loading: false,
     })
   },
-  hydrateFromCache: () =>
-    set({
-      userPermissions: readNumberArray(USER_KEY),
-      menuPermissions: readMenuMap(MENU_KEY),
-      assignedPermissions: readNumberArray(ASSIGNED_KEY),
-      initialized: true,
-    }),
   requestReload: () => set((state) => ({ reloadToken: state.reloadToken + 1 })),
   clear: () => {
     clearCache()
     set({
       userPermissions: [],
       menuPermissions: {},
+      allowedMenuUrls: [],
       assignedPermissions: [],
       initialized: false,
       loading: false,

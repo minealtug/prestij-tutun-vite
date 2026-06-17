@@ -12,6 +12,35 @@ export function normalizeUrl(url: string): string {
   return path || '/'
 }
 
+function pickMenuUrlFromPermissionItem(item: unknown): string | null {
+  if (typeof item === 'string') {
+    const trimmed = item.trim()
+    return trimmed.startsWith('/') ? normalizeUrl(trimmed) : null
+  }
+
+  if (!item || typeof item !== 'object') return null
+
+  const row = item as Record<string, unknown>
+  for (const key of ['menuUrl', 'MenuUrl', 'url', 'Url', 'path', 'Path']) {
+    const value = row[key]
+    if (typeof value === 'string' && value.trim().startsWith('/')) {
+      return normalizeUrl(value)
+    }
+  }
+
+  return null
+}
+
+/** /api/Auth/me → permissions alanından erişilebilir menü URL'leri */
+export function mapAllowedMenuUrlsFromApi(raw: unknown): string[] {
+  const list = Array.isArray(raw) ? raw : []
+  const urls = list
+    .map(pickMenuUrlFromPermissionItem)
+    .filter((url): url is string => Boolean(url))
+
+  return [...new Set(urls)]
+}
+
 export function buildMenuPermissionMap(
   menus: Array<{ id: number; yetkiId: number; menuUrl: string; yetkiAdi: string }>,
   yetkiler: Array<{ id: number; yetkiTuru: string }>,
@@ -38,6 +67,10 @@ function filterByTuru(entries: MenuPermissionEntry[], turu: string) {
   return entries.filter((e) => e.yetkiTuru.toLowerCase() === turu.toLowerCase())
 }
 
+function getActiveEntries(entries: MenuPermissionEntry[], assignedPermissions: Set<number>) {
+  return entries.filter((e) => assignedPermissions.has(e.yetkiId))
+}
+
 export function checkReadPermission(
   url: string,
   menuPermissions: MenuPermissionMap,
@@ -53,23 +86,25 @@ export function checkReadPermission(
   const okuma = filterByTuru(entries, YETKI_OKUMA)
   const yazma = filterByTuru(entries, YETKI_YAZMA)
 
-  if (yazma.length > 0 && okuma.length === 0) return true
+  if (yazma.length > 0 && okuma.length === 0) {
+    const active = getActiveEntries(yazma, assignedPermissions)
+    if (active.length === 0) return false
+    return active.some((e) => userPermissions.includes(e.yetkiId))
+  }
 
   if (okuma.length > 0 && yazma.length === 0) {
-    const allAssigned = okuma.every((e) => assignedPermissions.has(e.yetkiId))
-    if (!allAssigned) return false
-    return okuma.some((e) => userPermissions.includes(e.yetkiId))
+    const active = getActiveEntries(okuma, assignedPermissions)
+    if (active.length === 0) return false
+    return active.some((e) => userPermissions.includes(e.yetkiId))
   }
 
   if (okuma.length > 0 && yazma.length > 0) {
-    const allOkumaAssigned = okuma.every((e) => assignedPermissions.has(e.yetkiId))
-    const allYazmaAssigned = yazma.every((e) => assignedPermissions.has(e.yetkiId))
-    if (!allOkumaAssigned || !allYazmaAssigned) return false
-    const allIds = [...okuma, ...yazma].map((e) => e.yetkiId)
-    return allIds.some((id) => userPermissions.includes(id))
+    const active = getActiveEntries([...okuma, ...yazma], assignedPermissions)
+    if (active.length === 0) return false
+    return active.some((e) => userPermissions.includes(e.yetkiId))
   }
 
-  return true
+  return false
 }
 
 export function checkWritePermission(
@@ -88,21 +123,19 @@ export function checkWritePermission(
   const yazma = filterByTuru(entries, YETKI_YAZMA)
 
   if (yazma.length > 0 && okuma.length === 0) {
-    const allAssigned = yazma.every((e) => assignedPermissions.has(e.yetkiId))
-    if (!allAssigned) return false
-    return yazma.some((e) => userPermissions.includes(e.yetkiId))
+    const active = getActiveEntries(yazma, assignedPermissions)
+    if (active.length === 0) return false
+    return active.some((e) => userPermissions.includes(e.yetkiId))
   }
 
   if (okuma.length > 0 && yazma.length === 0) {
-    const allAssigned = okuma.every((e) => assignedPermissions.has(e.yetkiId))
-    if (!allAssigned) return false
-    return okuma.some((e) => userPermissions.includes(e.yetkiId))
+    return false
   }
 
   if (okuma.length > 0 && yazma.length > 0) {
-    const allYazmaAssigned = yazma.every((e) => assignedPermissions.has(e.yetkiId))
-    if (!allYazmaAssigned) return false
-    return yazma.some((e) => userPermissions.includes(e.yetkiId))
+    const active = getActiveEntries(yazma, assignedPermissions)
+    if (active.length === 0) return false
+    return active.some((e) => userPermissions.includes(e.yetkiId))
   }
 
   return false

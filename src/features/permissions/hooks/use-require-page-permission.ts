@@ -12,8 +12,7 @@ export function useRequirePagePermission() {
   const { hasReadPermission, hasWritePermission, loading, isAdmin } = usePermissions()
 
   const path = normalizeUrl(location.pathname)
-  const canRead =
-    isAdminOnlyPath(path) ? isAdmin : path === '/' ? true : hasReadPermission(path)
+  const canRead = isAdminOnlyPath(path) ? isAdmin : hasReadPermission(path)
   const canEdit = hasWritePermission(path)
 
   useEffect(() => {
