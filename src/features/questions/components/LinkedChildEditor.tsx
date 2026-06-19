@@ -4,6 +4,12 @@ import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import type { CevapGirdiTipDto } from '../types/question.types'
 import { BAGLI_KOSUL_ESIT, BAGLI_KOSUL_TIPI_OPTIONS } from '../utils/bagli-kosul-tipi'
+import {
+  GORUNME_KOSULU_LABEL,
+  SECENEK_GRUP_LINKED_LABEL,
+  getBagliSoruTriggerLabel,
+  getBagliSoruVisibilityHint,
+} from '../utils/question-field-labels'
 import { AltSecenekSelect } from './AltSecenekSelect'
 
 export interface LinkedChildDraft {
@@ -138,9 +144,7 @@ export function LinkedChildEditor({
           ? needsSecenekGrup(selectedAnswerType.adi)
           : false
         const parentTriggerGrupLabel = getSecenekGrupLabel(secenekGrupOptions, parentSecenekGrupId)
-        const triggerLabel = parentTriggerGrupLabel
-          ? `Tetikleyici (üst soru: ${parentTriggerGrupLabel})`
-          : 'Tetikleyici alt seçenek'
+        const triggerLabel = getBagliSoruTriggerLabel(parentTriggerGrupLabel)
 
         return (
           <div
@@ -183,7 +187,7 @@ export function LinkedChildEditor({
                   required={Boolean(parentSecenekGrupId)}
                 />
                 <Select
-                  label="Tetikleyici koşulu"
+                  label={GORUNME_KOSULU_LABEL}
                   value={child.bagliKosulTipi}
                   onChange={(e) =>
                     updateChildField(child.key, (item) => ({
@@ -195,11 +199,7 @@ export function LinkedChildEditor({
                   disabled={readOnly}
                 />
                 <p className="text-xs text-muted">
-                  Bu soru, üst soruda &quot;{parentTriggerGrupLabel ?? `Grup ${parentSecenekGrupId}`}&quot;
-                  grubundan seçilen cevap verildiğinde görünür.
-                  {child.bagliKosulTipi === 'buyuk_esit'
-                    ? ' En az (≥): seçilen değer eşik ve üzerindeyse soru açılır (ör. 2 seçilince 1 ve 2 tetikleyicili sorular birlikte gelir).'
-                    : ' Eşit (=): yalnızca seçilen tetikleyiciyle birebir eşleşince açılır.'}
+                  {getBagliSoruVisibilityHint(parentTriggerGrupLabel, child.bagliKosulTipi)}
                 </p>
               </div>
             ) : null}
@@ -232,7 +232,7 @@ export function LinkedChildEditor({
               />
 
               <Select
-                label="Bu sorunun cevap seçenek grubu"
+                label={SECENEK_GRUP_LINKED_LABEL}
                 value={child.secenekGrupId}
                 onChange={(e) =>
                   updateChildField(child.key, (item) => ({
@@ -292,10 +292,10 @@ export function LinkedChildEditor({
                   <div>
                     <h5 className="text-sm font-medium text-foreground">Alt Bağlı Sorular</h5>
                     <p className="text-xs text-muted">
-                      Alt sorular, bu sorunun cevap seçenek grubundan (
+                      Alt sorular, bu sorunun cevap seçenekleri (
                       {getSecenekGrupLabel(secenekGrupOptions, Number(child.secenekGrupId)) ??
-                        `Grup ${child.secenekGrupId}`}
-                      ) tetiklenir.
+                        `Liste #${child.secenekGrupId}`}
+                      ) üzerinden açılır.
                     </p>
                   </div>
                   <Button

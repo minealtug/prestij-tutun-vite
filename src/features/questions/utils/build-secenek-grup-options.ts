@@ -1,4 +1,5 @@
 import type { AltSecenekDto, SecenekGrupOption } from '../types/alt-secenek.types'
+import { formatSecenekGrupOptionLabel } from './question-field-labels'
 
 export function buildSecenekGrupOptions(altSecenekler: AltSecenekDto[]): SecenekGrupOption[] {
   const byGrup = new Map<number, AltSecenekDto[]>()
@@ -19,7 +20,7 @@ export function buildSecenekGrupOptions(altSecenekler: AltSecenekDto[]): Secenek
       const names = sorted.map((item) => item.adi).join(' / ')
       return {
         id: secenekGrupId,
-        label: `Grup ${secenekGrupId} — ${names}`,
+        label: formatSecenekGrupOptionLabel(secenekGrupId, names),
       }
     })
 }

@@ -23,6 +23,7 @@ import {
   BAGLI_KOSUL_TIPI_OPTIONS,
   normalizeBagliKosulTipi,
 } from '../utils/bagli-kosul-tipi'
+import { GORUNME_KOSULU_LABEL } from '../utils/question-field-labels'
 import type { QuestionDto } from '../types/question.types'
 
 export function QuestionsPage() {
@@ -290,7 +291,7 @@ export function QuestionsPage() {
           />
           {editingQuestion?.bagliSoru && (
             <Select
-              label="Tetikleyici koşulu"
+              label={GORUNME_KOSULU_LABEL}
               value={editBagliKosulTipi}
               onChange={(e) => setEditBagliKosulTipi(e.target.value)}
               options={BAGLI_KOSUL_TIPI_OPTIONS.map((option) => ({

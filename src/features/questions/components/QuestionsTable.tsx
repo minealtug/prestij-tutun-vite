@@ -5,6 +5,7 @@ import { ErrorState } from '@/components/feedback/ErrorState'
 import type { QuestionDto } from '../types/question.types'
 import { getFriendlyAnswerTypeLabel } from '../utils/answer-type-label'
 import { getBagliKosulTipiLabel } from '../utils/bagli-kosul-tipi'
+import { GORUNME_KOSULU_TABLE_HEADER } from '../utils/question-field-labels'
 
 function resolveBaslikAdi(row: QuestionDto & { baslik?: { adi?: string | null } }) {
   return row.baslikAdi?.trim() || row.baslik?.adi?.trim() || null
@@ -131,7 +132,7 @@ export function QuestionsTable({
     },
     {
       key: 'bagliKosulTipi',
-      header: 'TETİKLEYİCİ KOŞUL',
+      header: GORUNME_KOSULU_TABLE_HEADER,
       className: 'w-40',
       render: (row) => {
         if (!row.bagliSoru) return '-'

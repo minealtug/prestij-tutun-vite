@@ -60,9 +60,9 @@ function mapLinkedChild(
   }
 
   if (parentSecenekGrupId && !bagliAltSecenekId) {
-    setError(
-      `"${soruMetni}" için üst sorunun seçenek grubundan (Grup ${parentSecenekGrupId}) tetikleyici alt seçenek seçmelisiniz.`,
-    )
+      setError(
+        `"${soruMetni}" için üst sorunun cevap seçeneklerinden hangi cevabın bu soruyu açacağını seçmelisiniz.`,
+      )
     return null
   }
 

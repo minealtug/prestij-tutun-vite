@@ -2,6 +2,11 @@ import { useEffect } from 'react'
 import { Select } from '@/components/ui/Select'
 import { useAltSeceneklerByGrupId } from '../hooks/use-alt-secenekler-by-grup'
 import { buildAltSecenekOptionsFromQuery } from '../utils/build-alt-secenek-options'
+import {
+  ALT_SECENEK_LABEL,
+  ALT_SECENEK_LOADING,
+  ALT_SECENEK_NEED_SECENEK_GRUP,
+} from '../utils/question-field-labels'
 
 interface AltSecenekSelectProps {
   secenekGrupId?: number
@@ -17,7 +22,7 @@ export function AltSecenekSelect({
   secenekGrupId,
   value,
   onChange,
-  label = 'Alt Seçenek',
+  label = ALT_SECENEK_LABEL,
   required = false,
   disabled = false,
   id,
@@ -27,7 +32,7 @@ export function AltSecenekSelect({
   const query = useAltSeceneklerByGrupId(parsedGrupId)
   const options =
     query.isLoading || query.isFetching
-      ? [{ value: '', label: 'Alt seçenekler yükleniyor...' }]
+      ? [{ value: '', label: ALT_SECENEK_LOADING }]
       : buildAltSecenekOptionsFromQuery(query.data ?? [], parsedGrupId)
 
   useEffect(() => {
@@ -45,7 +50,7 @@ export function AltSecenekSelect({
         label={label}
         value=""
         onChange={() => undefined}
-        options={[{ value: '', label: 'Önce seçenek grubu seçin' }]}
+        options={[{ value: '', label: ALT_SECENEK_NEED_SECENEK_GRUP }]}
         disabled
         required={required}
       />

@@ -25,6 +25,15 @@ import { getFriendlyAnswerTypeLabel } from '../utils/answer-type-label'
 import { needsSecenekGrup } from '../utils/needs-secenek-grup'
 import { mapLinkedChildren } from '../utils/map-linked-children'
 import { BAGLI_KOSUL_ESIT, BAGLI_KOSUL_TIPI_OPTIONS, normalizeBagliKosulTipi } from '../utils/bagli-kosul-tipi'
+import {
+  GORUNME_KOSULU_LABEL,
+  SECENEK_GRUP_LABEL,
+  SECENEK_GRUP_LINKED_LABEL,
+  SECENEK_GRUP_LOADING,
+  SECENEK_GRUP_PLACEHOLDER,
+  getBagliSoruTriggerLabel,
+  getBagliSoruVisibilityHint,
+} from '../utils/question-field-labels'
 import { clearLinkedChildTriggers } from '../utils/clear-linked-child-triggers'
 import { AltSecenekSelect } from './AltSecenekSelect'
 import {
@@ -121,9 +130,7 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
     () => [
       {
         value: '',
-        label: secenekGruplariQuery.isLoading
-          ? 'Seçenek grupları yükleniyor...'
-          : 'Seçenek grubu seçin',
+        label: secenekGruplariQuery.isLoading ? SECENEK_GRUP_LOADING : SECENEK_GRUP_PLACEHOLDER,
       },
       ...secenekGruplariQuery.secenekGruplari.map((grup) => ({
         value: String(grup.id),
@@ -396,11 +403,11 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
             key={`trigger-${idPrefix}-${trigger.secenekGrupId ?? 'none'}`}
             id={`${idPrefix}trigger`}
             secenekGrupId={trigger.secenekGrupId}
-            label={
+            label={getBagliSoruTriggerLabel(
               trigger.secenekGrupId
-                ? `Tetikleyici (üst soru: ${getSecenekGrupLabel(trigger.secenekGrupId) ?? `Grup ${trigger.secenekGrupId}`})`
-                : 'Tetikleyici alt seçenek'
-            }
+                ? getSecenekGrupLabel(trigger.secenekGrupId) ?? undefined
+                : undefined,
+            )}
             value={trigger.value}
             onChange={trigger.onChange}
             disabled={secenekGruplariQuery.isLoading || !trigger.secenekGrupId}
@@ -409,17 +416,16 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
           {trigger.secenekGrupId ? (
             <>
               <Select
-                label="Tetikleyici koşulu"
+                label={GORUNME_KOSULU_LABEL}
                 value={bagliKosulTipi}
                 onChange={(e) => setBagliKosulTipi(e.target.value)}
                 options={BAGLI_KOSUL_TIPI_OPTIONS}
               />
               <p className="text-xs text-muted">
-                Bu soru, üst soruda &quot;{getSecenekGrupLabel(trigger.secenekGrupId) ?? `Grup ${trigger.secenekGrupId}`}&quot;
-                grubundan seçilen cevap verildiğinde görünür.
-                {bagliKosulTipi === 'buyuk_esit'
-                  ? ' En az (≥): seçilen değer eşik ve üzerindeyse soru açılır.'
-                  : ' Eşit (=): yalnızca seçilen tetikleyiciyle birebir eşleşince açılır.'}
+                {getBagliSoruVisibilityHint(
+                  getSecenekGrupLabel(trigger.secenekGrupId),
+                  bagliKosulTipi,
+                )}
               </p>
             </>
           ) : null}
@@ -451,7 +457,7 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
         />
 
         <Select
-          label={trigger ? 'Bu sorunun cevap seçenek grubu' : 'Seçenek Grup'}
+          label={trigger ? SECENEK_GRUP_LINKED_LABEL : SECENEK_GRUP_LABEL}
           value={form.secenekGrupId}
           onChange={(e) => {
             setForm((f) => ({
@@ -639,11 +645,11 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
                   key={`link-existing-trigger-${parentSecenekGrupId ?? 'none'}`}
                   id="link-existing-trigger"
                   secenekGrupId={parentSecenekGrupId}
-                  label={
+                  label={getBagliSoruTriggerLabel(
                     parentSecenekGrupId
-                      ? `Tetikleyici (üst soru: ${getSecenekGrupLabel(parentSecenekGrupId) ?? `Grup ${parentSecenekGrupId}`})`
-                      : 'Tetikleyici alt seçenek'
-                  }
+                      ? getSecenekGrupLabel(parentSecenekGrupId) ?? undefined
+                      : undefined,
+                  )}
                   value={bagliAltSecenekId}
                   onChange={setBagliAltSecenekId}
                   disabled={secenekGruplariQuery.isLoading || !parentSecenekGrupId}
@@ -652,18 +658,17 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
                 {parentSecenekGrupId ? (
                   <>
                     <Select
-                      label="Tetikleyici koşulu"
+                      label={GORUNME_KOSULU_LABEL}
                       value={bagliKosulTipi}
                       onChange={(e) => setBagliKosulTipi(e.target.value)}
                       options={BAGLI_KOSUL_TIPI_OPTIONS}
                     />
                     <p className="text-xs text-muted">
-                      Bağlanacak soru, üst soruda &quot;
-                      {getSecenekGrupLabel(parentSecenekGrupId) ?? `Grup ${parentSecenekGrupId}`}&quot;
-                      grubundan seçilen cevap verildiğinde görünür.
-                      {bagliKosulTipi === 'buyuk_esit'
-                        ? ' En az (≥): seçilen değer eşik ve üzerindeyse soru açılır.'
-                        : ' Eşit (=): yalnızca seçilen tetikleyiciyle birebir eşleşince açılır.'}
+                      {getBagliSoruVisibilityHint(
+                        getSecenekGrupLabel(parentSecenekGrupId),
+                        bagliKosulTipi,
+                        { linkedExisting: true },
+                      )}
                     </p>
                   </>
                 ) : null}
@@ -716,7 +721,7 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
         )}
         {secenekGruplariQuery.isError && (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            Seçenek grubu listesi alınamadı.
+            Seçenek listesi alınamadı.
           </p>
         )}
 
