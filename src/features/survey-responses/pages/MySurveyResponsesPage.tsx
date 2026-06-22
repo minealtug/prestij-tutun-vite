@@ -90,7 +90,6 @@ export function MySurveyResponsesPage() {
     <PageContainer>
       <SurveyResponseStatsCards
         data={filteredData}
-        filterSummary="Sadece kendi cevapladığım anketler"
         isLoading={responsesQuery.isLoading}
       />
 
@@ -132,6 +131,7 @@ export function MySurveyResponsesPage() {
           isError={responsesQuery.isError}
           error={responsesQuery.error}
           onRefresh={() => void responsesQuery.refetch()}
+          columnBorders
         />
       </Card>
     </PageContainer>

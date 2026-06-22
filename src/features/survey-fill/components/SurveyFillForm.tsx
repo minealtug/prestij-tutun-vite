@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, RefreshCw, Save } from 'lucide-react'
+import { CheckCircle2, Info, Save } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
@@ -436,7 +436,10 @@ export function SurveyFillForm({
   const renderQuestionFields = () => (
     <div className="space-y-4">
       {!sessionEkiciId && (
-        <p className="text-sm text-muted">Soruları doldurmak için yukarıdan ekici seçin.</p>
+        <p className="flex items-center gap-2 text-sm text-muted">
+          <Info className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="underline">Soruları doldurmak için yukarıdan ekici seçin.</span>
+        </p>
       )}
 
       {visibleQuestions.map((question) => {
@@ -491,19 +494,14 @@ export function SurveyFillForm({
         </div>
 
         {sessionEkiciId && visibleQuestions.length > 0 && !oturumQuery.isError && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4">
+          <div className="border-t border-border px-5 py-4">
             <p className="text-sm text-muted">
               Doldurulan:{' '}
               <span className="font-medium text-foreground">
                 {progress.answered} / {progress.total}
               </span>{' '}
               soru
-              <span className="mx-2 text-border">·</span>
             </p>
-            <Button type="button" variant="outline" size="sm" onClick={handleRefresh}>
-              <RefreshCw className="h-4 w-4" />
-              Yenile
-            </Button>
           </div>
         )}
 

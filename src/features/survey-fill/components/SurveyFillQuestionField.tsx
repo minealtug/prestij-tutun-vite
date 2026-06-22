@@ -186,7 +186,7 @@ export function SurveyFillQuestionField({
             >
               *
             </span>
-            Zorunlu soru
+            <span className="underline">Zorunlu soru</span>
           </span>
         )}
       </div>

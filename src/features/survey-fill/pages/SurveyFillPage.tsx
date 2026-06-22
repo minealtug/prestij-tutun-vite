@@ -8,10 +8,17 @@ import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { SurveyFillForm } from '../components/SurveyFillForm'
 import { useAnketSablonlar } from '../hooks/use-anket-yanit'
 
+function parsePositiveInt(value: string | null): number {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
+
 export function SurveyFillPage() {
   const { canRead, canEdit, loading: permissionLoading } = useRequirePagePermission()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [selectedBaslikId, setSelectedBaslikId] = useState(0)
+  const [selectedBaslikId, setSelectedBaslikId] = useState(() =>
+    parsePositiveInt(searchParams.get('baslikId')),
+  )
   const [selectedSablonId, setSelectedSablonId] = useState(0)
   const [initialEkiciId, setInitialEkiciId] = useState<string | null>(null)
 
@@ -19,26 +26,28 @@ export function SurveyFillPage() {
   const sablonlarQuery = useAnketSablonlar(selectedBaslikId > 0 ? selectedBaslikId : null)
 
   useEffect(() => {
-    const baslikId = Number(searchParams.get('baslikId'))
-    const sablonId = Number(searchParams.get('sablonId'))
+    const baslikId = parsePositiveInt(searchParams.get('baslikId'))
+    const sablonId = parsePositiveInt(searchParams.get('sablonId'))
     const ekiciId = searchParams.get('ekiciId')?.trim() || null
 
-    if (!Number.isFinite(baslikId) || baslikId <= 0) return
-    if (!Number.isFinite(sablonId) || sablonId <= 0) return
-    if (!ekiciId) return
+    if (baslikId <= 0 || sablonId <= 0 || !ekiciId) return
 
     setSelectedBaslikId(baslikId)
     setSelectedSablonId(sablonId)
     setInitialEkiciId(ekiciId)
-    setSearchParams({}, { replace: true })
+    setSearchParams({ baslikId: String(baslikId) }, { replace: true })
   }, [searchParams, setSearchParams])
 
   useEffect(() => {
-    if (selectedBaslikId > 0) return
     const surveys = surveysQuery.data
-    if (!surveys?.length) return
-    setSelectedBaslikId(Number(surveys[0].id))
-  }, [surveysQuery.data, selectedBaslikId])
+    if (!surveys || selectedBaslikId <= 0) return
+
+    const exists = surveys.some((survey) => Number(survey.id) === selectedBaslikId)
+    if (!exists) {
+      setSelectedBaslikId(0)
+      setSearchParams({}, { replace: true })
+    }
+  }, [surveysQuery.data, selectedBaslikId, setSearchParams])
 
   useEffect(() => {
     if (selectedBaslikId <= 0) {
@@ -106,9 +115,15 @@ export function SurveyFillPage() {
             label="Anket"
             value={selectedBaslikId > 0 ? String(selectedBaslikId) : ''}
             onChange={(e) => {
-              setSelectedBaslikId(Number(e.target.value) || 0)
+              const baslikId = Number(e.target.value) || 0
+              setSelectedBaslikId(baslikId)
               setSelectedSablonId(0)
               setInitialEkiciId(null)
+              if (baslikId > 0) {
+                setSearchParams({ baslikId: String(baslikId) }, { replace: true })
+              } else {
+                setSearchParams({}, { replace: true })
+              }
             }}
             options={surveyOptions}
             disabled={selectDisabled}
@@ -128,7 +143,7 @@ export function SurveyFillPage() {
           />
         ) : (
           <div className="border-t border-border px-5 py-8 text-sm text-muted">
-            {selectDisabled ? 'Anketler yükleniyor…' : 'Soruları görmek için anket seçin.'}
+            {selectDisabled ? 'Anketler yükleniyor…' : 'Soruları görmek için Anket seçin.'}
           </div>
         )}
       </Card>

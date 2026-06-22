@@ -100,7 +100,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      <nav className="flex-1 space-y-4 overflow-y-auto p-3">
+      <nav className="scrollbar-hidden flex-1 space-y-4 overflow-y-auto p-3">
         {loading && !sidebarCollapsed && (
           <p className="px-3 text-xs text-white/50">Menü yükleniyor…</p>
         )}

@@ -12,7 +12,7 @@ function displayCount(value: number | undefined, loading: boolean) {
 
 interface SurveyResponseStatsCardsProps {
   data: AnketCevapOzetItem[]
-  filterSummary: string
+  filterSummary?: string
   isLoading: boolean
 }
 
@@ -30,10 +30,12 @@ export function SurveyResponseStatsCards({
 
   return (
     <section className="px-1 py-1">
-      <div className="mb-4 rounded-md border border-[#d4dde8] bg-[#f5f7fa] px-4 py-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted">Seçili filtre</p>
-        <p className="mt-1 text-sm font-semibold text-foreground">{filterSummary}</p>
-      </div>
+      {filterSummary ? (
+        <div className="mb-4 rounded-md border border-[#d4dde8] bg-[#f5f7fa] px-4 py-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">Seçili filtre</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{filterSummary}</p>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard

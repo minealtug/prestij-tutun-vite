@@ -19,6 +19,7 @@ interface SurveyResponsesTableProps {
   isError: boolean
   error: unknown
   onRefresh: () => void
+  columnBorders?: boolean
 }
 
 function ExpandIcon({ open }: { open: boolean }) {
@@ -38,6 +39,7 @@ export function SurveyResponsesTable({
   isError,
   error,
   onRefresh,
+  columnBorders = false,
 }: SurveyResponsesTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -88,7 +90,12 @@ export function SurveyResponsesTable({
   return (
     <div className="w-full border-t border-[#ececec]">
       <div className="w-full overflow-x-auto">
-        <table className="app-table app-table-compact min-w-[900px]">
+        <table
+          className={cn(
+            'app-table app-table-compact min-w-[900px]',
+            columnBorders && 'app-table-cols',
+          )}
+        >
           <thead>
             <tr>
               <th>TARİH</th>
@@ -141,7 +148,7 @@ export function SurveyResponsesTable({
                       </td>
                     </tr>
                     {isOpen && (
-                      <tr className="border-b border-[#ececec] bg-[#fafbfc]">
+                      <tr className="bg-[#f5f8fb]">
                         <td colSpan={5} className="!p-0">
                           <SurveyResponseAnswersPanel
                             ekiciId={row.ekiciId}
@@ -149,6 +156,7 @@ export function SurveyResponsesTable({
                             baslikId={row.baslikId}
                             kategoriAdi={kategoriAdi}
                             enabled={isOpen}
+                            columnBorders={columnBorders}
                           />
                         </td>
                       </tr>
