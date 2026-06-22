@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -14,6 +14,7 @@ import {
   useUpdateQuestion,
 } from '../hooks/use-questions'
 import { useSurveys } from '@/features/surveys/hooks/use-surveys'
+import { useAnswerUnits } from '@/features/answer-units/hooks/use-answer-units'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import {
@@ -23,13 +24,20 @@ import {
 } from '../utils/bagli-kosul-tipi'
 import { GORUNME_KOSULU_LABEL } from '../utils/question-field-labels'
 import type { QuestionDto } from '../types/question.types'
+import { resolveCevapGirdiTipId } from '../utils/resolve-question-cevap-girdi-tip'
+import { resolveQuestionBirimId } from '../utils/resolve-question-birim-adi'
 
 function buildQuestionUpdatePayload(
   question: QuestionDto,
-  values: { soruMetni: string; aktif: boolean; zorunlu: boolean },
+  values: {
+    soruMetni: string
+    aktif: boolean
+    zorunlu: boolean
+    anketCevapBirimId: string
+  },
 ): Record<string, unknown> | null {
-  const cevapGirdiTipId = Number(question.cevapGirdiTipId)
-  if (!Number.isFinite(cevapGirdiTipId) || cevapGirdiTipId <= 0) return null
+  const cevapGirdiTipId = resolveCevapGirdiTipId(question)
+  if (cevapGirdiTipId == null) return null
 
   const payload: Record<string, unknown> = {
     soruMetni: values.soruMetni,
@@ -50,6 +58,11 @@ function buildQuestionUpdatePayload(
     payload.secenekGrupId = question.secenekGrupId
   }
 
+  const parsedAnketCevapBirimId = Number(values.anketCevapBirimId)
+  if (Number.isFinite(parsedAnketCevapBirimId) && parsedAnketCevapBirimId > 0) {
+    payload.anketCevapBirimId = parsedAnketCevapBirimId
+  }
+
   return payload
 }
 
@@ -58,6 +71,7 @@ export function QuestionsPage() {
   const { canRead, canEdit, loading: permissionLoading } = useRequirePagePermission()
   const isDefinitionsPage = location.pathname.startsWith('/tanimlamalar')
   const surveysQuery = useSurveys()
+  const answerUnitsQuery = useAnswerUnits()
   const updateQuestion = useUpdateQuestion()
   const updateBagliKosul = useUpdateBagliKosul()
   const setQuestionActive = useSetQuestionActive()
@@ -66,9 +80,26 @@ export function QuestionsPage() {
   const [editText, setEditText] = useState('')
   const [editAktif, setEditAktif] = useState(true)
   const [editZorunlu, setEditZorunlu] = useState(false)
+  const [editAnketCevapBirimId, setEditAnketCevapBirimId] = useState('')
   const [editBagliKosulTipi, setEditBagliKosulTipi] = useState(BAGLI_KOSUL_ESIT)
   const [editSaveError, setEditSaveError] = useState('')
   const questionsQuery = useQuestions(isDefinitionsPage ? selectedSurveyId : undefined)
+
+  const birimOptions = useMemo(
+    () => [
+      {
+        key: 'placeholder',
+        value: '',
+        label: answerUnitsQuery.isLoading ? 'Birimler yükleniyor...' : 'Birim seçin',
+      },
+      ...(answerUnitsQuery.data ?? []).map((unit) => ({
+        key: String(unit.id),
+        value: String(unit.id),
+        label: unit.adi,
+      })),
+    ],
+    [answerUnitsQuery.data, answerUnitsQuery.isLoading],
+  )
 
   useEffect(() => {
     if (!isDefinitionsPage) return
@@ -89,6 +120,8 @@ export function QuestionsPage() {
     setEditText(question.soruMetni)
     setEditAktif(question.aktif)
     setEditZorunlu(question.zorunlu)
+    const birimId = resolveQuestionBirimId(question)
+    setEditAnketCevapBirimId(birimId != null ? String(birimId) : '')
     setEditBagliKosulTipi(normalizeBagliKosulTipi(question.bagliKosulTipi))
     setEditSaveError('')
   }
@@ -98,6 +131,7 @@ export function QuestionsPage() {
     setEditText('')
     setEditAktif(true)
     setEditZorunlu(false)
+    setEditAnketCevapBirimId('')
     setEditBagliKosulTipi(BAGLI_KOSUL_ESIT)
     setEditSaveError('')
   }
@@ -108,7 +142,9 @@ export function QuestionsPage() {
     const textChanged = editText.trim() !== editingQuestion.soruMetni
     const aktifChanged = editAktif !== editingQuestion.aktif
     const zorunluChanged = editZorunlu !== editingQuestion.zorunlu
-    const questionContentChanged = textChanged || zorunluChanged
+    const originalBirimId = resolveQuestionBirimId(editingQuestion)
+    const birimChanged = editAnketCevapBirimId !== (originalBirimId != null ? String(originalBirimId) : '')
+    const questionContentChanged = textChanged || zorunluChanged || birimChanged
     const kosulChanged =
       editingQuestion.bagliSoru &&
       normalizeBagliKosulTipi(editBagliKosulTipi) !==
@@ -127,6 +163,7 @@ export function QuestionsPage() {
           soruMetni: editText.trim(),
           aktif: editAktif,
           zorunlu: editZorunlu,
+          anketCevapBirimId: editAnketCevapBirimId,
         })
         if (!payload) {
           setEditSaveError('Cevap tipi bilgisi eksik; soru güncellenemedi.')
@@ -236,7 +273,7 @@ export function QuestionsPage() {
         open={Boolean(editingQuestion)}
         onClose={closeEditModal}
         title="Soruyu Düzenle"
-        description="Soru metni, durum ve koşul alanlarını güncelleyin"
+        description="Soru metni, birim, durum ve koşul alanlarını güncelleyin"
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={closeEditModal}>
@@ -284,6 +321,14 @@ export function QuestionsPage() {
               <span className="text-sm text-foreground">Aktif</span>
             </label>
           </div>
+
+          <Select
+            label="Birim"
+            value={editAnketCevapBirimId}
+            onChange={(e) => setEditAnketCevapBirimId(e.target.value)}
+            options={birimOptions}
+            disabled={answerUnitsQuery.isLoading}
+          />
 
           {editingQuestion?.bagliSoru && (
             <Select

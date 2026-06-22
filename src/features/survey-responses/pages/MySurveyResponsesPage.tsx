@@ -132,6 +132,7 @@ export function MySurveyResponsesPage() {
           error={responsesQuery.error}
           onRefresh={() => void responsesQuery.refetch()}
           columnBorders
+          showAnswerCounts
         />
       </Card>
     </PageContainer>

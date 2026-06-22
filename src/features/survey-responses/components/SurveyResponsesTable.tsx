@@ -20,6 +20,11 @@ interface SurveyResponsesTableProps {
   error: unknown
   onRefresh: () => void
   columnBorders?: boolean
+  showAnswerCounts?: boolean
+}
+
+function formatAnswerCount(value: number) {
+  return Math.max(0, value).toLocaleString('tr-TR')
 }
 
 function ExpandIcon({ open }: { open: boolean }) {
@@ -40,7 +45,9 @@ export function SurveyResponsesTable({
   error,
   onRefresh,
   columnBorders = false,
+  showAnswerCounts = false,
 }: SurveyResponsesTableProps) {
+  const columnCount = showAnswerCounts ? 7 : 5
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
@@ -92,7 +99,8 @@ export function SurveyResponsesTable({
       <div className="w-full overflow-x-auto">
         <table
           className={cn(
-            'app-table app-table-compact min-w-[900px]',
+            'app-table app-table-compact',
+            showAnswerCounts ? 'min-w-[72rem]' : 'min-w-[900px]',
             columnBorders && 'app-table-cols',
           )}
         >
@@ -102,13 +110,19 @@ export function SurveyResponsesTable({
               <th>KULLANICI</th>
               <th>ADI SOYADI</th>
               <th>ANKET</th>
+              {showAnswerCounts && (
+                <>
+                  <th className="w-28 text-center">YANITLANAN</th>
+                  <th className="w-32 text-center">YANITLANMAYAN</th>
+                </>
+              )}
               <th className="w-16 text-center">DETAY</th>
             </tr>
           </thead>
           <tbody>
             {visibleData.length === 0 ? (
               <tr>
-                <td colSpan={5} className="!p-0">
+                <td colSpan={columnCount} className="!p-0">
                   <EmptyState
                     compact
                     title="Henüz anket cevabı yok"
@@ -143,13 +157,23 @@ export function SurveyResponsesTable({
                       <td>{getOzetKullaniciAdi(row)}</td>
                       <td>{getOzetFullName(row)}</td>
                       <td>{getOzetSurveyName(row)}</td>
+                      {showAnswerCounts && (
+                        <>
+                          <td className="text-center font-medium text-primary-600">
+                            {formatAnswerCount(row.yanitlananSoruSayisi)}
+                          </td>
+                          <td className="text-center font-medium text-red-600">
+                            {formatAnswerCount(row.yanitlanmayanSoruSayisi)}
+                          </td>
+                        </>
+                      )}
                       <td className="text-center">
                         <ExpandIcon open={isOpen} />
                       </td>
                     </tr>
                     {isOpen && (
                       <tr className="bg-[#f5f8fb]">
-                        <td colSpan={5} className="!p-0">
+                        <td colSpan={columnCount} className="!p-0">
                           <SurveyResponseAnswersPanel
                             ekiciId={row.ekiciId}
                             sablonId={row.sablonId}

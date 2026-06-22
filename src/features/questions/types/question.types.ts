@@ -12,6 +12,7 @@ export interface QuestionDto {
   baslikAdi: string
   cevapGirdiTipAdi?: string
   cevapGirdiTipId?: number
+  cevapGirdiTip?: { id?: number | null; adi?: string | null } | null
   soruMetni: string
   altSoruMetni: string | null
   zorunlu: boolean
@@ -22,6 +23,9 @@ export interface QuestionDto {
   bagliAltSecenekId?: number | null
   bagliKosulTipi?: string | null
   bagliOlduguSoru?: string | { soruMetni?: string | null; [key: string]: unknown } | null
+  anketCevapBirimId?: number | null
+  anketCevapBirimAdi?: string | null
+  anketCevapBirim?: { id?: number | null; adi?: string | null } | null
   kaynak?: 'AppDb' | 'LegacyDb' | string
 }
 

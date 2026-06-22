@@ -1,11 +1,18 @@
 import { Pencil, Ban } from 'lucide-react'
+import { useMemo } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Table, type TableColumn } from '@/components/ui/Table'
 import { ErrorState } from '@/components/feedback/ErrorState'
+import { useAnswerUnits } from '@/features/answer-units/hooks/use-answer-units'
 import type { QuestionDto } from '../types/question.types'
 import { getFriendlyAnswerTypeLabel } from '../utils/answer-type-label'
 import { getBagliKosulTipiLabel } from '../utils/bagli-kosul-tipi'
 import { GORUNME_KOSULU_TABLE_HEADER } from '../utils/question-field-labels'
+import { resolveQuestionBirimAdi } from '../utils/resolve-question-birim-adi'
+import {
+  resolveCevapGirdiTipAdi,
+  resolveCevapGirdiTipId,
+} from '../utils/resolve-question-cevap-girdi-tip'
 
 function resolveBaslikAdi(row: QuestionDto & { baslik?: { adi?: string | null } }) {
   return row.baslikAdi?.trim() || row.baslik?.adi?.trim() || null
@@ -53,6 +60,15 @@ export function QuestionsTable({
   onSetPassive,
   isUpdating,
 }: QuestionsTableProps) {
+  const answerUnitsQuery = useAnswerUnits()
+  const unitsById = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const unit of answerUnitsQuery.data ?? []) {
+      map.set(unit.id, unit.adi)
+    }
+    return map
+  }, [answerUnitsQuery.data])
+
   const columns: TableColumn<QuestionDto>[] = [
     {
       key: 'aktif',
@@ -74,22 +90,32 @@ export function QuestionsTable({
       key: 'soruMetni',
       header: 'SORU METNİ',
       className: 'min-w-[16rem] whitespace-normal sm:min-w-[20rem] lg:min-w-[24rem]',
-      render: (row) => (
-        <span className="whitespace-normal break-words">{row.soruMetni}</span>
-      ),
+      render: (row) => {
+        const birimAdi = resolveQuestionBirimAdi(row, unitsById)
+
+        return (
+          <span className="whitespace-normal break-words">
+            {row.soruMetni}
+            {birimAdi ? <span className="text-muted"> ({birimAdi})</span> : null}
+          </span>
+        )
+      },
     },
     {
       key: 'cevapGirdiTipAdi',
       header: 'CEVAP TİPİ',
-      className: 'w-20 max-w-[5rem] whitespace-nowrap',
+      className: 'min-w-[8rem] whitespace-normal',
       render: (row) => {
-        if (!row.cevapGirdiTipAdi) return row.cevapGirdiTipId != null ? row.cevapGirdiTipId : '-'
-        const friendly = getFriendlyAnswerTypeLabel(row.cevapGirdiTipAdi)
-        const label =
-          friendly === row.cevapGirdiTipAdi ? friendly : `${friendly} (${row.cevapGirdiTipAdi})`
+        const cevapTipAdi = resolveCevapGirdiTipAdi(row)
+        if (!cevapTipAdi) {
+          const cevapTipId = resolveCevapGirdiTipId(row)
+          return cevapTipId != null ? String(cevapTipId) : '-'
+        }
+
+        const label = getFriendlyAnswerTypeLabel(cevapTipAdi)
 
         return (
-          <span className="block truncate" title={label}>
+          <span className="whitespace-normal break-words" title={cevapTipAdi}>
             {label}
           </span>
         )
@@ -194,7 +220,7 @@ export function QuestionsTable({
           isLoading={isLoading}
           emptyMessage="Henüz soru yok."
           horizontalScroll
-          tableClassName="min-w-[68rem]"
+          tableClassName="min-w-[68rem] app-table-cols"
           variant="plain"
           compact
           className="!rounded-none !border-0"
