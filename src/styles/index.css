@@ -183,4 +183,16 @@
   .scrollbar-hidden::-webkit-scrollbar {
     display: none;
   }
+
+  .pdf-export-root,
+  .pdf-export-root * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .pdf-export-root .glass-card {
+    background: #ffffff !important;
+    border: 1px solid #d4dde8 !important;
+    box-shadow: none !important;
+  }
 }

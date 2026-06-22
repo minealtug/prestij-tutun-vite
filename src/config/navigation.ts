@@ -101,6 +101,7 @@ export const pageTitles: Record<string, string> = {
   '/anket-cevaplari': 'Cevaplanan Anketler',
   '/cevapladigim-anketler': 'Cevapladığım Anketler',
   '/raporlar': 'Raporlar',
+  '/raporlar/yas-cinsiyet': 'Yaş–Cinsiyet Raporu',
   '/tanimlamalar': 'Tanımlamalar',
   '/tanimlamalar/soru-tanimlamalari': 'Tanımlı Sorular',
   '/tanimlamalar/anket-tanimlamalari': 'Anket Tanımlama',

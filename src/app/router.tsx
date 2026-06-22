@@ -15,6 +15,8 @@ import { SurveyFillPage } from '@/features/survey-fill/pages/SurveyFillPage'
 import { AnswerUnitsPage } from '@/features/answer-units/pages/AnswerUnitsPage'
 import { EkiciDefinitionsPage } from '@/features/ekici-definitions/pages/EkiciDefinitionsPage'
 import { ModulePage } from '@/pages/ModulePage'
+import { ReportsPage } from '@/features/reports/pages/ReportsPage'
+import { AgeGenderReportPage } from '@/features/reports/pages/AgeGenderReportPage'
 import { YetkilendirmePage } from '@/features/permissions/pages/YetkilendirmePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
@@ -47,7 +49,8 @@ export const router = createBrowserRouter([
           { path: 'anket-doldurma', element: <SurveyFillPage /> },
           { path: 'anket-cevaplari', element: <SurveyResponsesPage /> },
           { path: 'cevapladigim-anketler', element: <MySurveyResponsesPage /> },
-          { path: 'raporlar', element: <ModulePage /> },
+          { path: 'raporlar', element: <ReportsPage /> },
+          { path: 'raporlar/yas-cinsiyet', element: <AgeGenderReportPage /> },
           { path: 'tanimlamalar', element: <ModulePage /> },
           { path: 'yetkilendirme', element: <YetkilendirmePage /> },
           { path: 'users', element: <UsersPage /> },
