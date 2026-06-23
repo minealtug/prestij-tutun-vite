@@ -25,6 +25,13 @@ function hasValidAltSecenekler(values: ReturnType<typeof createEmptySecenekGrupF
   return values.altSecenekler.some((item) => item.adi.trim().length > 0)
 }
 
+function normalizeOptionsSignature(options: string[]): string {
+  return options
+    .map((item) => item.trim().toLocaleLowerCase('tr-TR'))
+    .filter((item) => item.length > 0)
+    .join('|')
+}
+
 export function OptionGroupsPage() {
   const { canRead, canEdit, loading: permissionLoading } = useRequirePagePermission()
   const groupsQuery = useOptionGroups()
@@ -38,10 +45,21 @@ export function OptionGroupsPage() {
   const [createSuccessModalOpen, setCreateSuccessModalOpen] = useState(false)
 
   const groups = groupsQuery.data ?? []
+  const createOptionsSignature = useMemo(
+    () => normalizeOptionsSignature(createValues.altSecenekler.map((item) => item.adi)),
+    [createValues.altSecenekler],
+  )
+  const isDuplicateCreateGroup = useMemo(() => {
+    if (!createOptionsSignature) return false
+    return groups.some((group) => {
+      const existingSignature = normalizeOptionsSignature(group.altSecenekler.map((item) => item.adi))
+      return existingSignature === createOptionsSignature
+    })
+  }, [createOptionsSignature, groups])
 
   const canSubmitCreate = useMemo(
-    () => canEdit && hasValidAltSecenekler(createValues),
-    [canEdit, createValues],
+    () => canEdit && hasValidAltSecenekler(createValues) && !isDuplicateCreateGroup,
+    [canEdit, createValues, isDuplicateCreateGroup],
   )
 
   const canSubmitEdit = useMemo(
@@ -147,6 +165,15 @@ export function OptionGroupsPage() {
                 <Plus className="h-4 w-4" />
                 Seçenek Grubu Ekle
               </Button>
+
+              {isDuplicateCreateGroup && (
+                <p
+                  className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+                  role="alert"
+                >
+                  Aynı seçenek listesi zaten mevcut. Lütfen farklı bir seçenek grubu girin.
+                </p>
+              )}
 
               {createGroup.isError && (
                 <p
