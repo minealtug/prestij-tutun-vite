@@ -10,8 +10,8 @@ const answerTypeLabelMap: Record<string, string> = {
   'combo box': 'Liste (Açılır Menü)',
   numeric: 'Sayı',
   number: 'Sayı',
-  datetime: 'Tarih/Saat',
-  'date time': 'Tarih/Saat',
+  datetime: 'Tarih',
+  'date time': 'Tarih',
   date: 'Tarih',
   time: 'Saat',
 }

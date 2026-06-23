@@ -7,6 +7,7 @@ import {
   formatMultiSelectValue,
   isMultiSelectValueAnswered,
 } from './multi-select-value'
+import { toDateInputValue } from './date-input-value'
 import { getQuestionKey } from './question-key'
 import { resolveEffectiveQuestionInputKind } from './resolve-question-input-kind'
 import { sortQuestionsUnderParents } from './sort-survey-fill-questions'
@@ -195,6 +196,10 @@ export function getInitialAnswerValue(
       (option) => option.adi === soru.cevapText?.trim(),
     )
     return matched ? String(matched.id) : ''
+  }
+
+  if (kind === 'date') {
+    return toDateInputValue(soru.cevapText)
   }
 
   if (soru.cevapText) return soru.cevapText

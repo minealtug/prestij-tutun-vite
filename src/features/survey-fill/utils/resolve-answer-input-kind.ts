@@ -3,7 +3,6 @@ export type AnswerInputKind =
   | 'textarea'
   | 'number'
   | 'date'
-  | 'datetime'
   | 'checkbox'
   | 'select'
 
@@ -47,11 +46,12 @@ export function resolveAnswerInputKind(cevapGirdiTipAdi?: string): AnswerInputKi
     return 'number'
   }
 
-  if (normalized.includes('datetime') || normalized.includes('date time')) {
-    return 'datetime'
-  }
-
-  if (normalized.includes('date') || normalized.includes('tarih')) {
+  if (
+    normalized.includes('datetime') ||
+    normalized.includes('date time') ||
+    normalized.includes('date') ||
+    normalized.includes('tarih')
+  ) {
     return 'date'
   }
 

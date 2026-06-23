@@ -1,6 +1,7 @@
 import type { AnketYanitCevapRequest, AnketYanitSoruDto } from '../types/anket-yanit.types'
 import type { AnswerTypeKindLookup } from './build-answer-type-kind-lookup'
 import { parseMultiSelectValue } from './multi-select-value'
+import { toDateOnlyApiValue } from './date-input-value'
 import { resolveEffectiveQuestionInputKind } from './resolve-question-input-kind'
 
 export function buildAnketYanitCevapRequest(
@@ -58,8 +59,9 @@ export function buildAnketYanitCevapRequest(
       : { ...base, cevapText: value.trim() || null }
   }
 
-  if (kind === 'date' || kind === 'datetime') {
-    return { ...base, cevapDatetime: value || null, cevapText: value.trim() || null }
+  if (kind === 'date') {
+    const dateValue = toDateOnlyApiValue(value)
+    return { ...base, cevapDatetime: dateValue, cevapText: dateValue }
   }
 
   return { ...base, cevapText: value.trim() || null }

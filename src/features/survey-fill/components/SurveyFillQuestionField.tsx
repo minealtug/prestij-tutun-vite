@@ -159,15 +159,7 @@ function renderAnswerControl(
     <Input
       id={fieldId}
       label={label}
-      type={
-        kind === 'number'
-          ? 'number'
-          : kind === 'date'
-            ? 'date'
-            : kind === 'datetime'
-              ? 'datetime-local'
-              : 'text'
-      }
+      type={kind === 'number' ? 'number' : kind === 'date' ? 'date' : 'text'}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder="Cevabınızı girin"
@@ -224,11 +216,6 @@ export function SurveyFillQuestionField({
           </p>
           {kind !== 'ekici' && question.altSoruMetni?.trim() && (
             <p className="text-xs leading-snug text-muted sm:text-sm">{question.altSoruMetni}</p>
-          )}
-          {question.bagliSoru && (
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
-              Bağlı soru
-            </p>
           )}
         </div>
         {question.zorunlu && (
