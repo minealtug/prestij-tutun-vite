@@ -3,22 +3,34 @@ import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
+import { Modal } from '@/components/ui/Modal'
 import { getErrorMessage } from '@/lib/api/api-error'
 import { SurveysTable } from '../components/SurveysTable'
 import { useCreateSurvey, useDeleteSurvey, useSurveys } from '../hooks/use-surveys'
+import { useQuestions } from '@/features/questions/hooks/use-questions'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import {
   DUPLICATE_SURVEY_NAME_MESSAGE,
   isSurveyNameTaken,
 } from '../utils/survey-name'
+import {
+  isSurveyDeleteBlockedByQuestions,
+  SURVEY_DELETE_BLOCKED_BY_QUESTIONS_MESSAGE,
+  surveyHasLinkedQuestions,
+} from '../utils/survey-delete'
+import type { SurveyDto } from '../types/survey.types'
 
 export function SurveysPage() {
   const { canRead, canEdit, loading: permissionLoading } = useRequirePagePermission()
   const surveysQuery = useSurveys()
+  const questionsQuery = useQuestions()
   const createSurvey = useCreateSurvey()
   const deleteSurvey = useDeleteSurvey()
   const [surveyName, setSurveyName] = useState('')
+  const [blockedDeleteSurvey, setBlockedDeleteSurvey] = useState<SurveyDto | null>(null)
+
+  const allQuestions = useMemo(() => questionsQuery.data ?? [], [questionsQuery.data])
 
   const surveyCount = surveysQuery.data?.length ?? 0
   const trimmedName = surveyName.trim()
@@ -39,10 +51,27 @@ export function SurveysPage() {
     )
   }
 
-  const handleDelete = (id: string) => {
-    if (!canEdit) return
+  const handleDelete = async (id: string) => {
+    if (!canEdit || deleteSurvey.isPending) return
+
+    const survey = surveysQuery.data?.find((item) => item.id === id)
     if (!window.confirm('Bu anketi silmek istediğinize emin misiniz?')) return
-    deleteSurvey.mutate(id)
+
+    if (surveyHasLinkedQuestions(id, allQuestions)) {
+      setBlockedDeleteSurvey(survey ?? { id, name: '-' })
+      return
+    }
+
+    try {
+      await deleteSurvey.mutateAsync(id)
+    } catch (error) {
+      if (isSurveyDeleteBlockedByQuestions(error)) {
+        setBlockedDeleteSurvey(survey ?? { id, name: '-' })
+        return
+      }
+
+      window.alert(getErrorMessage(error))
+    }
   }
 
   if (permissionLoading) {
@@ -127,6 +156,30 @@ export function SurveysPage() {
           isDeleting={deleteSurvey.isPending}
         />
       </div>
+
+      <Modal
+        open={blockedDeleteSurvey != null}
+        onClose={() => setBlockedDeleteSurvey(null)}
+        title="Anket silinemedi"
+        description="Silme işlemi tamamlanamadı"
+        size="sm"
+        footer={
+          <div className="flex justify-end">
+            <Button onClick={() => setBlockedDeleteSurvey(null)}>Tamam</Button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          {blockedDeleteSurvey?.name ? (
+            <p className="rounded-lg bg-foreground/5 px-3 py-2 text-sm text-foreground">
+              {blockedDeleteSurvey.name}
+            </p>
+          ) : null}
+          <p className="text-sm text-amber-800" role="alert">
+            {SURVEY_DELETE_BLOCKED_BY_QUESTIONS_MESSAGE}
+          </p>
+        </div>
+      </Modal>
     </PageContainer>
   )
 }

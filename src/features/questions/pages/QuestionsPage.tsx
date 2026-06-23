@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -21,8 +22,10 @@ import { useRequirePagePermission } from '@/features/permissions/hooks/use-requi
 import {
   BAGLI_KOSUL_ESIT,
   BAGLI_KOSUL_TIPI_OPTIONS,
+  getBagliKosulTipiLabel,
   normalizeBagliKosulTipi,
 } from '../utils/bagli-kosul-tipi'
+import { getFriendlyAnswerTypeLabel } from '../utils/answer-type-label'
 import { GORUNME_KOSULU_LABEL } from '../utils/question-field-labels'
 import { AltSecenekMultiSelect } from '../components/AltSecenekMultiSelect'
 import { needsSecenekGrup } from '../utils/needs-secenek-grup'
@@ -73,6 +76,40 @@ function buildQuestionUpdatePayload(
   return payload
 }
 
+function getParentQuestionSearchText(
+  value: QuestionDto['bagliOlduguSoru'],
+): string {
+  if (typeof value === 'string') return value.trim()
+  if (value && typeof value === 'object') {
+    const candidate = value.soruMetni
+    if (typeof candidate === 'string') return candidate.trim()
+  }
+  return ''
+}
+
+function matchesQuestionSearch(question: QuestionDto, query: string): boolean {
+  const cevapTipAdi = question.cevapGirdiTipAdi?.trim()
+  const fields = [
+    question.soruMetni,
+    question.altSoruMetni,
+    question.baslikAdi,
+    cevapTipAdi,
+    cevapTipAdi ? getFriendlyAnswerTypeLabel(cevapTipAdi) : '',
+    question.anketCevapBirimAdi,
+    question.anketCevapBirim?.adi,
+    getParentQuestionSearchText(question.bagliOlduguSoru),
+    question.bagliKosulTipi ? getBagliKosulTipiLabel(question.bagliKosulTipi) : '',
+    question.aktif ? 'aktif' : 'pasif',
+    question.zorunlu ? 'zorunlu' : '',
+    question.bagliSoru ? 'bağlı' : '',
+    String(question.id),
+  ]
+
+  return fields
+    .filter(Boolean)
+    .some((value) => String(value).toLocaleLowerCase('tr-TR').includes(query))
+}
+
 export function QuestionsPage() {
   const location = useLocation()
   const { canRead, canEdit, loading: permissionLoading } = useRequirePagePermission()
@@ -84,6 +121,7 @@ export function QuestionsPage() {
   const setQuestionActive = useSetQuestionActive()
   const deleteQuestion = useDeleteQuestion()
   const [selectedSurveyId, setSelectedSurveyId] = useState(0)
+  const [search, setSearch] = useState('')
   const [editingQuestion, setEditingQuestion] = useState<QuestionDto | null>(null)
   const [editText, setEditText] = useState('')
   const [editAktif, setEditAktif] = useState(true)
@@ -125,6 +163,10 @@ export function QuestionsPage() {
     const defaultSurveyId = Number(preferredSurvey?.id ?? surveys[0]?.id)
     if (defaultSurveyId > 0) setSelectedSurveyId(defaultSurveyId)
   }, [isDefinitionsPage, selectedSurveyId, surveysQuery.data])
+
+  useEffect(() => {
+    setSearch('')
+  }, [selectedSurveyId])
 
   const openEditModal = (question: QuestionDto) => {
     if (!canEdit) return
@@ -258,6 +300,12 @@ export function QuestionsPage() {
   const currentQuestions =
     isDefinitionsPage && selectedSurveyId <= 0 ? [] : (questionsQuery.data ?? [])
 
+  const filteredQuestions = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase('tr-TR')
+    if (!query) return currentQuestions
+    return currentQuestions.filter((question) => matchesQuestionSearch(question, query))
+  }, [currentQuestions, search])
+
   const refreshQuestions = () => {
     void questionsQuery.refetch()
     if (isDefinitionsPage && selectedSurveyId > 0) {
@@ -288,19 +336,37 @@ export function QuestionsPage() {
       {!isDefinitionsPage && <QuestionForm readOnly={!canEdit} />}
 
       {isDefinitionsPage && (
-        <div className="w-full">
-          <Select
-            label="Anket"
-            value={selectedSurveyId > 0 ? String(selectedSurveyId) : ''}
-            onChange={(e) => setSelectedSurveyId(Number(e.target.value) || 0)}
-            options={[{ key: 'placeholder', value: '', label: 'Anket seçin' }, ...surveySelectOptions]}
-          />
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:gap-4">
+          <div className="w-full md:max-w-xs md:shrink-0">
+            <Select
+              label="Anket"
+              value={selectedSurveyId > 0 ? String(selectedSurveyId) : ''}
+              onChange={(e) => setSelectedSurveyId(Number(e.target.value) || 0)}
+              options={[{ key: 'placeholder', value: '', label: 'Anket seçin' }, ...surveySelectOptions]}
+            />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Soru metni, cevap tipi, birim..."
+                className="h-10 w-full rounded-lg border border-border bg-surface-elevated pl-9 pr-3 text-sm placeholder:text-muted focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              />
+            </div>
+          </div>
         </div>
       )}
 
       {isDefinitionsPage && (
         <QuestionsTable
-          data={currentQuestions}
+          data={filteredQuestions}
           isLoading={isDefinitionsLoading}
           isError={questionsQuery.isError && Boolean(getDefinitionsError())}
           error={getDefinitionsError()}
