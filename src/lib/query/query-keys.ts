@@ -29,6 +29,9 @@ export const queryKeys = {
   answerUnits: {
     all: ['answer-units'] as const,
   },
+  optionGroups: {
+    all: ['option-groups'] as const,
+  },
   ekiciDefinitions: {
     all: ['ekici-definitions'] as const,
   },

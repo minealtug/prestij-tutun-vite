@@ -13,6 +13,7 @@ import { SurveyResponsesPage } from '@/features/survey-responses/pages/SurveyRes
 import { MySurveyResponsesPage } from '@/features/survey-responses/pages/MySurveyResponsesPage'
 import { SurveyFillPage } from '@/features/survey-fill/pages/SurveyFillPage'
 import { AnswerUnitsPage } from '@/features/answer-units/pages/AnswerUnitsPage'
+import { OptionGroupsPage } from '@/features/option-groups/pages/OptionGroupsPage'
 import { EkiciDefinitionsPage } from '@/features/ekici-definitions/pages/EkiciDefinitionsPage'
 import { ModulePage } from '@/pages/ModulePage'
 import { ReportsPage } from '@/features/reports/pages/ReportsPage'
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
           { path: 'tanimlamalar/soru-tanimlamalari', element: <QuestionsPage /> },
           { path: 'tanimlamalar/anket-tanimlamalari', element: <SurveysPage /> },
           { path: 'tanimlamalar/birim-tanimlamalari', element: <AnswerUnitsPage /> },
+          { path: 'tanimlamalar/secenek-tanimlamalari', element: <OptionGroupsPage /> },
           { path: 'tanimlamalar/ekici-tanimlamalari', element: <EkiciDefinitionsPage /> },
           {
             path: 'anket-yonetimi',
