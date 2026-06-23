@@ -300,6 +300,23 @@ export function QuestionsPage() {
   const currentQuestions =
     isDefinitionsPage && selectedSurveyId <= 0 ? [] : (questionsQuery.data ?? [])
 
+  useEffect(() => {
+    if (!isDefinitionsPage || currentQuestions.length === 0) return
+
+    const question206 = currentQuestions.find(
+      (question) => String(question.id) === '206',
+    )
+
+    if (question206) {
+      console.log('[Soru 206]', question206)
+    } else {
+      console.log('[Soru 206] Bu ankette bulunamadı', {
+        selectedSurveyId,
+        questionIds: currentQuestions.map((question) => question.id),
+      })
+    }
+  }, [isDefinitionsPage, currentQuestions, selectedSurveyId])
+
   const filteredQuestions = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('tr-TR')
     if (!query) return currentQuestions

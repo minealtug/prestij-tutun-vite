@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Info, Save } from 'lucide-react'
+import { CheckCircle2, Info, Save, FilePen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
@@ -30,11 +30,13 @@ import {
   buildPreviewQuestionsFromDefinitions,
   getDisplayFillQuestions,
   getAllOturumQuestions,
+  getDraftQuestionsToSubmit,
   getFormFillProgress,
   getQuestionDisplayNumber,
   getQuestionsToSubmit,
   sortOturumQuestionsForFill,
 } from '../utils/oturum-questions'
+import { sortSurveyFillQuestions } from '../utils/sort-survey-fill-questions'
 import { getQuestionKey } from '../utils/question-key'
 import { resolveSurveyFillMintikaId } from '../utils/resolve-survey-fill-mintika-id'
 import { validateSurveyFillAnswers } from '../utils/validate-survey-fill-answers'
@@ -64,6 +66,7 @@ export function SurveyFillForm({
 }: SurveyFillFormProps) {
   const [sessionEkiciId, setSessionEkiciId] = useState<string | null>(null)
   const [successModalOpen, setSuccessModalOpen] = useState(false)
+  const [successModalVariant, setSuccessModalVariant] = useState<'full' | 'draft'>('full')
   const [lastSavedCount, setLastSavedCount] = useState(0)
 
   const oturumQuery = useAnketYanitOturum(
@@ -176,6 +179,32 @@ export function SurveyFillForm({
   const progress = useMemo(
     () => getFormFillProgress(visibleQuestions, answers, answerTypeLookup, manualEntryByKey),
     [visibleQuestions, answers, answerTypeLookup, manualEntryByKey],
+  )
+
+  const hiddenEkiciQuestions = useMemo(
+    () => allOturumQuestions.filter(isEkiciProducerQuestion),
+    [allOturumQuestions],
+  )
+
+  const draftQuestionsToSubmit = useMemo(
+    () =>
+      sortSurveyFillQuestions(
+        getDraftQuestionsToSubmit(
+          [...visibleQuestions, ...hiddenEkiciQuestions],
+          answers,
+          initialAnswers,
+          answerTypeLookup,
+          manualEntryByKey,
+        ),
+      ),
+    [
+      visibleQuestions,
+      hiddenEkiciQuestions,
+      answers,
+      initialAnswers,
+      answerTypeLookup,
+      manualEntryByKey,
+    ],
   )
 
   const ekiciOptions = useMemo(
@@ -310,7 +339,7 @@ export function SurveyFillForm({
     })
   }
 
-  const handleSubmitAnswers = () => {
+  const handleSaveAnswers = (mode: 'full' | 'draft') => {
     if (!canSubmit || !sessionEkiciId) {
       setSubmitError('Cevapları kaydetmek için önce ekici seçin.')
       return
@@ -321,25 +350,36 @@ export function SurveyFillForm({
       return
     }
 
-    const validationErrors = validateSurveyFillAnswers(
-      visibleQuestions,
-      answers,
-      answerTypeLookup,
-      manualEntryByKey,
-    )
-    if (Object.keys(validationErrors).length > 0) {
-      setFieldErrors(validationErrors)
-      return
+    if (mode === 'full') {
+      const validationErrors = validateSurveyFillAnswers(
+        visibleQuestions,
+        answers,
+        answerTypeLookup,
+        manualEntryByKey,
+      )
+      if (Object.keys(validationErrors).length > 0) {
+        setFieldErrors(validationErrors)
+        return
+      }
     }
 
-    const hiddenEkiciQuestions = allOturumQuestions.filter(isEkiciProducerQuestion)
-    const questionsToSubmit = getQuestionsToSubmit(
-      [...visibleQuestions, ...hiddenEkiciQuestions],
-      answers,
-      initialAnswers,
-    )
+    const questionsToSubmit =
+      mode === 'draft'
+        ? draftQuestionsToSubmit
+        : sortSurveyFillQuestions(
+            getQuestionsToSubmit(
+              [...visibleQuestions, ...hiddenEkiciQuestions],
+              answers,
+              initialAnswers,
+            ),
+          )
+
     if (questionsToSubmit.length === 0) {
-      setSubmitError('Kaydedilecek yeni cevap bulunmuyor.')
+      setSubmitError(
+        mode === 'draft'
+          ? 'Taslak olarak kaydedilecek yeni cevap bulunmuyor.'
+          : 'Kaydedilecek yeni cevap bulunmuyor.',
+      )
       return
     }
 
@@ -372,11 +412,16 @@ export function SurveyFillForm({
       onSuccess: () => {
         setLastSavedCount(savedCount)
         setInitialAnswers({ ...answers })
+        setSuccessModalVariant(mode)
         setSuccessModalOpen(true)
       },
       onError: (error) => setSubmitError(getErrorMessage(error)),
     })
   }
+
+  const handleSubmitAnswers = () => handleSaveAnswers('full')
+
+  const handleSaveDraft = () => handleSaveAnswers('draft')
 
   const renderQuestions = () => {
     if (showQuestionsLoading) {
@@ -545,6 +590,15 @@ export function SurveyFillForm({
 
           <div className="flex flex-wrap justify-end gap-2">
             <Button
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={!canSubmit || !sessionEkiciId || draftQuestionsToSubmit.length === 0}
+              loading={submitCevapBatch.isPending || oturumQuery.isFetching}
+            >
+              <FilePen className="h-4 w-4" />
+              Cevaplanan soruları taslağa kaydet
+            </Button>
+            <Button
               onClick={handleSubmitAnswers}
               disabled={!canSubmit || !sessionEkiciId}
               loading={submitCevapBatch.isPending || oturumQuery.isFetching}
@@ -559,6 +613,7 @@ export function SurveyFillForm({
         open={successModalOpen}
         onClose={() => setSuccessModalOpen(false)}
         answeredCount={lastSavedCount}
+        variant={successModalVariant}
       />
     </>
   )

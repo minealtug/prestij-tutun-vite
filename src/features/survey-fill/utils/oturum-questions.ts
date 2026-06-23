@@ -254,3 +254,23 @@ export function getQuestionsToSubmit(
     return true
   })
 }
+
+export function getDraftQuestionsToSubmit(
+  questions: AnketYanitSoruDto[],
+  answers: Record<string, string>,
+  initialAnswers: Record<string, string>,
+  answerTypeLookup?: AnswerTypeKindLookup,
+  manualEntryByKey: Record<string, boolean> = {},
+): AnketYanitSoruDto[] {
+  return questions.filter((question) => {
+    const key = getQuestionKey(question)
+    const value = answers[key] ?? ''
+    const initial = initialAnswers[key] ?? ''
+    const manual = manualEntryByKey[key] ?? false
+
+    if (!isQuestionAnswered(question, value, answerTypeLookup, manual)) return false
+    if (value === initial) return false
+
+    return true
+  })
+}
