@@ -52,6 +52,8 @@ const OZET_SEED: AnketCevapOzetItem[] = [
     ekiciAd: 'Test',
     ekiciSoyad: 'Ekici',
     mintikaAdi: 'KALE',
+    bolgeAdi: 'EGE',
+    menseiAdi: 'TÜRKİYE',
     baslikAdi: 'Sezon Sonu Anketi',
     sablonAdi: 'Sezon Sonu Anketi',
     sonIslemTarihi: '2026-05-20T14:32:00.000Z',

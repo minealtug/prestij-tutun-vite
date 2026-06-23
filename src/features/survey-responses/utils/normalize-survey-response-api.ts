@@ -70,6 +70,8 @@ export function mapAnketCevapOzetFromApi(raw: unknown): AnketCevapOzetItem | nul
     ekiciAd: String(pick(row, 'ekiciAd', 'EkiciAd') ?? ''),
     ekiciSoyad: String(pick(row, 'ekiciSoyad', 'EkiciSoyad') ?? ''),
     mintikaAdi: String(pick(row, 'mintikaAdi', 'MintikaAdi') ?? ''),
+    bolgeAdi: String(pick(row, 'bolgeAdi', 'BolgeAdi') ?? '') || undefined,
+    menseiAdi: String(pick(row, 'menseiAdi', 'MenseiAdi') ?? '') || undefined,
     baslikAdi: String(pick(row, 'baslikAdi', 'BaslikAdi') ?? ''),
     sablonAdi: String(pick(row, 'sablonAdi', 'SablonAdi') ?? ''),
     kullaniciAdi: String(
