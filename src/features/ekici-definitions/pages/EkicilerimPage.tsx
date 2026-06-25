@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { FileSpreadsheet } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { PageContainer } from '@/components/layout/PageContainer'
@@ -16,6 +18,7 @@ import { buildMyEkiciTableRows, getLatestCevapForEkici } from '../utils/merge-ek
 import { DEFAULT_EKICILERIM_ANKET_BASLIK_ID } from '../utils/ekici-anket-durumu'
 import { buildSurveyFillLinkFromEkici } from '@/features/survey-fill/utils/survey-fill-navigation'
 import type { MyEkiciTableRow } from '../components/MyEkicilerTable'
+import { exportMyEkicilerToExcel } from '../utils/export-my-ekiciler-excel'
 
 function matchesEkiciSearch(ekici: EkiciDefinitionDto, query: string) {
   const fields = [
@@ -88,6 +91,11 @@ export function EkicilerimPage() {
       ? 'Arama kriterlerinize uygun ekici kaydı bulunamadı.'
       : 'Mıntıkanızda kayıtlı ekici bulunmuyor.'
 
+  const selectedSurveyName = useMemo(() => {
+    if (!anketSelected) return undefined
+    return anketOptions.find((option) => option.value === selectedBaslikId)?.label
+  }, [anketOptions, anketSelected, selectedBaslikId])
+
   const isLoading = ekicilerQuery.isLoading || cevaplarQuery.isLoading || surveysQuery.isLoading
   const isError = ekicilerQuery.isError || cevaplarQuery.isError
 
@@ -104,6 +112,15 @@ export function EkicilerimPage() {
         ekici: row,
       }),
     )
+  }
+
+  const handleExportExcel = () => {
+    if (tableRows.length === 0) return
+
+    exportMyEkicilerToExcel(tableRows, {
+      anketSelected,
+      surveyName: selectedSurveyName,
+    })
   }
 
   if (permissionLoading) {
@@ -127,25 +144,37 @@ export function EkicilerimPage() {
   return (
     <PageContainer>
       <div className="app-table-shell !rounded-md">
-        <div className="flex flex-col gap-3 border-b border-[#ececec] px-4 py-3 lg:flex-row lg:items-end">
-          <div className="min-w-0 flex-1 sm:max-w-xs">
-            <Select
-              label="Anket"
-              value={selectedBaslikId}
-              onChange={(e) => setSelectedBaslikId(e.target.value)}
-              options={anketOptions}
-              disabled={surveysQuery.isLoading}
-            />
+        <div className="flex flex-col gap-3 border-b border-[#ececec] px-4 py-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-end">
+            <div className="min-w-0 flex-1 sm:max-w-xs">
+              <Select
+                label="Anket"
+                value={selectedBaslikId}
+                onChange={(e) => setSelectedBaslikId(e.target.value)}
+                options={anketOptions}
+                disabled={surveysQuery.isLoading}
+              />
+            </div>
+            <div className="min-w-0 flex-1 sm:max-w-lg">
+              <Input
+                className="!h-9"
+                placeholder="Ad, soyad, TC, bölge, mıntıka, köy..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                aria-label="Ekici ara"
+              />
+            </div>
           </div>
-          <div className="min-w-0 flex-1 sm:max-w-lg">
-            <Input
-              className="!h-9"
-              placeholder="Ad, soyad, TC, bölge, mıntıka, köy..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              aria-label="Ekici ara"
-            />
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 border-green-600 bg-transparent text-green-700 hover:bg-green-50"
+            onClick={handleExportExcel}
+            disabled={isLoading || tableRows.length === 0}
+          >
+            <FileSpreadsheet className="h-4 w-4" aria-hidden />
+            Excel'e Aktar
+          </Button>
         </div>
 
         <MyEkicilerTable
