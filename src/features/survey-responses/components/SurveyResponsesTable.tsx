@@ -179,6 +179,8 @@ export function SurveyResponsesTable({
                             sablonId={row.sablonId}
                             baslikId={row.baslikId}
                             kategoriAdi={kategoriAdi}
+                            ekiciAdi={getOzetFullName(row)}
+                            anketAdi={getOzetSurveyName(row)}
                             enabled={isOpen}
                             columnBorders={columnBorders}
                           />

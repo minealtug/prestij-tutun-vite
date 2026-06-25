@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Filter } from 'lucide-react'
+import { FileSpreadsheet, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
@@ -9,6 +9,7 @@ import { useRequirePagePermission } from '@/features/permissions/hooks/use-requi
 import { SurveyResponseStatsCards } from '../components/SurveyResponseStatsCards'
 import { SurveyResponsesTable } from '../components/SurveyResponsesTable'
 import { useMySurveyResponses } from '../hooks/use-survey-responses'
+import { exportMySurveyResponsesToExcel } from '../utils/export-my-survey-responses-excel'
 
 function toSelectOptions(values: string[], placeholder: string) {
   return [{ value: '', label: placeholder }, ...values.map((value) => ({ value, label: value }))]
@@ -68,6 +69,15 @@ export function MySurveyResponsesPage() {
     [data, anketAdiFilter, ekiciFilter],
   )
 
+  const handleExportExcel = () => {
+    if (filteredData.length === 0) return
+
+    exportMySurveyResponsesToExcel(filteredData, {
+      anketFilter: anketAdiFilter,
+      ekiciFilter: ekiciFilter,
+    })
+  }
+
   if (permissionLoading) {
     return (
       <PageContainer>
@@ -125,6 +135,18 @@ export function MySurveyResponsesPage() {
       </Card>
 
       <Card className="overflow-hidden !rounded-md !p-0" interactive={false}>
+        <div className="flex justify-end border-b border-[#ececec] px-4 py-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-green-600 bg-transparent text-green-700 hover:bg-green-50"
+            onClick={handleExportExcel}
+            disabled={responsesQuery.isLoading || filteredData.length === 0}
+          >
+            <FileSpreadsheet className="h-4 w-4" aria-hidden />
+            Excel'e Aktar
+          </Button>
+        </div>
         <SurveyResponsesTable
           data={filteredData}
           isLoading={responsesQuery.isLoading}

@@ -48,7 +48,7 @@ export function Header() {
             fullName={user?.fullName ?? 'Kullanıcı'}
             fotografUrl={user?.fotografUrl}
             cacheKey={user?.id}
-            className="h-8 w-8 border-0 bg-primary-500"
+            className="h-8 w-8 border-0 bg-transparent"
             imageClassName="h-8 w-8"
             initialsClassName="font-bold text-white"
           />
