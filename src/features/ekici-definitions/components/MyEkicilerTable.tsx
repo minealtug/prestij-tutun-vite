@@ -68,7 +68,12 @@ export function MyEkicilerTable({
       header: 'Ekici',
       className: 'min-w-[150px]',
       render: (row) => (
-        <div className="leading-snug">
+        <div
+          className={cn(
+            'leading-snug',
+            row.aktif !== 1 && 'border-l-2 border-red-500 pl-2',
+          )}
+        >
           <div className="font-medium text-foreground">{getEkiciFullNameDisplay(row)}</div>
           <div className="text-[11px] text-muted">{row.tcKimlikNo || '—'}</div>
         </div>
