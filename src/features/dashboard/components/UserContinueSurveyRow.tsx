@@ -81,8 +81,8 @@ export function UserContinueSurveyRow({ item, rank }: UserContinueSurveyRowProps
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground">{title}</p>
-              <p className="mt-0.5 truncate text-xs text-muted">{subtitle}</p>
+              <p className="truncate text-sm font-semibold text-foreground">{subtitle}</p>
+              <p className="mt-0.5 truncate text-xs text-muted">{title}</p>
             </div>
             <Button size="sm" onClick={() => navigate(fillLink ?? '/anket-doldurma')}>
               Devam Et

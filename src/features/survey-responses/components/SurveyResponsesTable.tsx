@@ -10,7 +10,7 @@ import {
   getOzetKullaniciAdi,
   getOzetSurveyName,
 } from '../types/survey-response.types'
-import { formatSonIslemTarihi } from '../utils/map-anket-cevap'
+import { formatSonIslemTarihi, getSurveyResponseRowClassName } from '../utils/map-anket-cevap'
 import { SurveyResponseAnswersPanel } from './SurveyResponseAnswersPanel'
 
 interface SurveyResponsesTableProps {
@@ -140,7 +140,8 @@ export function SurveyResponsesTable({
                     <tr
                       className={cn(
                         'cursor-pointer',
-                        isOpen && 'bg-[#fff9f0]',
+                        getSurveyResponseRowClassName(row),
+                        isOpen && 'ring-1 ring-inset ring-primary-300',
                       )}
                       onClick={() => toggle(row.id)}
                       onKeyDown={(e) => {

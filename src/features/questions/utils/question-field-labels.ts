@@ -1,6 +1,3 @@
-import type { BagliKosulTipi } from './bagli-kosul-tipi'
-import { BAGLI_KOSUL_BUYUK_ESIT } from './bagli-kosul-tipi'
-
 export const SECENEK_GRUP_LABEL = 'Cevap seçenekleri'
 export const SECENEK_GRUP_LINKED_LABEL = 'Bu sorunun cevap seçenekleri'
 export const SECENEK_GRUP_PLACEHOLDER = 'Cevap seçeneklerini seçin'
@@ -23,22 +20,6 @@ export function getBagliSoruTriggerLabel(parentSecenekGrupLabel?: string): strin
   const trimmed = parentSecenekGrupLabel?.trim()
   if (!trimmed) return BAGLI_SORU_TRIGGER_LABEL
   return `Üst soruda seçilecek cevap (${trimmed})`
-}
-
-export function getBagliSoruVisibilityHint(
-  parentSecenekGrupLabel: string | undefined,
-  bagliKosulTipi: BagliKosulTipi | string,
-  options?: { linkedExisting?: boolean },
-): string {
-  const listeAdi = parentSecenekGrupLabel?.trim() || 'üst sorunun cevap listesinden'
-  const subject = options?.linkedExisting ? 'Bağlanacak soru' : 'Bu soru'
-
-  const kosul =
-    bagliKosulTipi === BAGLI_KOSUL_BUYUK_ESIT
-      ? 'Seçilen cevap ve üzerindeki değerler verildiğinde görünür (ör. 2 seçilince 1 ve 2 için tanımlı sorular birlikte açılır).'
-      : 'Yalnızca seçilen cevap verildiğinde görünür.'
-
-  return `${subject}, üst soruda "${listeAdi}" listesinden cevap verildiğinde görünür. ${kosul}`
 }
 
 export function formatSecenekGrupOptionLabel(secenekGrupId: number, optionNames: string): string {

@@ -32,7 +32,6 @@ import {
   SECENEK_GRUP_LOADING,
   SECENEK_GRUP_PLACEHOLDER,
   getBagliSoruTriggerLabel,
-  getBagliSoruVisibilityHint,
 } from '../utils/question-field-labels'
 import { clearLinkedChildTriggers, clearLinkedChildAltSecenekIds } from '../utils/clear-linked-child-triggers'
 import { AltSecenekSelect } from './AltSecenekSelect'
@@ -431,12 +430,6 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
                 onChange={(e) => setBagliKosulTipi(normalizeBagliKosulTipi(e.target.value))}
                 options={BAGLI_KOSUL_TIPI_OPTIONS}
               />
-              <p className="text-xs text-muted">
-                {getBagliSoruVisibilityHint(
-                  getSecenekGrupLabel(trigger.secenekGrupId),
-                  bagliKosulTipi,
-                )}
-              </p>
             </>
           ) : null}
         </div>
@@ -692,13 +685,6 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
                       onChange={(e) => setBagliKosulTipi(normalizeBagliKosulTipi(e.target.value))}
                       options={BAGLI_KOSUL_TIPI_OPTIONS}
                     />
-                    <p className="text-xs text-muted">
-                      {getBagliSoruVisibilityHint(
-                        getSecenekGrupLabel(parentSecenekGrupId),
-                        bagliKosulTipi,
-                        { linkedExisting: true },
-                      )}
-                    </p>
                   </>
                 ) : null}
               </div>

@@ -69,11 +69,11 @@ export const sidebarSections: NavSection[] = [
   {
     items: [
       { to: '/', label: 'Ana Sayfa', icon: LayoutDashboard, end: true },
+      { to: '/ekicilerim', label: 'Ekicilerim', icon: UserRound },
       { to: '/soru-yonetimi', label: 'Soru Ekleme', icon: FileQuestion },
       { to: '/anket-doldurma', label: 'Anket Doldurma Ekranı', icon: ClipboardPen },
       { to: '/anket-cevaplari', label: 'Cevaplanan Anketler', icon: MessageSquareReply },
       { to: '/cevapladigim-anketler', label: 'Cevapladığım Anketler', icon: MessageSquareReply },
-      { to: '/ekicilerim', label: 'Ekicilerim', icon: UserRound },
       { to: '/raporlar', label: 'Raporlar', icon: BarChart3 },
       {
         label: 'Tanımlamalar',

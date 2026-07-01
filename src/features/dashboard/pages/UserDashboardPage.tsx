@@ -8,14 +8,17 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSION_DENIED_KEY } from '@/features/permissions/hooks/use-require-page-permission'
 import { useMySurveyResponses } from '@/features/survey-responses/hooks/use-survey-responses'
-import { useEkiciDefinitions } from '@/features/ekici-definitions/hooks/use-ekici-definitions'
+import {
+  useEkiciDefinitions,
+  useMyEkiciler,
+} from '@/features/ekici-definitions/hooks/use-ekici-definitions'
+import { useMintikas } from '@/features/users/hooks/use-users'
 import { computeSurveyResponseStats } from '@/features/survey-responses/utils/compute-survey-response-stats'
 import { UserSurveyStatusPieChart } from '../components/UserSurveyStatusPieChart'
 import { UserSurveyMetricChartCard } from '../components/UserSurveyMetricChartCard'
 import { UserContinueSurveysCard } from '../components/UserContinueSurveysCard'
-import { UserCompletedSurveysCard } from '../components/UserCompletedSurveysCard'
-import { UserMintikaDistributionCard } from '../components/UserMintikaDistributionCard'
-import { UserIncompleteSurveysChartCard } from '../components/UserIncompleteSurveysChartCard'
+import { UserFilledEkiciCard } from '../components/UserFilledEkiciCard'
+import { UserFormStatusTableCard } from '../components/UserFormStatusTableCard'
 import { enrichSurveysWithEkiciLocations } from '../utils/enrich-survey-location'
 import { groupUserDashboardSurveys } from '../utils/user-dashboard-survey-groups'
 
@@ -36,7 +39,9 @@ export function UserDashboardPage() {
   const user = useAuthStore((state) => state.user)
   const userId = user?.id
   const responsesQuery = useMySurveyResponses(userId)
+  const myEkicilerQuery = useMyEkiciler()
   const ekicilerQuery = useEkiciDefinitions()
+  const mintikasQuery = useMintikas()
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000)
@@ -63,14 +68,32 @@ export function UserDashboardPage() {
   }).format(now)
 
   const data = useMemo(() => responsesQuery.data ?? [], [responsesQuery.data])
+  const myEkiciIds = useMemo(
+    () =>
+      (myEkicilerQuery.data ?? [])
+        .filter((ekici) => ekici.aktif === 1)
+        .map((ekici) => ekici.id),
+    [myEkicilerQuery.data],
+  )
+  const ekiciCoverageLoading = responsesQuery.isLoading || myEkicilerQuery.isLoading
   const enrichedData = useMemo(() => {
     const ekiciler = ekicilerQuery.data ?? []
-    if (ekiciler.length === 0) return data
+    const mintikaById = new Map<number, string>()
+
+    for (const mintika of mintikasQuery.data ?? []) {
+      if (mintika.adi?.trim()) mintikaById.set(mintika.id, mintika.adi.trim())
+    }
+    for (const ekici of ekiciler) {
+      if (ekici.mintikaId > 0 && ekici.mintikaAdi?.trim()) {
+        mintikaById.set(ekici.mintikaId, ekici.mintikaAdi.trim())
+      }
+    }
 
     const ekiciById = new Map(
       ekiciler.map((ekici) => [
         ekici.id,
         {
+          mintikaId: ekici.mintikaId,
           menseiAdi: ekici.menseiAdi,
           bolgeAdi: ekici.bolgeAdi,
           mintikaAdi: ekici.mintikaAdi,
@@ -78,8 +101,8 @@ export function UserDashboardPage() {
       ]),
     )
 
-    return enrichSurveysWithEkiciLocations(data, ekiciById)
-  }, [data, ekicilerQuery.data])
+    return enrichSurveysWithEkiciLocations(data, ekiciById, mintikaById)
+  }, [data, ekicilerQuery.data, mintikasQuery.data])
 
   const groups = useMemo(() => groupUserDashboardSurveys(enrichedData), [enrichedData])
   const stats = useMemo(() => computeSurveyResponseStats(enrichedData), [enrichedData])
@@ -88,8 +111,8 @@ export function UserDashboardPage() {
 
   const tamamlanmaTrend =
     stats.tamamlanmaOrani != null
-      ? `Genel tamamlanma oranı %${stats.tamamlanmaOrani}`
-      : 'Henüz anket kaydı yok'
+      ? `Form tamamlama oranı %${stats.tamamlanmaOrani}`
+      : 'Henüz form kaydı yok'
 
   return (
     <PageContainer>
@@ -111,7 +134,7 @@ export function UserDashboardPage() {
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,320px)]">
         <Card
-          title="Anket Durumu"
+          title="Ekici form tamamlama durumu"
           description={tamamlanmaTrend}
           interactive={false}
         >
@@ -129,7 +152,7 @@ export function UserDashboardPage() {
             percent={getStatusPercent(groups.completed.length, totalSurveyCount)}
             color="#10b981"
             icon={CheckCircle2}
-            description="Toplam anketleriniz içindeki payı"
+            description="Toplam formlarınız içindeki payı"
             isLoading={responsesQuery.isLoading}
           />
           <UserSurveyMetricChartCard
@@ -138,12 +161,13 @@ export function UserDashboardPage() {
             percent={getStatusPercent(groups.partial.length, totalSurveyCount)}
             color="#f59e0b"
             icon={CircleAlert}
-            description="Devam etmeniz gereken anketler"
+            description="Devam etmeniz gereken formlar"
             isLoading={responsesQuery.isLoading}
           />
-          <UserMintikaDistributionCard
-            surveys={enrichedData}
-            isLoading={responsesQuery.isLoading}
+          <UserFilledEkiciCard
+            ekiciIds={myEkiciIds}
+            surveys={data}
+            isLoading={ekiciCoverageLoading}
           />
         </div>
       </section>
@@ -154,13 +178,9 @@ export function UserDashboardPage() {
         isLoading={responsesQuery.isLoading}
       />
 
-      <UserCompletedSurveysCard
-        completedSurveys={groups.completed}
-        isLoading={responsesQuery.isLoading}
-      />
-
-      <UserIncompleteSurveysChartCard
-        surveys={enrichedData}
+      <UserFormStatusTableCard
+        completedForms={groups.completed}
+        partialForms={groups.partial}
         isLoading={responsesQuery.isLoading}
       />
     </PageContainer>

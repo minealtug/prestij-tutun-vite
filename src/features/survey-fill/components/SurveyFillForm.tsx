@@ -656,7 +656,6 @@ export function SurveyFillForm({
           <SurveyFillQuestionField
             key={key}
             question={question}
-            allQuestions={questionsWithOptions}
             displayNumber={getQuestionDisplayNumber(visibleQuestions, question)}
             value={answers[key] ?? ''}
             error={fieldErrors[key]}

@@ -1,10 +1,14 @@
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx-js-style'
 import type { AnketCevapOzetItem } from '../types/survey-response.types'
 import {
   getOzetFullName,
   getOzetKullaniciAdi,
   getOzetSurveyName,
 } from '../types/survey-response.types'
+import {
+  applySurveyResponseRowFills,
+  getSurveyResponseExcelFillRgb,
+} from './excel-survey-response-row-fill'
 import { formatSonIslemTarihi } from './map-anket-cevap'
 
 function formatExportDate(): string {
@@ -42,6 +46,11 @@ export function exportMySurveyResponsesToExcel(
   }))
 
   const worksheet = XLSX.utils.json_to_sheet(sheetRows)
+  applySurveyResponseRowFills(
+    worksheet,
+    rows.map((row) => getSurveyResponseExcelFillRgb(row)),
+  )
+
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Cevapladığım Anketler')
 
@@ -52,5 +61,5 @@ export function exportMySurveyResponsesToExcel(
   const filterPart = filterParts.length > 0 ? `-${filterParts.join('-')}` : ''
   const filename = `cevapladigim-anketler${filterPart}-${formatExportDate()}.xlsx`
 
-  XLSX.writeFile(workbook, filename)
+  XLSX.writeFile(workbook, filename, { cellStyles: true })
 }

@@ -10,7 +10,6 @@ import type { AnswerTypeKindLookup } from '../utils/build-answer-type-kind-looku
 import { getFriendlyAnswerTypeLabel } from '@/features/questions/utils/answer-type-label'
 import { getQuestionKey } from '../utils/question-key'
 import { getSurveyFillQuestionLabel } from '../utils/is-ekici-producer-question'
-import { resolveLinkedQuestionTriggerHint } from '../utils/resolve-linked-question-trigger-hint'
 import { resolveSurveyFillBirimAdi } from '../utils/resolve-survey-fill-birim-adi'
 import {
   parseMultiSelectValue,
@@ -24,7 +23,6 @@ import {
 
 interface SurveyFillQuestionFieldProps {
   question: SurveyFillSoruView
-  allQuestions?: SurveyFillSoruView[]
   /** Verilmezse soru numarası gösterilmez (üretimi yapan kişi sorusu). */
   displayNumber?: number
   value: string
@@ -175,7 +173,6 @@ function renderAnswerControl(
 
 export function SurveyFillQuestionField({
   question,
-  allQuestions = [],
   displayNumber,
   value,
   error,
@@ -203,12 +200,6 @@ export function SurveyFillQuestionField({
     value: String(option.id),
     label: option.adi,
   }))
-  const linkedTriggerHint = resolveLinkedQuestionTriggerHint(
-    question,
-    allQuestions,
-    answerTypeLookup,
-  )
-
   return (
     <article
       id={`survey-fill-question-${getQuestionKey(question)}`}
@@ -233,11 +224,6 @@ export function SurveyFillQuestionField({
           {birimAdi && (
             <p className="text-xs text-muted">
               Birim: <span className="font-medium text-foreground">{birimAdi}</span>
-            </p>
-          )}
-          {linkedTriggerHint && (
-            <p className="rounded-md border border-primary-200/80 bg-primary-50/80 px-2.5 py-1.5 text-xs leading-snug text-primary-800">
-              {linkedTriggerHint}
             </p>
           )}
         </div>

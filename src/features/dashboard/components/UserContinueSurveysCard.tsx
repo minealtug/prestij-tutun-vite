@@ -24,7 +24,7 @@ export function UserContinueSurveysCard({
     <Card
       className="border-amber-200/80 bg-amber-50/20"
       title="Kaldığınız yerden devam edin"
-      description={isLoading ? undefined : 'Öncelikli yarım anketleriniz'}
+      description={isLoading ? undefined : 'Öncelikli yarım ekici formlarınız'}
       accent
       footer={
         hasMore ? (
@@ -32,14 +32,14 @@ export function UserContinueSurveysCard({
             to="/cevapladigim-anketler"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700"
           >
-            Tüm yarım anketleri gör ({partialSurveys.length})
+            Tüm yarım formları gör ({partialSurveys.length})
             <ChevronRight className="h-4 w-4" />
           </Link>
         ) : undefined
       }
     >
       {isLoading ? (
-        <p className="text-sm text-muted">Anketleriniz yükleniyor…</p>
+        <p className="text-sm text-muted">Formlarınız yükleniyor…</p>
       ) : partialSurveys.length > 0 ? (
         <div className="space-y-3">
           {stalePartialCount > 0 ? (
@@ -49,16 +49,16 @@ export function UserContinueSurveysCard({
             >
               <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <p>
-                <span className="font-semibold">{stalePartialCount} anket</span> bir haftadan uzun
+                <span className="font-semibold">{stalePartialCount} ekici formu</span> bir haftadan uzun
                 süredir yarım — listenin üstündekiler en acil olanlar.
               </p>
             </div>
           ) : null}
 
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">Öncelikli anketler</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">Öncelikli formlar</p>
             <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-              {partialSurveys.length} yarım anket
+              {partialSurveys.length} yarım form
             </span>
           </div>
 
@@ -72,8 +72,8 @@ export function UserContinueSurveysCard({
         <EmptyState
           compact
           icon={CheckCircle2}
-          title="Yarım anket yok"
-          description="Devam eden anketiniz bulunmuyor. Tamamladığınız kayıtlar aşağıda listelenir."
+          title="Yarım form yok"
+          description="Devam eden ekici formunuz bulunmuyor."
         />
       )}
     </Card>

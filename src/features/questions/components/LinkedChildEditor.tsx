@@ -9,7 +9,6 @@ import {
   GORUNME_KOSULU_LABEL,
   SECENEK_GRUP_LINKED_LABEL,
   getBagliSoruTriggerLabel,
-  getBagliSoruVisibilityHint,
 } from '../utils/question-field-labels'
 import { AltSecenekSelect } from './AltSecenekSelect'
 import { AltSecenekMultiSelect } from './AltSecenekMultiSelect'
@@ -205,9 +204,6 @@ export function LinkedChildEditor({
                   options={BAGLI_KOSUL_TIPI_OPTIONS}
                   disabled={readOnly}
                 />
-                <p className="text-xs text-muted">
-                  {getBagliSoruVisibilityHint(parentTriggerGrupLabel, child.bagliKosulTipi)}
-                </p>
               </div>
             ) : null}
 
@@ -251,7 +247,6 @@ export function LinkedChildEditor({
                   }))
                 }
                 options={secenekGrupOptions}
-                disabled={secenekGruplariLoading}
                 disabled={secenekGruplariLoading}
               />
             </div>

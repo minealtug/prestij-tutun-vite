@@ -61,6 +61,9 @@ export function mapAnketCevapOzetFromApi(raw: unknown): AnketCevapOzetItem | nul
 
   const baslikIdRaw = Number(pick(row, 'baslikId', 'BaslikId') ?? NaN)
   const baslikId = Number.isFinite(baslikIdRaw) && baslikIdRaw > 0 ? baslikIdRaw : undefined
+  const mintikaIdRaw = Number(pick(row, 'mintikaId', 'MintikaId') ?? NaN)
+  const mintikaId =
+    Number.isFinite(mintikaIdRaw) && mintikaIdRaw > 0 ? mintikaIdRaw : undefined
 
   return {
     id: getAnketCevapRowId(ekiciId, sablonId, baslikId),
@@ -69,6 +72,7 @@ export function mapAnketCevapOzetFromApi(raw: unknown): AnketCevapOzetItem | nul
     sablonId,
     ekiciAd: String(pick(row, 'ekiciAd', 'EkiciAd') ?? ''),
     ekiciSoyad: String(pick(row, 'ekiciSoyad', 'EkiciSoyad') ?? ''),
+    mintikaId,
     mintikaAdi: String(pick(row, 'mintikaAdi', 'MintikaAdi') ?? ''),
     bolgeAdi: String(pick(row, 'bolgeAdi', 'BolgeAdi') ?? '') || undefined,
     menseiAdi: String(pick(row, 'menseiAdi', 'MenseiAdi') ?? '') || undefined,

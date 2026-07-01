@@ -35,6 +35,7 @@ export interface AnketCevapOzetItem {
   sablonId: number
   ekiciAd: string
   ekiciSoyad: string
+  mintikaId?: number
   mintikaAdi: string
   bolgeAdi?: string
   menseiAdi?: string

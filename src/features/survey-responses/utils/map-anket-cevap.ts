@@ -179,3 +179,20 @@ export function formatSonIslemTarihi(iso: string): string {
   })
   return `${day} ${time}`
 }
+
+export function getSurveyResponseRowClassName(
+  item: Pick<AnketCevapOzetItem, 'yanitlananSoruSayisi' | 'yanitlanmayanSoruSayisi'>,
+): string | undefined {
+  const answered = Math.max(0, item.yanitlananSoruSayisi)
+  const unanswered = Math.max(0, item.yanitlanmayanSoruSayisi)
+
+  if (unanswered === 0 && answered > 0) {
+    return 'app-table-row--completed'
+  }
+
+  if (answered > 0 && unanswered > 0) {
+    return 'app-table-row--in-progress'
+  }
+
+  return undefined
+}

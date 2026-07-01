@@ -15,8 +15,8 @@ interface UserSurveyStatusPieChartProps {
 }
 
 const SLICE_DEFINITIONS: Omit<UserSurveyStatusSlice, 'value'>[] = [
-  { key: 'completed', name: 'Tamamladığım', color: '#10b981' },
-  { key: 'partial', name: 'Yarım kalan', color: '#f59e0b' },
+  { key: 'completed', name: 'Tamamlanan form', color: '#10b981' },
+  { key: 'partial', name: 'Yarım kalan form', color: '#f59e0b' },
 ]
 
 function buildSlices(completed: number, partial: number): UserSurveyStatusSlice[] {
@@ -51,7 +51,7 @@ function ChartTooltip({
     <div className="rounded-lg border border-[#d4dde8] bg-white px-3 py-2 text-sm shadow-md">
       <p className="font-medium text-foreground">{item.name}</p>
       <p className="mt-0.5 text-muted">
-        {value.toLocaleString('tr-TR')} anket · %{percent}
+        {value.toLocaleString('tr-TR')} form · %{percent}
       </p>
     </div>
   )
@@ -72,7 +72,7 @@ export function UserSurveyStatusPieChart({
   if (total === 0) {
     return (
       <p className="py-16 text-center text-sm text-muted">
-        Grafik için henüz anket kaydı bulunmuyor.
+        Grafik için henüz form kaydı bulunmuyor.
       </p>
     )
   }
@@ -81,7 +81,7 @@ export function UserSurveyStatusPieChart({
     <div className="w-full">
       <p className="mb-2 text-center text-sm text-muted">
         Toplam{' '}
-        <span className="font-semibold text-foreground">{total.toLocaleString('tr-TR')}</span> anket
+        <span className="font-semibold text-foreground">{total.toLocaleString('tr-TR')}</span> form
       </p>
 
       <div className="h-[280px] w-full">
