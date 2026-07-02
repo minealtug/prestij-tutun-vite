@@ -10,5 +10,6 @@ export function useEkiciler(params?: CografiFiltreQueryParams, enabled = true) {
     queryKey: queryKeys.surveyFill.ekiciler(params ?? {}),
     queryFn: () => ekiciApi.getByCurrentUserMintika(params),
     enabled: enabled && mintikaReady,
+    staleTime: 0,
   })
 }

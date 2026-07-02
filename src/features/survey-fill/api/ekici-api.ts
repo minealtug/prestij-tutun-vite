@@ -14,9 +14,7 @@ function toEkiciQuery(params?: CografiFiltreQueryParams): Record<string, unknown
 
 export const ekiciApi = {
   getByCurrentUserMintika: async (params?: CografiFiltreQueryParams): Promise<EkiciDto[]> => {
-    const raw = await apiClient.get<unknown[]>('/api/Ekici/mintikam', {
-      params: toEkiciQuery(params),
-    })
+    const raw = await apiClient.get<unknown[]>('/api/Ekici/mintikam', toEkiciQuery(params))
     return mapEkicilerFromApi(raw)
   },
 }

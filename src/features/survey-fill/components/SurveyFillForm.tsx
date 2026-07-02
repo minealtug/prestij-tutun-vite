@@ -717,21 +717,23 @@ export function SurveyFillForm({
           {ekicilerQuery.isLoading ? (
             <Skeleton className="h-11 w-full rounded-lg" />
           ) : (
-            <SearchableSelect
-              label="Ekici"
-              value={sessionEkiciId ?? ''}
-              onChange={handleEkiciChange}
-              options={ekiciOptions}
-              disabled={ekicilerQuery.isLoading || !geoCascade.queryParams.mintikaId}
-              placeholder="Ad veya soyad ile ekici ara..."
-              emptyMessage={
-                geoCascade.queryParams.koyId
-                  ? 'Seçilen köyde ekici bulunamadı'
-                  : geoCascade.queryParams.alimNoktasiId
-                    ? 'Seçilen alım noktasında ekici bulunamadı'
-                    : 'Eşleşen ekici bulunamadı'
-              }
-            />
+            <div className="space-y-1">
+              <SearchableSelect
+                label="Ekici"
+                value={sessionEkiciId ?? ''}
+                onChange={handleEkiciChange}
+                options={ekiciOptions}
+                disabled={ekicilerQuery.isLoading || !geoCascade.queryParams.mintikaId}
+                placeholder="Ad veya soyad ile ekici ara..."
+                emptyMessage={
+                  geoCascade.queryParams.koyId
+                    ? 'Seçilen köyde ekici bulunamadı'
+                    : geoCascade.queryParams.alimNoktasiId
+                      ? 'Seçilen alım noktasında ekici bulunamadı'
+                      : 'Eşleşen ekici bulunamadı'
+                }
+              />
+            </div>
           )}
 
           {isSelectedEkiciPassive && selectedEkici && (

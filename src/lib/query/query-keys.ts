@@ -55,7 +55,8 @@ export const queryKeys = {
   },
   surveyFill: {
     ekicilerRoot: ['survey-fill', 'ekiciler'] as const,
-    ekiciler: (params?: object) => ['survey-fill', 'ekiciler', params ?? {}] as const,
+    ekiciler: (params?: object) =>
+      ['survey-fill', 'ekiciler', JSON.stringify(params ?? {})] as const,
     sablonlar: (baslikId: number) => ['survey-fill', 'sablonlar', baslikId] as const,
     oturum: (params: { baslikId: number; sablonId: number; ekiciId: string }) =>
       ['survey-fill', 'oturum', params] as const,
