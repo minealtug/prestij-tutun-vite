@@ -81,6 +81,7 @@ export function mapEkiciDefinitionFromApi(raw: unknown): EkiciDefinitionDto | nu
     cinsiyet: readNullableString(pick(row, 'cinsiyet', 'Cinsiyet')),
     icralik: readBool(pick(row, 'icralik', 'Icralik')),
     ekiciDurumId: readNumber(pick(row, 'ekiciDurumId', 'EkiciDurumId'), 1),
+    ekiciDurumAdi: readNullableString(pick(row, 'ekiciDurumAdi', 'EkiciDurumAdi')),
     aktif: readNumber(pick(row, 'aktif', 'Aktif'), 1),
     makineKodu: readString(pick(row, 'makineKodu', 'MakineKodu')) || '000',
     uretimMerkeziId: readNumber(pick(row, 'uretimMerkeziId', 'UretimMerkeziId')),

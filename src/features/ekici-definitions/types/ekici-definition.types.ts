@@ -22,6 +22,7 @@ export interface EkiciDefinitionDto {
   cinsiyet: string | null
   icralik: boolean
   ekiciDurumId: number
+  ekiciDurumAdi: string | null
   aktif: number
   makineKodu: string
   uretimMerkeziId: number

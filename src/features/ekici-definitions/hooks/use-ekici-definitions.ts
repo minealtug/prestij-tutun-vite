@@ -14,6 +14,14 @@ export function useEkiciDefinitions() {
   })
 }
 
+export function useEkiciDurumOptions() {
+  return useQuery({
+    queryKey: queryKeys.ekiciDefinitions.durumlar,
+    queryFn: () => ekiciDefinitionsApi.getDurumlar(),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
 export function useMyEkiciler(
   params?: CografiFiltreQueryParams,
   options?: { requireMintika?: boolean },

@@ -1,16 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Skeleton } from '@/components/feedback/Skeleton'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
-import { PageContainer } from '@/components/layout/PageContainer'
-import { CografiFiltreFields } from '@/features/cografi-filtre/components/CografiFiltreFields'
-import { useCografiFiltreCascade } from '@/features/cografi-filtre/hooks/use-cografi-filtre-cascade'
-import { useCografiFiltreOptions } from '@/features/cografi-filtre/hooks/use-cografi-filtre-options'
-import type { CografiFiltreQueryParams } from '@/features/cografi-filtre/types'
-import { hasCografiFiltreSelection } from '@/features/cografi-filtre/types'
-import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { getErrorMessage } from '@/lib/api/api-error'
+import { PageContainer } from '@/components/layout/PageContainer'
+import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { EkiciDefinitionForm } from '../components/EkiciDefinitionForm'
 import { EkiciDefinitionsTable } from '../components/EkiciDefinitionsTable'
 import {
@@ -64,20 +58,6 @@ function matchesEkiciSearch(ekici: EkiciDefinitionDto, query: string) {
     .some((value) => String(value).toLocaleLowerCase('tr-TR').includes(query))
 }
 
-function matchesCografiFiltre(
-  ekici: EkiciDefinitionDto,
-  params: CografiFiltreQueryParams,
-): boolean {
-  if (params.menseiId != null && ekici.menseiId !== params.menseiId) return false
-  if (params.bolgeId != null && ekici.bolgeId !== params.bolgeId) return false
-  if (params.mintikaId != null && ekici.mintikaId !== params.mintikaId) return false
-  if (params.alimNoktasiId != null && ekici.alimNoktasiId !== params.alimNoktasiId) {
-    return false
-  }
-  if (params.koyId != null && ekici.koyId !== params.koyId) return false
-  return true
-}
-
 function isFormValid(values: ReturnType<typeof createEmptyEkiciFormValues>) {
   return (
     values.tcKimlikNo.trim().length > 0 &&
@@ -100,8 +80,6 @@ export function EkiciDefinitionsPage() {
   const ekicilerQuery = useEkiciDefinitions()
   const createEkici = useCreateEkiciDefinition()
   const updateEkici = useUpdateEkiciDefinition()
-  const cografiFiltreQuery = useCografiFiltreOptions()
-  const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
 
   const [search, setSearch] = useState('')
   const [createModalOpen, setCreateModalOpen] = useState(false)
@@ -113,23 +91,15 @@ export function EkiciDefinitionsPage() {
   const [editValues, setEditValues] = useState(createEmptyEkiciFormValues)
   const [editError, setEditError] = useState('')
 
-  const hasGeoFilter = hasCografiFiltreSelection(geoCascade.queryParams)
-
   const filteredEkiciler = useMemo(() => {
     const items = ekicilerQuery.data ?? []
     const query = search.trim().toLocaleLowerCase('tr-TR')
-
-    return items.filter((ekici) => {
-      if (hasGeoFilter && !matchesCografiFiltre(ekici, geoCascade.queryParams)) {
-        return false
-      }
-      if (query && !matchesEkiciSearch(ekici, query)) return false
-      return true
-    })
-  }, [ekicilerQuery.data, geoCascade.queryParams, hasGeoFilter, search])
+    if (!query) return items
+    return items.filter((ekici) => matchesEkiciSearch(ekici, query))
+  }, [ekicilerQuery.data, search])
 
   const tableEmptyMessage =
-    search.trim().length > 0 || hasGeoFilter
+    search.trim().length > 0
       ? 'Arama kriterlerinize uygun ekici kaydı bulunamadı.'
       : 'Henüz ekici kaydı bulunmuyor.'
 
@@ -214,47 +184,22 @@ export function EkiciDefinitionsPage() {
   return (
     <PageContainer>
       <div className="app-table-shell !rounded-md">
-        <div className="flex flex-col gap-3 border-b border-[#ececec] px-4 py-3">
-          {cografiFiltreQuery.isLoading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Skeleton key={index} className="h-11 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : (
-            <CografiFiltreFields
-              values={geoCascade.values}
-              selectOptions={geoCascade.selectOptions}
-              onMenseiChange={geoCascade.setMenseiId}
-              onBolgeChange={geoCascade.setBolgeId}
-              onMintikaChange={geoCascade.setMintikaId}
-              onAlimNoktasiChange={geoCascade.setAlimNoktasiId}
-              onKoyChange={geoCascade.setKoyId}
+        <div className="flex flex-col gap-3 border-b border-[#ececec] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 flex-1 sm:max-w-lg">
+            <Input
+              className="!h-9"
+              placeholder="Ad, soyad, TC, bölge, mıntıka, köy..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Ekici ara"
             />
-          )}
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0 flex-1 sm:max-w-lg">
-              <Input
-                className="!h-9"
-                placeholder="Ad, soyad, TC, bölge, mıntıka, köy..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                aria-label="Ekici ara"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              {ekicilerQuery.data && (
-                <p className="shrink-0 text-xs text-muted">
-                  Gösterilen: {filteredEkiciler.length} / {ekicilerQuery.data.length} kayıt
-                </p>
-              )}
-              {canEdit && (
-                <Button onClick={openCreateModal}>
-                  Yeni Ekici
-                </Button>
-              )}
-            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {canEdit && (
+              <Button onClick={openCreateModal}>
+                Yeni Ekici
+              </Button>
+            )}
           </div>
         </div>
 
@@ -332,6 +277,7 @@ export function EkiciDefinitionsPage() {
             disabled
             idPrefix="view-ekici"
             uretimMerkeziOptions={uretimMerkeziOptions}
+            ekiciDurumAdi={viewingEkici.ekiciDurumAdi}
             locationLabels={{
               menseiAdi: viewingEkici.menseiAdi,
               bolgeAdi: viewingEkici.bolgeAdi,
@@ -375,6 +321,7 @@ export function EkiciDefinitionsPage() {
             disabled={updateEkici.isPending}
             idPrefix="edit-ekici"
             uretimMerkeziOptions={uretimMerkeziOptions}
+            ekiciDurumAdi={editingEkici?.ekiciDurumAdi}
             locationLabels={
               editingEkici
                 ? {

@@ -11,6 +11,7 @@ import {
   getMintikalarForBolge,
 } from '@/features/survey-responses/utils/cografi-filtre'
 import type { EkiciDefinitionFormValues } from '../types/ekici-definition.types'
+import { useEkiciDurumOptions } from '../hooks/use-ekici-definitions'
 import { formatEkiciDisplayText } from '../utils/format-ekici-display-text'
 
 interface EkiciDefinitionFormProps {
@@ -25,12 +26,8 @@ interface EkiciDefinitionFormProps {
     alimNoktasiAdi?: string | null
     koyAdi?: string | null
   }
+  ekiciDurumAdi?: string | null
   uretimMerkeziOptions?: { value: string; label: string }[]
-}
-
-const EKICI_DURUM_LABELS: Record<number, string> = {
-  1: 'Aktif',
-  2: 'Pasif',
 }
 
 const CINSIYET_OPTIONS = [
@@ -99,15 +96,17 @@ function toSelectOptions(
   return options
 }
 
-function getEkiciDurumOptions(currentId: number) {
-  const ids = new Set<number>([1, 2, currentId].filter((id) => id > 0))
-  return [
-    { value: '', label: 'Durum seçin' },
-    ...[...ids].sort((a, b) => a - b).map((id) => ({
-      value: String(id),
-      label: EKICI_DURUM_LABELS[id] ?? `Durum #${id}`,
-    })),
-  ]
+function getEkiciDurumOptions(
+  items: { id: number; adi: string }[],
+  selectedId?: number,
+  selectedLabel?: string | null,
+) {
+  return toSelectOptions(
+    items.map((item) => ({ id: item.id, adi: item.adi })),
+    'Durum seçin',
+    selectedId,
+    selectedLabel,
+  )
 }
 
 export function EkiciDefinitionForm({
@@ -116,10 +115,12 @@ export function EkiciDefinitionForm({
   disabled = false,
   idPrefix = 'ekici',
   locationLabels,
+  ekiciDurumAdi,
   uretimMerkeziOptions = [],
 }: EkiciDefinitionFormProps) {
   const cografiFiltreQuery = useCografiFiltreOptions()
   const cografiFiltre = cografiFiltreQuery.data
+  const ekiciDurumQuery = useEkiciDurumOptions()
 
   const set = <K extends keyof EkiciDefinitionFormValues>(key: K, value: EkiciDefinitionFormValues[K]) => {
     onChange({ ...values, [key]: value })
@@ -198,11 +199,17 @@ export function EkiciDefinitionForm({
   }, [uretimMerkeziOptions, values.uretimMerkeziId])
 
   const ekiciDurumOptions = useMemo(
-    () => getEkiciDurumOptions(values.ekiciDurumId),
-    [values.ekiciDurumId],
+    () =>
+      getEkiciDurumOptions(
+        ekiciDurumQuery.data ?? [],
+        values.ekiciDurumId,
+        ekiciDurumAdi,
+      ),
+    [ekiciDurumQuery.data, values.ekiciDurumId, ekiciDurumAdi],
   )
 
   const geoDisabled = disabled || cografiFiltreQuery.isLoading
+  const durumDisabled = disabled || ekiciDurumQuery.isLoading
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -394,9 +401,9 @@ export function EkiciDefinitionForm({
         label="Ekici Durumu"
         value={values.ekiciDurumId > 0 ? String(values.ekiciDurumId) : ''}
         options={ekiciDurumOptions}
-        disabled={disabled}
+        disabled={durumDisabled}
         required
-        onChange={(e) => set('ekiciDurumId', Number(e.target.value) || 1)}
+        onChange={(e) => set('ekiciDurumId', Number(e.target.value) || 0)}
       />
 
       <SectionTitle>Durum</SectionTitle>
