@@ -363,8 +363,8 @@ function buildColumns(
     },
     {
       key: 'uretimMerkeziYetki',
-      header: 'ÜM',
-      className: 'hidden xl:table-cell w-[4.5rem]',
+      header: 'Üretim Merkezi',
+      className: 'hidden xl:table-cell min-w-[7rem]',
       render: (row) => (
         <BoolBadge value={row.uretimMerkeziYetki} trueLabel="Var" falseLabel="Yok" />
       ),
