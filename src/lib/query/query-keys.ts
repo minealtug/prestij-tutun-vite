@@ -34,7 +34,9 @@ export const queryKeys = {
   },
   ekiciDefinitions: {
     all: ['ekici-definitions'] as const,
-    mintikam: ['ekici-definitions', 'mintikam'] as const,
+    mintikamRoot: ['ekici-definitions', 'mintikam'] as const,
+    mintikam: (params?: object) =>
+      ['ekici-definitions', 'mintikam', JSON.stringify(params ?? {})] as const,
   },
   permissions: {
     menus: ['permissions', 'menus'] as const,

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { CografiFiltreQueryParams } from '@/features/cografi-filtre/types'
 import { queryKeys } from '@/lib/query/query-keys'
 import { ekiciDefinitionsApi } from '../api/ekici-definitions-api'
 import type {
@@ -13,10 +14,18 @@ export function useEkiciDefinitions() {
   })
 }
 
-export function useMyEkiciler() {
+export function useMyEkiciler(
+  params?: CografiFiltreQueryParams,
+  options?: { requireMintika?: boolean },
+) {
+  const scoped = params !== undefined
+  const requireMintika = options?.requireMintika ?? scoped
+  const mintikaReady = Boolean(params?.mintikaId)
+
   return useQuery({
-    queryKey: queryKeys.ekiciDefinitions.mintikam,
-    queryFn: () => ekiciDefinitionsApi.getByCurrentUserMintika(),
+    queryKey: queryKeys.ekiciDefinitions.mintikam(params ?? {}),
+    queryFn: () => ekiciDefinitionsApi.getByCurrentUserMintika(params),
+    enabled: !scoped || !requireMintika || mintikaReady,
   })
 }
 
@@ -43,18 +52,6 @@ export function useUpdateEkiciDefinition() {
       id: string
       payload: UpdateEkiciDefinitionRequest
     }) => ekiciDefinitionsApi.update(id, payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.ekiciDefinitions.all })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.surveyFill.ekicilerRoot })
-    },
-  })
-}
-
-export function useDeleteEkiciDefinition() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (id: string) => ekiciDefinitionsApi.delete(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.ekiciDefinitions.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.surveyFill.ekicilerRoot })

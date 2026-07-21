@@ -33,6 +33,8 @@ interface SurveyFillQuestionFieldProps {
   selectLoading?: boolean
   answerTypeLookup?: AnswerTypeKindLookup
   disabled?: boolean
+  /** Ekici bilgisinden otomatik doldurulmuş; kullanıcı değiştiremez */
+  locked?: boolean
   useManualEntry?: boolean
   onEnableManualEntry?: () => void
   onDisableManualEntry?: () => void
@@ -182,12 +184,14 @@ export function SurveyFillQuestionField({
   selectLoading = false,
   answerTypeLookup,
   disabled = false,
+  locked = false,
   useManualEntry = false,
   onEnableManualEntry,
   onDisableManualEntry,
   answerUnitsById,
 }: SurveyFillQuestionFieldProps) {
   const fieldId = `survey-fill-${getQuestionKey(question)}`
+  const fieldDisabled = disabled || locked
   const kind = resolveEffectiveQuestionInputKind(question, answerTypeLookup, useManualEntry)
   const showSecenekDropdown =
     kind === 'select' && hasSecenekGrupDropdown(question) && !useManualEntry
@@ -207,7 +211,7 @@ export function SurveyFillQuestionField({
         'rounded-xl border border-border/80 bg-surface-elevated/60 p-4 sm:p-5',
         question.bagliSoru && 'ml-3 border-l-4 border-l-primary-300/70 sm:ml-4',
         error && 'border-red-300/80 ring-1 ring-red-200',
-        disabled && 'opacity-70',
+        fieldDisabled && 'opacity-70',
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -225,6 +229,9 @@ export function SurveyFillQuestionField({
             <p className="text-xs text-muted">
               Birim: <span className="font-medium text-foreground">{birimAdi}</span>
             </p>
+          )}
+          {locked && (
+            <p className="text-xs text-muted">Ekici bilgisinden otomatik dolduruldu.</p>
           )}
         </div>
         {question.zorunlu && (
@@ -261,36 +268,40 @@ export function SurveyFillQuestionField({
                     },
                     ...selectOptions,
                   ]}
-                  disabled={disabled || selectLoading || selectOptions.length === 0}
+                  disabled={fieldDisabled || selectLoading || selectOptions.length === 0}
                   error={error}
                 />
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="md"
-                className="h-10 w-10 shrink-0 px-0"
-                onClick={onEnableManualEntry}
-                disabled={disabled}
-                title="Listede yoksa manuel giriş yap"
-                aria-label="Manuel cevap gir"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+              {!locked && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  className="h-10 w-10 shrink-0 px-0"
+                  onClick={onEnableManualEntry}
+                  disabled={fieldDisabled}
+                  title="Listede yoksa manuel giriş yap"
+                  aria-label="Manuel cevap gir"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-            <p className="text-xs text-muted">
-              Listede cevabınız yoksa + ile manuel giriş yapabilirsiniz.
-            </p>
+            {!locked && (
+              <p className="text-xs text-muted">
+                Listede cevabınız yoksa + ile manuel giriş yapabilirsiniz.
+              </p>
+            )}
           </div>
         ) : (
           <>
-            {useManualEntry && onDisableManualEntry ? (
+            {useManualEntry && onDisableManualEntry && !locked ? (
               <div className="mb-2 flex justify-end">
                 <button
                   type="button"
                   className="text-xs font-medium text-primary-600 hover:text-primary-700"
                   onClick={onDisableManualEntry}
-                  disabled={disabled}
+                  disabled={fieldDisabled}
                 >
                   Listeden seç
                 </button>
@@ -300,7 +311,7 @@ export function SurveyFillQuestionField({
               fieldId,
               value,
               error,
-              disabled: disabled || (kind === 'multiSelect' && selectLoading),
+              disabled: fieldDisabled || (kind === 'multiSelect' && selectLoading),
               onChange,
               ekiciOptions,
               ekiciLoading,

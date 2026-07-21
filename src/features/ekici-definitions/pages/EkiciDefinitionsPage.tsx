@@ -9,7 +9,6 @@ import { EkiciDefinitionForm } from '../components/EkiciDefinitionForm'
 import { EkiciDefinitionsTable } from '../components/EkiciDefinitionsTable'
 import {
   useCreateEkiciDefinition,
-  useDeleteEkiciDefinition,
   useEkiciDefinitions,
   useUpdateEkiciDefinition,
 } from '../hooks/use-ekici-definitions'
@@ -33,6 +32,7 @@ function toViewFormValues(ekici: EkiciDefinitionDto) {
     babaAdi: formatEkiciDisplayText(values.babaAdi) || values.babaAdi,
     anaAdi: formatEkiciDisplayText(values.anaAdi) || values.anaAdi,
     dogumYeri: formatEkiciDisplayText(values.dogumYeri) || values.dogumYeri,
+    cinsiyet: values.cinsiyet || '—',
   }
 }
 
@@ -80,7 +80,6 @@ export function EkiciDefinitionsPage() {
   const ekicilerQuery = useEkiciDefinitions()
   const createEkici = useCreateEkiciDefinition()
   const updateEkici = useUpdateEkiciDefinition()
-  const deleteEkici = useDeleteEkiciDefinition()
 
   const [search, setSearch] = useState('')
   const [createModalOpen, setCreateModalOpen] = useState(false)
@@ -148,7 +147,7 @@ export function EkiciDefinitionsPage() {
   }
 
   const openEdit = (ekici: EkiciDefinitionDto) => {
-    if (!canEdit || ekici.kaynak !== 'AppDb') return
+    if (!canEdit) return
     setEditingEkici(ekici)
     setEditValues(ekiciDefinitionToFormValues(ekici))
     setEditError('')
@@ -170,23 +169,6 @@ export function EkiciDefinitionsPage() {
         onError: (error) => setEditError(getErrorMessage(error)),
       },
     )
-  }
-
-  const handleDelete = (id: string) => {
-    if (!canEdit) return
-
-    const ekici = (ekicilerQuery.data ?? []).find((item) => item.id === id)
-    if (ekici?.kaynak !== 'AppDb') return
-
-    const label = ekici ? getEkiciFullNameDisplay(ekici) : 'Bu ekici'
-    if (!window.confirm(`${label} kaydını silmek istediğinize emin misiniz?`)) return
-
-    deleteEkici.mutate(id, {
-      onSuccess: () => {
-        if (editingEkici?.id === id) closeEdit()
-        if (viewingEkici?.id === id) closeView()
-      },
-    })
   }
 
   if (permissionLoading) {
@@ -229,9 +211,7 @@ export function EkiciDefinitionsPage() {
           onRefresh={() => void ekicilerQuery.refetch()}
           onView={openView}
           onEdit={canEdit ? openEdit : undefined}
-          onDelete={canEdit ? handleDelete : undefined}
           isUpdating={updateEkici.isPending}
-          isDeleting={deleteEkici.isPending}
           emptyMessage={tableEmptyMessage}
         />
       </div>
@@ -240,7 +220,7 @@ export function EkiciDefinitionsPage() {
         open={createModalOpen}
         onClose={closeCreateModal}
         title="Yeni Ekici"
-    
+        size="xl"
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={closeCreateModal}>
@@ -275,6 +255,7 @@ export function EkiciDefinitionsPage() {
       <Modal
         open={Boolean(viewingEkici)}
         onClose={closeView}
+        size="xl"
         title={viewingEkici ? `${getEkiciFullNameDisplay(viewingEkici)} — Detay` : 'Ekici Detayı'}
         description={
           viewingEkici?.kaynak === 'LegacyDb'
@@ -310,8 +291,13 @@ export function EkiciDefinitionsPage() {
       <Modal
         open={Boolean(editingEkici)}
         onClose={closeEdit}
+        size="xl"
         title={editingEkici ? `${getEkiciFullNameDisplay(editingEkici)} — Düzenle` : 'Ekici Düzenle'}
-        description="Yalnızca uygulama veritabanındaki ekici kayıtları güncellenebilir."
+        description={
+          editingEkici?.kaynak === 'LegacyDb'
+            ? 'Legacy kayıt değiştirilmez; güncel hali uygulama veritabanına kaydedilir.'
+            : 'Ekici kaydını güncelleyin.'
+        }
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={closeEdit}>

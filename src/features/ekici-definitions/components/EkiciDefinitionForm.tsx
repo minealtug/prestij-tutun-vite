@@ -33,6 +33,12 @@ const EKICI_DURUM_LABELS: Record<number, string> = {
   2: 'Pasif',
 }
 
+const CINSIYET_OPTIONS = [
+  { value: '', label: 'Cinsiyet seçin' },
+  { value: 'Erkek', label: 'Erkek' },
+  { value: 'Kadın', label: 'Kadın' },
+]
+
 function CheckboxField({
   label,
   checked,
@@ -255,6 +261,14 @@ export function EkiciDefinitionForm({
         onChange={(e) => set('dogumTarihi', e.target.value)}
         disabled={disabled}
         required
+      />
+      <Select
+        id={`${idPrefix}-cinsiyet`}
+        label="Cinsiyet"
+        value={values.cinsiyet}
+        options={CINSIYET_OPTIONS}
+        disabled={disabled}
+        onChange={(e) => set('cinsiyet', e.target.value)}
       />
       <Input
         id={`${idPrefix}-yil`}

@@ -13,9 +13,7 @@ interface EkiciDefinitionsTableProps {
   onRefresh: () => void
   onView?: (ekici: EkiciDefinitionDto) => void
   onEdit?: (ekici: EkiciDefinitionDto) => void
-  onDelete?: (id: string) => void
   isUpdating?: boolean
-  isDeleting?: boolean
   emptyMessage?: string
 }
 
@@ -51,9 +49,7 @@ export function EkiciDefinitionsTable({
   onRefresh,
   onView,
   onEdit,
-  onDelete,
   isUpdating = false,
-  isDeleting = false,
   emptyMessage = 'Henüz ekici kaydı bulunmuyor.',
 }: EkiciDefinitionsTableProps) {
   const columns: TableColumn<EkiciDefinitionDto>[] = [
@@ -110,15 +106,14 @@ export function EkiciDefinitionsTable({
       className: 'w-14',
       render: (row) => <AktifBadge aktif={row.aktif} />,
     },
-    ...(onView || onEdit || onDelete
+    ...(onView || onEdit
       ? [
           {
             key: 'actions',
             header: 'İşlemler',
-            className: 'min-w-[190px]',
+            className: 'min-w-[140px]',
             render: (row: EkiciDefinitionDto) => {
-              const isAppDb = row.kaynak === 'AppDb'
-              const actionsDisabled = isUpdating || isDeleting
+              const actionsDisabled = isUpdating
 
               return (
                 <div className="flex flex-wrap gap-1">
@@ -133,7 +128,7 @@ export function EkiciDefinitionsTable({
                       Görüntüle
                     </Button>
                   )}
-                  {onEdit && isAppDb && (
+                  {onEdit && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -142,17 +137,6 @@ export function EkiciDefinitionsTable({
                       onClick={() => onEdit(row)}
                     >
                       Düzenle
-                    </Button>
-                  )}
-                  {onDelete && isAppDb && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`${actionButtonClass} !text-red-600`}
-                      disabled={actionsDisabled}
-                      onClick={() => onDelete(row.id)}
-                    >
-                      Sil
                     </Button>
                   )}
                 </div>

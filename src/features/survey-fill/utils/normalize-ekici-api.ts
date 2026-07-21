@@ -1,4 +1,5 @@
 import type { EkiciDto } from '../types/ekici.types'
+import { toDateInputValue } from './date-input-value'
 
 function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
   for (const key of keys) {
@@ -22,6 +23,19 @@ function readAktif(raw: unknown): number {
   return Number.isFinite(num) ? num : 1
 }
 
+function readOptionalText(raw: unknown): string | null {
+  const text = String(raw ?? '').trim()
+  return text || null
+}
+
+function readDogumTarihi(raw: unknown): string | null {
+  const normalized = toDateInputValue(raw == null ? null : String(raw))
+  if (!normalized) return null
+  const year = Number(normalized.slice(0, 4))
+  if (!Number.isFinite(year) || year < 1900) return null
+  return normalized
+}
+
 export function isEkiciActive(ekici: Pick<EkiciDto, 'aktif'>): boolean {
   return ekici.aktif === 1
 }
@@ -41,6 +55,8 @@ export function mapEkiciFromApi(raw: unknown): EkiciDto | null {
     soyad: String(pick(row, 'soyad', 'Soyad') ?? '').trim(),
     mintikaId: readNumber(pick(row, 'mintikaId', 'MintikaId')),
     aktif: readAktif(pick(row, 'aktif', 'Aktif')),
+    cinsiyet: readOptionalText(pick(row, 'cinsiyet', 'Cinsiyet')),
+    dogumTarihi: readDogumTarihi(pick(row, 'dogumTarihi', 'DogumTarihi')),
   }
 }
 

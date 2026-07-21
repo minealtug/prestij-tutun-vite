@@ -70,6 +70,8 @@ export function YetkilendirmePage() {
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([])
   const [initialDepartmanIds, setInitialDepartmanIds] = useState<number[]>([])
   const [initialUserIds, setInitialUserIds] = useState<number[]>([])
+  const [departmanSearch, setDepartmanSearch] = useState('')
+  const [userSearch, setUserSearch] = useState('')
   const [assignError, setAssignError] = useState('')
 
   const filteredMenus = useMemo(() => {
@@ -115,9 +117,31 @@ export function YetkilendirmePage() {
     () =>
       (usersQuery.data ?? [])
         .filter((u) => u.aktif)
-        .map((u) => ({ id: u.id, label: u.fullName || u.userName })),
+        .map((u) => ({
+          id: u.id,
+          label: u.fullName || u.userName,
+          userName: u.userName,
+        })),
     [usersQuery.data],
   )
+
+  const filteredDepartmanSecimList = useMemo(() => {
+    const query = departmanSearch.trim().toLocaleLowerCase('tr-TR')
+    if (!query) return departmanSecimList
+    return departmanSecimList.filter((item) =>
+      item.label.toLocaleLowerCase('tr-TR').includes(query),
+    )
+  }, [departmanSecimList, departmanSearch])
+
+  const filteredUserSecimList = useMemo(() => {
+    const query = userSearch.trim().toLocaleLowerCase('tr-TR')
+    if (!query) return userSecimList
+    return userSecimList.filter(
+      (item) =>
+        item.label.toLocaleLowerCase('tr-TR').includes(query) ||
+        item.userName.toLocaleLowerCase('tr-TR').includes(query),
+    )
+  }, [userSecimList, userSearch])
 
   const uniqueMenuUrls = useMemo(
     () =>
@@ -196,6 +220,8 @@ export function YetkilendirmePage() {
     setInitialUserIds(userIds)
     setSelectedDepartmanIds(departmanIds)
     setSelectedUserIds(userIds)
+    setDepartmanSearch('')
+    setUserSearch('')
     setAssignError('')
     setAssignModalOpen(true)
   }
@@ -535,7 +561,14 @@ export function YetkilendirmePage() {
         footer={
           <div className="flex justify-end gap-2">
             {assignStep === 'list' && (
-              <Button variant="outline" onClick={() => setAssignStep('type')}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAssignStep('type')
+                  setDepartmanSearch('')
+                  setUserSearch('')
+                }}
+              >
                 <ArrowLeft className="h-4 w-4" />
                 Geri
               </Button>
@@ -596,27 +629,41 @@ export function YetkilendirmePage() {
           ) : assignType === 'departman' ? (
             <div className="space-y-2">
               <p className="text-sm text-muted">Bu menüyü görebilecek grupları seçin</p>
+              <Input
+                value={departmanSearch}
+                onChange={(e) => setDepartmanSearch(e.target.value)}
+                placeholder="Grup ara..."
+                aria-label="Grup ara"
+              />
               <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                {departmanSecimList.map((item) => {
-                  const checked = selectedDepartmanIds.includes(item.id)
-                  return (
-                    <label
-                      key={item.id}
-                      className="flex cursor-pointer items-center gap-3 border border-border px-3 py-2 hover:bg-muted/20"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => {
-                          setSelectedDepartmanIds((prev) =>
-                            e.target.checked ? [...prev, item.id] : prev.filter((id) => id !== item.id),
-                          )
-                        }}
-                      />
-                      <span className="text-sm text-foreground">{item.label}</span>
-                    </label>
-                  )
-                })}
+                {filteredDepartmanSecimList.length === 0 ? (
+                  <p className="px-1 py-4 text-center text-sm text-muted">
+                    Arama kriterlerinize uygun grup bulunamadı.
+                  </p>
+                ) : (
+                  filteredDepartmanSecimList.map((item) => {
+                    const checked = selectedDepartmanIds.includes(item.id)
+                    return (
+                      <label
+                        key={item.id}
+                        className="flex cursor-pointer items-center gap-3 border border-border px-3 py-2 hover:bg-muted/20"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            setSelectedDepartmanIds((prev) =>
+                              e.target.checked
+                                ? [...prev, item.id]
+                                : prev.filter((id) => id !== item.id),
+                            )
+                          }}
+                        />
+                        <span className="text-sm text-foreground">{item.label}</span>
+                      </label>
+                    )
+                  })
+                )}
               </div>
               <p className="text-xs text-muted">
                 <Check className="mr-1 inline h-3.5 w-3.5 text-green-600" />
@@ -626,27 +673,41 @@ export function YetkilendirmePage() {
           ) : (
             <div className="space-y-2">
               <p className="text-sm text-muted">Bu menüyü görebilecek personelleri seçin</p>
+              <Input
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Personel ara..."
+                aria-label="Personel ara"
+              />
               <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                {userSecimList.map((item) => {
-                  const checked = selectedUserIds.includes(item.id)
-                  return (
-                    <label
-                      key={item.id}
-                      className="flex cursor-pointer items-center gap-3 border border-border px-3 py-2 hover:bg-muted/20"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => {
-                          setSelectedUserIds((prev) =>
-                            e.target.checked ? [...prev, item.id] : prev.filter((id) => id !== item.id),
-                          )
-                        }}
-                      />
-                      <span className="text-sm text-foreground">{item.label}</span>
-                    </label>
-                  )
-                })}
+                {filteredUserSecimList.length === 0 ? (
+                  <p className="px-1 py-4 text-center text-sm text-muted">
+                    Arama kriterlerinize uygun personel bulunamadı.
+                  </p>
+                ) : (
+                  filteredUserSecimList.map((item) => {
+                    const checked = selectedUserIds.includes(item.id)
+                    return (
+                      <label
+                        key={item.id}
+                        className="flex cursor-pointer items-center gap-3 border border-border px-3 py-2 hover:bg-muted/20"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            setSelectedUserIds((prev) =>
+                              e.target.checked
+                                ? [...prev, item.id]
+                                : prev.filter((id) => id !== item.id),
+                            )
+                          }}
+                        />
+                        <span className="text-sm text-foreground">{item.label}</span>
+                      </label>
+                    )
+                  })
+                )}
               </div>
               <p className="text-xs text-muted">
                 <Check className="mr-1 inline h-3.5 w-3.5 text-green-600" />

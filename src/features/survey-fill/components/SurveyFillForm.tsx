@@ -50,6 +50,12 @@ import {
   detectInitialManualEntryKeys,
 } from '../utils/manual-entry'
 import { filterVisibleQuestionsForFill } from '../utils/resolve-linked-question-visibility'
+import {
+  buildKontratSahibiAutofill,
+  collectKontratSahibiTargetKeys,
+  isKontratSahibiSelected,
+  resolveKontratSahibiFieldKind,
+} from '../utils/kontrat-sahibi-autofill'
 import { SurveyFillSuccessModal } from './SurveyFillSuccessModal'
 import type { SurveyFillDeepLinkParams } from '../utils/survey-fill-navigation'
 
@@ -117,6 +123,7 @@ export function SurveyFillForm({
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [initialAnswers, setInitialAnswers] = useState<Record<string, string>>({})
   const [manualEntryByKey, setManualEntryByKey] = useState<Record<string, boolean>>({})
+  const [lockedAnswerKeys, setLockedAnswerKeys] = useState<Record<string, boolean>>({})
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [submitError, setSubmitError] = useState('')
 
@@ -232,11 +239,13 @@ export function SurveyFillForm({
 
   const ekiciOptions = useMemo(
     () =>
-      (ekicilerQuery.data ?? []).map((ekici) => ({
-        key: ekici.id,
-        value: ekici.id,
-        label: getEkiciFullName(ekici),
-      })),
+      (ekicilerQuery.data ?? [])
+        .filter((ekici) => isEkiciActive(ekici))
+        .map((ekici) => ({
+          key: ekici.id,
+          value: ekici.id,
+          label: getEkiciFullName(ekici),
+        })),
     [ekicilerQuery.data],
   )
 
@@ -287,6 +296,35 @@ export function SurveyFillForm({
   const previousGeoFilterKeyRef = useRef(geoFilterKey)
   const skipNextGeoClearRef = useRef(false)
   const deepLinkBootstrapKeyRef = useRef('')
+  const kontratSahibiAutofillSignatureRef = useRef('')
+
+  const kontratSahibiActive = useMemo(
+    () => isKontratSahibiSelected(questionsWithOptions, answers),
+    [questionsWithOptions, answers],
+  )
+
+  const kontratSahibiAutofillSignature = useMemo(() => {
+    if (!kontratSahibiActive) return 'inactive'
+    if (!selectedEkici) return 'active:no-ekici'
+
+    const optionsFingerprint = questionsWithOptions
+      .filter((question) => resolveKontratSahibiFieldKind(question) != null)
+      .map((question) => {
+        const optionIds = (question.altSecenekler ?? []).map((option) => option.id).join(',')
+        return `${getQuestionKey(question)}:${optionIds}`
+      })
+      .join(';')
+
+    return [
+      'active',
+      selectedEkici.id,
+      selectedEkici.cinsiyet ?? '',
+      selectedEkici.dogumTarihi ?? '',
+      selectedEkici.adi,
+      selectedEkici.soyad,
+      optionsFingerprint,
+    ].join('|')
+  }, [kontratSahibiActive, questionsWithOptions, selectedEkici])
 
   const deepLinkBootstrapKey = useMemo(
     () =>
@@ -304,6 +342,8 @@ export function SurveyFillForm({
     setAnswers({})
     setInitialAnswers({})
     setManualEntryByKey({})
+    setLockedAnswerKeys({})
+    kontratSahibiAutofillSignatureRef.current = ''
     setFieldErrors({})
     setSubmitError('')
     setSuccessModalOpen(false)
@@ -358,6 +398,8 @@ export function SurveyFillForm({
     setAnswers({})
     setInitialAnswers({})
     setManualEntryByKey({})
+    setLockedAnswerKeys({})
+    kontratSahibiAutofillSignatureRef.current = ''
     setFieldErrors({})
     setSubmitError('')
   }, [geoFilterKey])
@@ -372,6 +414,8 @@ export function SurveyFillForm({
       const manualKeys = detectInitialManualEntryKeys(questions, nextAnswers)
       const answersWithManual = applyManualEntryInitialAnswers(questions, nextAnswers, manualKeys)
       setManualEntryByKey(manualKeys)
+      setLockedAnswerKeys({})
+      kontratSahibiAutofillSignatureRef.current = ''
       setAnswers(answersWithManual)
       setInitialAnswers(answersWithManual)
       setFieldErrors({})
@@ -385,6 +429,8 @@ export function SurveyFillForm({
     const manualKeys = detectInitialManualEntryKeys(templateQuestions, nextAnswers)
     const answersWithManual = applyManualEntryInitialAnswers(templateQuestions, nextAnswers, manualKeys)
     setManualEntryByKey(manualKeys)
+    setLockedAnswerKeys({})
+    kontratSahibiAutofillSignatureRef.current = ''
     setAnswers(answersWithManual)
     setInitialAnswers(answersWithManual)
     setFieldErrors({})
@@ -395,6 +441,76 @@ export function SurveyFillForm({
     oturumQuery.data,
     answerTypeLookup,
     templateQuestions,
+  ])
+
+  useEffect(() => {
+    if (kontratSahibiAutofillSignatureRef.current === kontratSahibiAutofillSignature) return
+    kontratSahibiAutofillSignatureRef.current = kontratSahibiAutofillSignature
+
+    const targetKeys = collectKontratSahibiTargetKeys(questionsWithOptions)
+
+    if (!kontratSahibiActive || !selectedEkici) {
+      setLockedAnswerKeys((prev) => (Object.keys(prev).length === 0 ? prev : {}))
+
+      if (!kontratSahibiActive && targetKeys.length > 0) {
+        setAnswers((prev) => {
+          let changed = false
+          const next = { ...prev }
+          for (const key of targetKeys) {
+            if (key in next) {
+              delete next[key]
+              changed = true
+            }
+          }
+          return changed ? next : prev
+        })
+        setManualEntryByKey((prev) => {
+          let changed = false
+          const next = { ...prev }
+          for (const key of targetKeys) {
+            if (next[key]) {
+              delete next[key]
+              changed = true
+            }
+          }
+          return changed ? next : prev
+        })
+      }
+      return
+    }
+
+    const autofill = buildKontratSahibiAutofill(questionsWithOptions, selectedEkici)
+
+    setAnswers((prev) => {
+      let changed = false
+      const next = { ...prev }
+      for (const [key, value] of Object.entries(autofill.answers)) {
+        if (next[key] !== value) {
+          next[key] = value
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+
+    setLockedAnswerKeys(autofill.lockedKeys)
+
+    setManualEntryByKey((prev) => {
+      let changed = false
+      const next = { ...prev }
+      for (const key of Object.keys(autofill.lockedKeys)) {
+        if (next[key]) {
+          delete next[key]
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [
+    kontratSahibiActive,
+    kontratSahibiAutofillSignature,
+    questionsWithOptions,
+    selectedEkici,
   ])
 
   const handleRefresh = () => {
@@ -410,6 +526,8 @@ export function SurveyFillForm({
     setAnswers({})
     setInitialAnswers({})
     setManualEntryByKey({})
+    setLockedAnswerKeys({})
+    kontratSahibiAutofillSignatureRef.current = ''
     setFieldErrors({})
     setSubmitError('')
   }
@@ -663,6 +781,7 @@ export function SurveyFillForm({
             selectLoading={altSeceneklerQuery.isLoading}
             answerTypeLookup={answerTypeLookup}
             disabled={questionsDisabled}
+            locked={lockedAnswerKeys[key] ?? false}
             useManualEntry={manualEntryByKey[key] ?? false}
             onEnableManualEntry={() => handleEnableManualEntry(key)}
             onDisableManualEntry={() => handleDisableManualEntry(key)}

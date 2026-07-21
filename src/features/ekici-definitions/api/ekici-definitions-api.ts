@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api/api-client'
+import type { CografiFiltreQueryParams } from '@/features/cografi-filtre/types'
 import type {
   CreateEkiciDefinitionRequest,
   EkiciDefinitionDto,
@@ -10,14 +11,26 @@ import {
   toEkiciDefinitionPayload,
 } from '../utils/normalize-ekici-definition-api'
 
+function toEkiciQuery(params?: CografiFiltreQueryParams): Record<string, unknown> {
+  const record: Record<string, unknown> = {}
+  if (params?.menseiId != null) record.menseiId = params.menseiId
+  if (params?.bolgeId != null) record.bolgeId = params.bolgeId
+  if (params?.mintikaId != null) record.mintikaId = params.mintikaId
+  if (params?.alimNoktasiId != null) record.alimNoktasiId = params.alimNoktasiId
+  if (params?.koyId != null) record.koyId = params.koyId
+  return record
+}
+
 export const ekiciDefinitionsApi = {
   getAll: async (): Promise<EkiciDefinitionDto[]> => {
     const raw = await apiClient.get<unknown[]>('/api/Ekici')
     return mapEkiciDefinitionsFromApi(raw)
   },
 
-  getByCurrentUserMintika: async (): Promise<EkiciDefinitionDto[]> => {
-    const raw = await apiClient.get<unknown[]>('/api/Ekici/mintikam')
+  getByCurrentUserMintika: async (
+    params?: CografiFiltreQueryParams,
+  ): Promise<EkiciDefinitionDto[]> => {
+    const raw = await apiClient.get<unknown[]>('/api/Ekici/mintikam', toEkiciQuery(params))
     return mapEkiciDefinitionsFromApi(raw)
   },
 
@@ -45,9 +58,5 @@ export const ekiciDefinitionsApi = {
     const mapped = mapEkiciDefinitionFromApi(ekiciRaw)
     if (!mapped) throw new Error('Ekici kaydı güncellenemedi.')
     return mapped
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete<void>(`/api/Ekici/${id}`)
   },
 }

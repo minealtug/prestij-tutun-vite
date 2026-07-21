@@ -19,6 +19,7 @@ export interface EkiciDefinitionDto {
   anaAdi: string | null
   dogumYeri: string | null
   dogumTarihi: string
+  cinsiyet: string | null
   icralik: boolean
   ekiciDurumId: number
   aktif: number
@@ -44,6 +45,7 @@ export interface EkiciDefinitionFormValues {
   anaAdi: string
   dogumYeri: string
   dogumTarihi: string
+  cinsiyet: string
   icralik: boolean
   ekiciDurumId: number
   aktif: number
