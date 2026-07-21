@@ -2,10 +2,12 @@ import type {
   AlimNoktasiDto,
   BolgeDto,
   CografiFiltreOptionsDto,
+  CografiFiltreQueryParams,
   FilterOptionDto,
   KoyDto,
   MintikaDto,
 } from '../types'
+import { hasCografiFiltreSelection } from '../types'
 
 function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
   for (const key of keys) {
@@ -114,4 +116,49 @@ export function toSelectOptions(
   const options = [{ value: '', label: placeholder }]
   items.forEach((item) => options.push({ value: String(item.id), label: item.adi }))
   return options
+}
+
+/**
+ * Seçilen coğrafi filtreye karşılık gelen mıntıka id listesi.
+ * Filtre yoksa `null` döner (tüm kayıtlar).
+ * Kullanıcı gibi yalnızca mıntıka alanı olan kayıtlarda istemci tarafı filtre için kullanılır.
+ */
+export function getMintikaIdsForCografiFiltre(
+  options: CografiFiltreOptionsDto,
+  params: CografiFiltreQueryParams,
+): number[] | null {
+  if (!hasCografiFiltreSelection(params)) return null
+
+  if (params.koyId) {
+    const koy = options.koyler.find((item) => item.id === params.koyId)
+    if (!koy) return []
+    const alim = options.alimNoktalari.find((item) => item.id === koy.alimNoktasiId)
+    return alim ? [alim.mintikaId] : []
+  }
+
+  if (params.alimNoktasiId) {
+    const alim = options.alimNoktalari.find((item) => item.id === params.alimNoktasiId)
+    return alim ? [alim.mintikaId] : []
+  }
+
+  if (params.mintikaId) return [params.mintikaId]
+
+  if (params.bolgeId) {
+    return options.mintikalar
+      .filter((item) => item.bolgeId === params.bolgeId)
+      .map((item) => item.id)
+  }
+
+  if (params.menseiId) {
+    const bolgeIds = new Set(
+      options.bolgeler
+        .filter((item) => item.menseiId === params.menseiId)
+        .map((item) => item.id),
+    )
+    return options.mintikalar
+      .filter((item) => bolgeIds.has(item.bolgeId))
+      .map((item) => item.id)
+  }
+
+  return null
 }

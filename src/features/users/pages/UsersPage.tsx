@@ -1,8 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Search, UserPlus } from 'lucide-react'
+import { Skeleton } from '@/components/feedback/Skeleton'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { CografiFiltreFields } from '@/features/cografi-filtre/components/CografiFiltreFields'
+import { useCografiFiltreCascade } from '@/features/cografi-filtre/hooks/use-cografi-filtre-cascade'
+import { useCografiFiltreOptions } from '@/features/cografi-filtre/hooks/use-cografi-filtre-options'
+import { getMintikaIdsForCografiFiltre } from '@/features/cografi-filtre/utils/cografi-filtre'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { getErrorMessage } from '@/lib/api/api-error'
 import { useAuthStore } from '@/stores/auth-store'
@@ -49,6 +54,8 @@ export function UsersPage() {
 
   const usersQuery = useUsers()
   const migrateMutation = useMigrateUsers()
+  const cografiFiltreQuery = useCografiFiltreOptions()
+  const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
 
   const handleMigrationConfirm = () => {
     setMigrationError(null)
@@ -70,9 +77,20 @@ export function UsersPage() {
   const filteredUsers = useMemo(() => {
     const items = usersQuery.data ?? []
     const query = search.trim().toLowerCase()
-    if (!query) return items
-    return items.filter((user) => matchesSearch(user, query))
-  }, [search, usersQuery.data])
+    const options = cografiFiltreQuery.data
+    const mintikaIds = options
+      ? getMintikaIdsForCografiFiltre(options, geoCascade.queryParams)
+      : null
+    const mintikaIdSet = mintikaIds ? new Set(mintikaIds) : null
+
+    return items.filter((user) => {
+      if (mintikaIdSet && (user.mintikaId == null || !mintikaIdSet.has(user.mintikaId))) {
+        return false
+      }
+      if (query && !matchesSearch(user, query)) return false
+      return true
+    })
+  }, [cografiFiltreQuery.data, geoCascade.queryParams, search, usersQuery.data])
 
   if (permissionLoading) {
     return (
@@ -109,21 +127,41 @@ export function UsersPage() {
       </div>
 
       <div className="w-full overflow-visible rounded-lg border border-[#e8ecf0] bg-white">
-        <div className="flex flex-col gap-3 border-b border-[#ececec] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-          <div className="relative min-w-0 flex-1 sm:max-w-lg">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <Input
-              className="!h-9 pl-9"
-              placeholder="Ad, kullanıcı adı, departman..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+        <div className="flex flex-col gap-3 border-b border-[#ececec] px-3 py-3 sm:px-4">
+          {cografiFiltreQuery.isLoading ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton key={index} className="h-11 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <CografiFiltreFields
+              values={geoCascade.values}
+              selectOptions={geoCascade.selectOptions}
+              onMenseiChange={geoCascade.setMenseiId}
+              onBolgeChange={geoCascade.setBolgeId}
+              onMintikaChange={geoCascade.setMintikaId}
+              onAlimNoktasiChange={geoCascade.setAlimNoktasiId}
+              onKoyChange={geoCascade.setKoyId}
             />
-          </div>
-          {usersQuery.data && (
-            <p className="shrink-0 text-xs text-muted sm:text-right">
-              Gösterilen: {filteredUsers.length} / {usersQuery.data.length} kayıt
-            </p>
           )}
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative min-w-0 flex-1 sm:max-w-lg">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <Input
+                className="!h-9 pl-9"
+                placeholder="Ad, kullanıcı adı, departman..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            {usersQuery.data && (
+              <p className="shrink-0 text-xs text-muted sm:text-right">
+                Gösterilen: {filteredUsers.length} / {usersQuery.data.length} kayıt
+              </p>
+            )}
+          </div>
         </div>
 
         <UsersTable
