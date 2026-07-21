@@ -148,6 +148,25 @@ async function fetchAnketCevapListFromApi(
   return mapAndFilterAnketCevapItems(items, params)
 }
 
+async function fetchAllAnketCevapListFromApi(): Promise<AnketCevapOzetItem[]> {
+  const menseiler = await fetchMenseilerForAnketOnlySearch()
+  if (menseiler.length === 0) {
+    const items = await apiClient.get<unknown[]>('/api/AnketCevap', {})
+    return mapAndFilterAnketCevapItems(items, {})
+  }
+
+  const lists = await Promise.all(
+    menseiler.map((mensei) =>
+      apiClient.get<unknown[]>('/api/AnketCevap', toQueryRecord({ menseiId: mensei.id })),
+    ),
+  )
+  const byId = new Map<string, AnketCevapOzetItem>()
+  for (const item of mapAndFilterAnketCevapItems(lists.flat(), {})) {
+    byId.set(item.id, item)
+  }
+  return sortAnketCevapOzetList([...byId.values()])
+}
+
 export const surveyResponsesApi = {
   getCografiFiltreOptions: () =>
     withDevFallback(
@@ -162,6 +181,13 @@ export const surveyResponsesApi = {
     withDevFallback(
       () => fetchAnketCevapListFromApi(params),
       () => devResponsesStore.getList(params),
+    ),
+
+  /** Admin paneli: tüm menşeiler üzerinden birleşik özet listesi. */
+  getAll: async (): Promise<AnketCevapOzetItem[]> =>
+    withDevFallback(
+      () => fetchAllAnketCevapListFromApi(),
+      () => devResponsesStore.getList({}),
     ),
 
   getMyList: async (kullaniciId: string): Promise<AnketCevapOzetItem[]> =>

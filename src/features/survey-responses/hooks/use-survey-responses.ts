@@ -14,6 +14,15 @@ export function useSurveyResponses(params?: SurveyResponsesQueryParams) {
   })
 }
 
+export function useAllSurveyResponses(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.surveyResponses.adminAll,
+    queryFn: () => surveyResponsesApi.getAll(),
+    enabled,
+    staleTime: 60_000,
+  })
+}
+
 export function useMySurveyResponses(kullaniciId?: string) {
   return useQuery({
     queryKey: queryKeys.surveyResponses.mine(kullaniciId ?? ''),

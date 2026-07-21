@@ -47,6 +47,7 @@ export const queryKeys = {
   surveyResponses: {
     cografiFiltreOptions: ['survey-responses', 'cografi-filtre-options'] as const,
     all: (params?: object) => ['survey-responses', params ?? {}] as const,
+    adminAll: ['survey-responses', 'admin-all'] as const,
     mine: (kullaniciId: string) => ['survey-responses', 'mine', kullaniciId] as const,
     detail: (ekiciId: string, sablonId: number, baslikId?: number) =>
       ['survey-responses', 'detail', ekiciId, sablonId, baslikId ?? null] as const,
