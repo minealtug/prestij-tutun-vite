@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BarChart3, ChevronRight, Database, Users } from 'lucide-react'
+import { ChevronRight, ClipboardList, Database, Users } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
@@ -23,6 +23,15 @@ const REPORTS = [
     accent: 'from-primary-600 to-accent-500',
     tags: ['Tablo', 'Ham Veri', 'Dışa Aktarım'],
   },
+  {
+    to: '/raporlar/anket-cevaplari',
+    title: 'Anket Cevap Raporu',
+    description:
+      'Seçilen ankete verilen tüm cevapların ekici bilgileriyle birlikte satır bazlı dökümü.',
+    icon: ClipboardList,
+    accent: 'from-primary-600 to-accent-500',
+    tags: ['Anket', 'Cevaplar', 'Dışa Aktarım'],
+  },
 ] as const
 
 export function ReportsPage() {
@@ -40,20 +49,6 @@ export function ReportsPage() {
 
   return (
     <PageContainer>
-      <section className="gradient-brand rounded-xl px-6 py-6 shadow-lg md:px-8">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
-            <BarChart3 className="h-6 w-6 text-white" aria-hidden />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-white md:text-2xl">Raporlar</h1>
-            <p className="mt-1 max-w-2xl text-sm text-white/80">
-              Demografik, üretim ve anket verilerini görselleştiren analiz panelleri.
-            </p>
-          </div>
-        </div>
-      </section>
-
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {REPORTS.map((report) => (
           <Link key={report.to} to={report.to} className="group block">

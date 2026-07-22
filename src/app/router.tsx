@@ -20,6 +20,7 @@ import { ModulePage } from '@/pages/ModulePage'
 import { ReportsPage } from '@/features/reports/pages/ReportsPage'
 import { AgeGenderReportPage } from '@/features/reports/pages/AgeGenderReportPage'
 import { HamVeriReportPage } from '@/features/reports/pages/HamVeriReportPage'
+import { AnketCevaplariReportPage } from '@/features/reports/pages/AnketCevaplariReportPage'
 import { YetkilendirmePage } from '@/features/permissions/pages/YetkilendirmePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
@@ -63,6 +64,7 @@ export const router = createBrowserRouter([
           { path: 'raporlar', element: <ReportsPage /> },
           { path: 'raporlar/yas-cinsiyet', element: <AgeGenderReportPage /> },
           { path: 'raporlar/ham-veri', element: <HamVeriReportPage /> },
+          { path: 'raporlar/anket-cevaplari', element: <AnketCevaplariReportPage /> },
           { path: 'tanimlamalar', element: <ModulePage /> },
           { path: 'yetkilendirme', element: <YetkilendirmePage /> },
           { path: 'users', element: <UsersPage /> },

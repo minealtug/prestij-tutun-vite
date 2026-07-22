@@ -59,6 +59,8 @@ export const queryKeys = {
   reports: {
     ekiciYasCinsiyet: (params?: object) =>
       ['reports', 'ekici-yas-cinsiyet', JSON.stringify(params ?? {})] as const,
+    anketCevaplari: (params?: object) =>
+      ['reports', 'anket-cevaplari', JSON.stringify(params ?? {})] as const,
   },
   surveyFill: {
     ekicilerRoot: ['survey-fill', 'ekiciler'] as const,
