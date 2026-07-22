@@ -193,7 +193,17 @@ export function Sidebar() {
 
       <div className={cn('shrink-0 border-t border-white/10 p-4', sidebarCollapsed && 'text-center')}>
         {!sidebarCollapsed && (
-          <p className="text-xs text-white/50">© {new Date().getFullYear()} Prestij Tütün</p>
+          <p className="text-xs text-white/50">
+            © {new Date().getFullYear()}{' '}
+            <a
+              href="https://armabilisim.com.tr/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-white/80"
+            >
+              Arma Bilişim A.Ş.
+            </a>
+          </p>
         )}
       </div>
     </>
