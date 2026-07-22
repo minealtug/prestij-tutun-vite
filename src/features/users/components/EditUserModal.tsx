@@ -117,6 +117,18 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
     [sourceUser?.id, usersQuery.data],
   )
 
+  const selectedUserTypeDescription = useMemo(() => {
+    const fromOptions = userTypeOptions.find((item) => item.value === form.userTypeId)?.label
+    if (fromOptions && form.userTypeId) return fromOptions
+    return sourceUser?.userTypeDescription?.trim() || '—'
+  }, [form.userTypeId, sourceUser?.userTypeDescription, userTypeOptions])
+
+  const selectedMintikaAdi = useMemo(() => {
+    const fromOptions = mintikaOptions.find((item) => item.value === form.mintikaId)?.label
+    if (fromOptions && form.mintikaId) return fromOptions
+    return sourceUser?.mintikaAdi?.trim() || '—'
+  }, [form.mintikaId, mintikaOptions, sourceUser?.mintikaAdi])
+
   const updateField = <K extends keyof CreateUserFormState>(
     key: K,
     value: CreateUserFormState[K],
@@ -200,6 +212,12 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
 
           <section className="space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">Kimlik</h3>
+            <Input
+              label="Kullanıcı tipi açıklaması"
+              value={selectedUserTypeDescription}
+              disabled
+              readOnly
+            />
             <div className="grid gap-3 sm:grid-cols-2">
               <Input
                 label="Kullanıcı adı *"
@@ -295,6 +313,7 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
                 disabled={mintikasQuery.isLoading}
               />
             </div>
+            <Input label="Mıntıka adı" value={selectedMintikaAdi} disabled readOnly />
             <SearchableSelect
               label="Amir (supervisor)"
               value={form.supervisorUserId}

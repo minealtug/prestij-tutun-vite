@@ -1,4 +1,5 @@
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx-js-style'
+import { applyExcelHeaderStyles } from '@/lib/utils/excel-header-style'
 import type { MyEkiciTableRow } from '../components/MyEkicilerTable'
 import { formatEkiciDisplayText, getEkiciFullNameDisplay } from './format-ekici-display-text'
 
@@ -55,11 +56,13 @@ export function exportMyEkicilerToExcel(
   })
 
   const worksheet = XLSX.utils.json_to_sheet(sheetRows)
+  applyExcelHeaderStyles(worksheet)
+
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Ekicilerim')
 
   const surveyPart = surveyName?.trim() ? `-${sanitizeFilenamePart(surveyName)}` : ''
   const filename = `ekicilerim${surveyPart}-${formatExportDate()}.xlsx`
 
-  XLSX.writeFile(workbook, filename)
+  XLSX.writeFile(workbook, filename, { cellStyles: true })
 }

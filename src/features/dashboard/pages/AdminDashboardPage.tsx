@@ -166,6 +166,13 @@ export function AdminDashboardPage() {
         <p className="mt-1 text-sm text-white/80">{currentDateTime}</p>
       </section>
 
+      <AdminUserActivityCard
+        summary={userActivity}
+        dayWindow={activityDays}
+        onDayWindowChange={setActivityDays}
+        isLoading={usersQuery.isLoading || surveysLoading}
+      />
+
       <section className="rounded-md border border-[#e8ecf0] bg-white px-4 py-3">
         {cografiFiltreQuery.isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -192,13 +199,6 @@ export function AdminDashboardPage() {
         mintikaRows={mintikaRows}
         bolgeRows={bolgeRows}
         isLoading={surveysLoading}
-      />
-
-      <AdminUserActivityCard
-        summary={userActivity}
-        dayWindow={activityDays}
-        onDayWindowChange={setActivityDays}
-        isLoading={usersQuery.isLoading || surveysLoading}
       />
 
       <AdminStalePartialsCard

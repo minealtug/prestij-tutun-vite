@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx-js-style'
+import { applyExcelHeaderStyles } from '@/lib/utils/excel-header-style'
 import type { AnketCevapOzetItem } from '../types/survey-response.types'
 import {
   getOzetFullName,
@@ -50,6 +51,7 @@ export function exportMySurveyResponsesToExcel(
     worksheet,
     rows.map((row) => getSurveyResponseExcelFillRgb(row)),
   )
+  applyExcelHeaderStyles(worksheet)
 
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Cevapladığım Anketler')

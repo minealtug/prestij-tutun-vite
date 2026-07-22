@@ -3,6 +3,7 @@ import { Skeleton } from '@/components/feedback/Skeleton'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { Select } from '@/components/ui/Select'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { CografiFiltreFields } from '@/features/cografi-filtre/components/CografiFiltreFields'
 import { useCografiFiltreCascade } from '@/features/cografi-filtre/hooks/use-cografi-filtre-cascade'
@@ -28,6 +29,20 @@ import {
   formatEkiciDisplayText,
   getEkiciFullNameDisplay,
 } from '../utils/format-ekici-display-text'
+
+type AktifFilter = 'all' | 'aktif' | 'pasif'
+
+const AKTIF_FILTER_OPTIONS = [
+  { value: 'all', label: 'Tümü' },
+  { value: 'aktif', label: 'Aktif' },
+  { value: 'pasif', label: 'Pasif' },
+] as const
+
+function matchesAktifFilter(ekici: EkiciDefinitionDto, filter: AktifFilter) {
+  if (filter === 'aktif') return ekici.aktif === 1
+  if (filter === 'pasif') return ekici.aktif !== 1
+  return true
+}
 
 function toViewFormValues(ekici: EkiciDefinitionDto) {
   const values = ekiciDefinitionToFormValues(ekici)
@@ -104,6 +119,7 @@ export function EkiciDefinitionsPage() {
   const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
 
   const [search, setSearch] = useState('')
+  const [aktifFilter, setAktifFilter] = useState<AktifFilter>('all')
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [createValues, setCreateValues] = useState(createEmptyEkiciFormValues)
   const [createError, setCreateError] = useState('')
@@ -114,6 +130,7 @@ export function EkiciDefinitionsPage() {
   const [editError, setEditError] = useState('')
 
   const hasGeoFilter = hasCografiFiltreSelection(geoCascade.queryParams)
+  const hasAktifFilter = aktifFilter !== 'all'
 
   const filteredEkiciler = useMemo(() => {
     const items = ekicilerQuery.data ?? []
@@ -123,13 +140,14 @@ export function EkiciDefinitionsPage() {
       if (hasGeoFilter && !matchesCografiFiltre(ekici, geoCascade.queryParams)) {
         return false
       }
+      if (!matchesAktifFilter(ekici, aktifFilter)) return false
       if (query && !matchesEkiciSearch(ekici, query)) return false
       return true
     })
-  }, [ekicilerQuery.data, geoCascade.queryParams, hasGeoFilter, search])
+  }, [aktifFilter, ekicilerQuery.data, geoCascade.queryParams, hasGeoFilter, search])
 
   const tableEmptyMessage =
-    search.trim().length > 0 || hasGeoFilter
+    search.trim().length > 0 || hasGeoFilter || hasAktifFilter
       ? 'Arama kriterlerinize uygun ekici kaydı bulunamadı.'
       : 'Henüz ekici kaydı bulunmuyor.'
 
@@ -233,17 +251,27 @@ export function EkiciDefinitionsPage() {
             />
           )}
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0 flex-1 sm:max-w-lg">
-              <Input
-                className="!h-9"
-                placeholder="Ad, soyad, TC, bölge, mıntıka, köy..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                aria-label="Ekici ara"
-              />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="min-w-0 w-full sm:max-w-[9.5rem]">
+                <Select
+                  label="Durum"
+                  value={aktifFilter}
+                  onChange={(e) => setAktifFilter(e.target.value as AktifFilter)}
+                  options={[...AKTIF_FILTER_OPTIONS]}
+                />
+              </div>
+              <div className="min-w-0 flex-1 sm:max-w-lg">
+                <Input
+                  className="!h-9"
+                  placeholder="Ad, soyad, TC, bölge, mıntıka, köy..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  aria-label="Ekici ara"
+                />
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 sm:pb-0.5">
               {ekicilerQuery.data && (
                 <p className="shrink-0 text-xs text-muted">
                   Gösterilen: {filteredEkiciler.length} / {ekicilerQuery.data.length} kayıt

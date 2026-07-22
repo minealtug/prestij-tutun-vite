@@ -101,7 +101,7 @@ export function Table<T>({
       <div
         className={cn(
           'w-full',
-          horizontalScroll ? 'overflow-x-auto scrollbar-hidden' : 'overflow-x-hidden',
+          horizontalScroll ? 'overflow-x-auto scrollbar-visible' : 'overflow-x-hidden',
         )}
       >
         <table

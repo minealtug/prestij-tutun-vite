@@ -1,4 +1,5 @@
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx-js-style'
+import { applyExcelHeaderStyles } from '@/lib/utils/excel-header-style'
 import { UNANSWERED_ANSWER_LABEL } from '../types/survey-response.types'
 import type { FlatSoruCevapRow } from './map-anket-cevap'
 
@@ -45,6 +46,8 @@ export function exportSurveyResponseAnswersToExcel(
   }))
 
   const worksheet = XLSX.utils.json_to_sheet(sheetRows)
+  applyExcelHeaderStyles(worksheet)
+
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Anket Cevapları')
 
@@ -55,5 +58,5 @@ export function exportSurveyResponseAnswersToExcel(
   const namePart = nameParts.length > 0 ? `-${nameParts.join('-')}` : ''
   const filename = `anket-cevaplari${namePart}-${formatExportDate()}.xlsx`
 
-  XLSX.writeFile(workbook, filename)
+  XLSX.writeFile(workbook, filename, { cellStyles: true })
 }

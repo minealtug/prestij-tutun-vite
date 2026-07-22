@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Info, Save, FilePen } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, FileSpreadsheet, Info, Save, FilePen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
@@ -25,6 +25,7 @@ import {
   enrichOturumQuestionsWithDefinitions,
   mergeAltSeceneklerIntoQuestions,
 } from '../utils/enrich-oturum-questions'
+import { exportSurveyFillQuestionsToExcel } from '../utils/export-survey-fill-questions-excel'
 import { isEkiciProducerQuestion } from '../utils/is-ekici-producer-question'
 import { isAnketTamamlandiForEkici } from '../utils/is-anket-tamamlandi'
 import { getEkiciFullName, isEkiciActive } from '../utils/normalize-ekici-api'
@@ -76,6 +77,8 @@ interface SurveyFillFormProps {
 export function SurveyFillForm({
   baslikId,
   sablonId,
+  baslikAdi,
+  sablonAdi,
   initialEkiciId = null,
   initialGeoFilters = null,
   canSubmit = true,
@@ -565,6 +568,19 @@ export function SurveyFillForm({
     })
   }
 
+  const handleExportQuestionsExcel = () => {
+    if (questionsWithOptions.length === 0) return
+
+    exportSurveyFillQuestionsToExcel(sortSurveyFillQuestions(questionsWithOptions), {
+      answers,
+      answerTypeLookup,
+      manualEntryByKey,
+      ekiciAdi: selectedEkici ? getEkiciFullName(selectedEkici) : undefined,
+      anketAdi: baslikAdi,
+      sablonAdi,
+    })
+  }
+
   const handleSaveAnswers = (mode: 'full' | 'draft') => {
     if (!canSubmit || !sessionEkiciId) {
       setSubmitError('Cevapları kaydetmek için önce ekici seçin.')
@@ -883,18 +899,26 @@ export function SurveyFillForm({
           )}
         </div>
 
-        {sessionEkiciId &&
-          visibleQuestions.length > 0 &&
-          !oturumQuery.isError &&
-          !isSelectedEkiciSurveyCompleted && (
-          <div className="border-t border-border px-5 py-4">
-            <p className="text-sm text-muted">
-              Doldurulan:{' '}
-              <span className="font-medium text-foreground">
-                {progress.answered} / {progress.total}
-              </span>{' '}
-              soru
-            </p>
+        {questionsWithOptions.length > 0 && !isSelectedEkiciSurveyCompleted && (
+          <div className="flex flex-col gap-3 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            {sessionEkiciId && !oturumQuery.isError && (
+              <p className="text-sm text-muted">
+                Doldurulan:{' '}
+                <span className="font-medium text-foreground">
+                  {progress.answered} / {progress.total}
+                </span>{' '}
+                soru
+              </p>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-green-600 bg-transparent text-green-700 hover:bg-green-50 sm:ml-auto sm:w-auto"
+              onClick={handleExportQuestionsExcel}
+            >
+              <FileSpreadsheet className="h-4 w-4" aria-hidden />
+              Soruları Excel'e Aktar
+            </Button>
           </div>
         )}
 
