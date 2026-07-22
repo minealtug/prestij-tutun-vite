@@ -130,16 +130,16 @@ export function exportHamVeriReportToExcel(
   }
   matrix.push(row0, row1, row2)
 
+  // Yoğun (dense) dizi: veri sütunları sırayla, boşluk bırakmadan
   const buildTotalsCells = (totals: YasCinsiyetTotals): Cell[] => {
     const cells: Cell[] = []
-    bands.forEach((band, bi) => {
-      const base = groupStart + bi * 3
+    bands.forEach((band) => {
       const value = totals.bands[band.key] ?? { erkek: 0, kadin: 0, toplam: 0 }
-      cells[base] = numberCell(value.erkek)
-      cells[base + 1] = numberCell(value.kadin)
-      cells[base + 2] = numberCell(value.toplam, true)
+      cells.push(numberCell(value.erkek))
+      cells.push(numberCell(value.kadin))
+      cells.push(numberCell(value.toplam, true))
     })
-    cells[groupTotalCol] = numberCell(totals.grupToplam, true)
+    cells.push(numberCell(totals.grupToplam, true))
     return cells
   }
 
@@ -159,9 +159,7 @@ export function exportHamVeriReportToExcel(
     s: { r: matrix.length, c: 0 },
     e: { r: matrix.length, c: ROW_HEADERS.length - 1 },
   })
-  buildTotalsCells(genelToplam).forEach((cell, index) => {
-    totalRow[index] = cell
-  })
+  totalRow.push(...buildTotalsCells(genelToplam))
   matrix.push(totalRow)
 
   const worksheet = XLSX.utils.aoa_to_sheet(matrix)

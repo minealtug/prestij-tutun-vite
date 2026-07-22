@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ChevronRight, ClipboardList, Database } from 'lucide-react'
+import { ChartPie, ChevronRight, ClipboardList, Database } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
@@ -22,6 +22,15 @@ const REPORTS = [
     icon: ClipboardList,
     accent: 'from-primary-600 to-accent-500',
     tags: ['Anket', 'Cevaplar', 'Dışa Aktarım'],
+  },
+  {
+    to: '/raporlar/dashboard',
+    title: 'Dashboard Raporları',
+    description:
+      'Yaş-cinsiyet dağılımlarının pasta ve çubuk grafiklerle görselleştirildiği analiz paneli.',
+    icon: ChartPie,
+    accent: 'from-primary-600 to-accent-500',
+    tags: ['Grafik', 'Pie', 'Bar'],
   },
 ] as const
 

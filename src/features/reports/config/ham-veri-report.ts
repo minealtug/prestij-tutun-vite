@@ -54,16 +54,19 @@ export const TABS: YasCinsiyetTabConfig[] = [
     key: 'aile',
     label: 'Aile Bireyi Yaş-Cinsiyet Raporu',
     title: 'Aile Bireyi Yaş-Cinsiyet Dağılımları',
-    endpoint: undefined,
+    endpoint: '/api/Rapor/aile-yas-cinsiyet',
     bands: [
+      { key: 'bandUnder12', label: '12 Yaş Altı' },
+      { key: 'band12_14', label: '12-14' },
+      { key: 'band15_17', label: '15-17' },
       { key: 'band18_30', label: '18-30' },
       { key: 'band31_40', label: '31-40' },
       { key: 'band41_50', label: '41-50' },
       { key: 'band50Plus', label: '50 Yaş Üstü' },
     ],
     sourceLabel: 'Aile Bireyi',
-    totalLabel: 'Birey Toplam',
-    totalKey: 'bireyToplam',
+    totalLabel: 'Kişi Toplam',
+    totalKey: 'kisiToplam',
   },
 ]
 
