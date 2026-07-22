@@ -1,12 +1,18 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, FileSpreadsheet } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
+import { ErrorState } from '@/components/feedback/ErrorState'
+import { Skeleton } from '@/components/feedback/Skeleton'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { CografiFiltreFields } from '@/features/cografi-filtre/components/CografiFiltreFields'
+import { useCografiFiltreCascade } from '@/features/cografi-filtre/hooks/use-cografi-filtre-cascade'
+import { useMintikaCografiFiltreOptions } from '@/features/cografi-filtre/hooks/use-cografi-filtre-options'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
+import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { cn } from '@/lib/utils/cn'
 
 import {
@@ -28,6 +34,24 @@ const thBase =
 export function HamVeriReportPage() {
   const { canRead, loading: permissionLoading } = useRequirePagePermission()
   const [activeTab, setActiveTab] = useState<TabKey>('ekici')
+
+  const cografiFiltreQuery = useMintikaCografiFiltreOptions()
+  const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
+  const surveysQuery = useSurveys()
+  const [selectedBaslikId, setSelectedBaslikId] = useState('')
+
+  const anketOptions = useMemo(() => {
+    const surveys = surveysQuery.data ?? []
+    return [
+      { value: '', label: 'Anket seçin' },
+      ...surveys
+        .map((survey) => ({
+          value: String(survey.id),
+          label: survey.name.trim() || `Anket #${survey.id}`,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'tr-TR')),
+    ]
+  }, [surveysQuery.data])
 
   if (permissionLoading) {
     return (
@@ -59,18 +83,42 @@ export function HamVeriReportPage() {
       </Link>
 
       {/* Filtreler */}
-      <div className="glass-card !p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Select label="Menşei" options={[{ value: '', label: 'Tümü ..' }]} value="" />
-          <Select label="Mıntıka" options={[{ value: '', label: 'Türü ..' }]} value="" />
-          <Select label="Bölge" options={[{ value: '', label: 'Tümü ..' }]} value="" />
-          <Select label="Akım Nok." options={[{ value: '', label: 'Türü ..' }]} value="" />
-        </div>
-        <div className="mt-3 max-w-md">
+      <div className="glass-card flex flex-col gap-3 !p-4">
+        {cografiFiltreQuery.isError && (
+          <ErrorState
+            error={cografiFiltreQuery.error}
+            title="Coğrafi filtreler yüklenemedi"
+            onRetry={() => void cografiFiltreQuery.refetch()}
+            compact
+          />
+        )}
+
+        {cografiFiltreQuery.isLoading ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Skeleton key={index} className="h-11 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : (
+          <CografiFiltreFields
+            values={geoCascade.values}
+            selectOptions={geoCascade.selectOptions}
+            lockedLevels={geoCascade.lockedLevels}
+            onMenseiChange={geoCascade.setMenseiId}
+            onBolgeChange={geoCascade.setBolgeId}
+            onMintikaChange={geoCascade.setMintikaId}
+            onAlimNoktasiChange={geoCascade.setAlimNoktasiId}
+            onKoyChange={geoCascade.setKoyId}
+          />
+        )}
+
+        <div className="min-w-0 sm:max-w-xs">
           <Select
-            label="Anket Seçiniz"
-            options={[{ value: 'sip', label: 'SİP ANKET' }]}
-            value="sip"
+            label="Anket"
+            value={selectedBaslikId}
+            onChange={(e) => setSelectedBaslikId(e.target.value)}
+            options={anketOptions}
+            disabled={surveysQuery.isLoading}
           />
         </div>
       </div>
