@@ -27,6 +27,20 @@ export const ekiciDefinitionsApi = {
     return mapEkiciDefinitionsFromApi(raw)
   },
 
+  getDurumlar: async (): Promise<{ id: number; adi: string }[]> => {
+    const raw = await apiClient.get<unknown[]>('/api/Ekici/durumlar')
+    if (!Array.isArray(raw)) return []
+    return raw
+      .map((item) => {
+        const row = item && typeof item === 'object' ? (item as Record<string, unknown>) : {}
+        const id = Number(row.id ?? row.Id)
+        const adi = String(row.adi ?? row.Adi ?? '').trim()
+        if (!Number.isFinite(id) || id <= 0 || !adi) return null
+        return { id, adi }
+      })
+      .filter((item): item is { id: number; adi: string } => item !== null)
+  },
+
   getByCurrentUserMintika: async (
     params?: CografiFiltreQueryParams,
   ): Promise<EkiciDefinitionDto[]> => {

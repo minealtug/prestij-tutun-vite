@@ -94,7 +94,8 @@ export interface KontratSahibiAutofillResult {
 
 /**
  * Kontrat sahibi seçildiğinde bağlı sorulara ekici bilgilerini yazar.
- * Endpointten gelen alanlar kilitlenir; gelmeyenler boş ve düzenlenebilir kalır.
+ * Doğum tarihi ve ad-soyad endpointten geliyorsa kilitlenir.
+ * Cinsiyet doldurulur ama her zaman düzenlenebilir kalır.
  */
 export function buildKontratSahibiAutofill(
   questions: SurveyFillSoruView[],
@@ -119,7 +120,6 @@ export function buildKontratSahibiAutofill(
       const optionId = findGenderOptionId(question.altSecenekler ?? [], ekici.cinsiyet)
       if (optionId) {
         answers[key] = optionId
-        lockedKeys[key] = true
       }
       continue
     }
