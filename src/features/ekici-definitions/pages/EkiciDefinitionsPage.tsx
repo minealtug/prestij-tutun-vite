@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Skeleton } from '@/components/feedback/Skeleton'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
@@ -11,8 +12,6 @@ import type { CografiFiltreQueryParams } from '@/features/cografi-filtre/types'
 import { hasCografiFiltreSelection } from '@/features/cografi-filtre/types'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { getErrorMessage } from '@/lib/api/api-error'
-import { PageContainer } from '@/components/layout/PageContainer'
-import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { EkiciDefinitionForm } from '../components/EkiciDefinitionForm'
 import { EkiciDefinitionsTable } from '../components/EkiciDefinitionsTable'
 import {
@@ -80,6 +79,20 @@ function matchesEkiciSearch(ekici: EkiciDefinitionDto, query: string) {
     .some((value) => String(value).toLocaleLowerCase('tr-TR').includes(query))
 }
 
+function matchesCografiFiltre(
+  ekici: EkiciDefinitionDto,
+  params: CografiFiltreQueryParams,
+): boolean {
+  if (params.menseiId != null && ekici.menseiId !== params.menseiId) return false
+  if (params.bolgeId != null && ekici.bolgeId !== params.bolgeId) return false
+  if (params.mintikaId != null && ekici.mintikaId !== params.mintikaId) return false
+  if (params.alimNoktasiId != null && ekici.alimNoktasiId !== params.alimNoktasiId) {
+    return false
+  }
+  if (params.koyId != null && ekici.koyId !== params.koyId) return false
+  return true
+}
+
 function isFormValid(values: ReturnType<typeof createEmptyEkiciFormValues>) {
   return (
     values.tcKimlikNo.trim().length > 0 &&
@@ -102,6 +115,8 @@ export function EkiciDefinitionsPage() {
   const ekicilerQuery = useEkiciDefinitions()
   const createEkici = useCreateEkiciDefinition()
   const updateEkici = useUpdateEkiciDefinition()
+  const cografiFiltreQuery = useCografiFiltreOptions()
+  const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
 
   const [search, setSearch] = useState('')
   const [aktifFilter, setAktifFilter] = useState<AktifFilter>('all')
@@ -217,14 +232,22 @@ export function EkiciDefinitionsPage() {
   return (
     <PageContainer>
       <div className="app-table-shell !rounded-md">
-        <div className="flex flex-col gap-3 border-b border-[#ececec] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0 flex-1 sm:max-w-lg">
-            <Input
-              className="!h-9"
-              placeholder="Ad, soyad, TC, bölge, mıntıka, köy..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              aria-label="Ekici ara"
+        <div className="flex flex-col gap-3 border-b border-[#ececec] px-4 py-3">
+          {cografiFiltreQuery.isLoading ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton key={index} className="h-11 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <CografiFiltreFields
+              values={geoCascade.values}
+              selectOptions={geoCascade.selectOptions}
+              onMenseiChange={geoCascade.setMenseiId}
+              onBolgeChange={geoCascade.setBolgeId}
+              onMintikaChange={geoCascade.setMintikaId}
+              onAlimNoktasiChange={geoCascade.setAlimNoktasiId}
+              onKoyChange={geoCascade.setKoyId}
             />
           )}
 
@@ -254,11 +277,7 @@ export function EkiciDefinitionsPage() {
                   Gösterilen: {filteredEkiciler.length} / {ekicilerQuery.data.length} kayıt
                 </p>
               )}
-              {canEdit && (
-                <Button onClick={openCreateModal}>
-                  Yeni Ekici
-                </Button>
-              )}
+              {canEdit && <Button onClick={openCreateModal}>Yeni Ekici</Button>}
             </div>
           </div>
         </div>
@@ -305,7 +324,10 @@ export function EkiciDefinitionsPage() {
             uretimMerkeziOptions={uretimMerkeziOptions}
           />
           {(createEkici.isError || createError) && (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+            <p
+              className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              role="alert"
+            >
               {createError || getErrorMessage(createEkici.error)}
             </p>
           )}
@@ -395,7 +417,10 @@ export function EkiciDefinitionsPage() {
             }
           />
           {(updateEkici.isError || editError) && (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+            <p
+              className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              role="alert"
+            >
               {editError || getErrorMessage(updateEkici.error)}
             </p>
           )}
