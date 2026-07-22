@@ -57,8 +57,8 @@ export const queryKeys = {
     mintikaOptions: ['cografi-filtre', 'mintika-options'] as const,
   },
   reports: {
-    ekiciYasCinsiyet: (params?: object) =>
-      ['reports', 'ekici-yas-cinsiyet', JSON.stringify(params ?? {})] as const,
+    yasCinsiyet: (endpoint: string, params?: object) =>
+      ['reports', 'yas-cinsiyet', endpoint, JSON.stringify(params ?? {})] as const,
     anketCevaplari: (params?: object) =>
       ['reports', 'anket-cevaplari', JSON.stringify(params ?? {})] as const,
   },

@@ -1,9 +1,9 @@
 import type {
-  AgeBandValue,
-  EkiciYasCinsiyetReport,
-  EkiciYasCinsiyetRow,
-  EkiciYasCinsiyetTotals,
-} from '../types/ekici-yas-cinsiyet.types'
+  BandValue,
+  YasCinsiyetReport,
+  YasCinsiyetRow,
+  YasCinsiyetTotals,
+} from '../types/yas-cinsiyet-report.types'
 
 type Raw = Record<string, unknown>
 
@@ -35,27 +35,12 @@ function firstArray(node: Raw, keys: string[]): unknown[] {
   return []
 }
 
-function toBand(value: unknown): AgeBandValue {
+function toBand(value: unknown): BandValue {
   const raw = asRecord(value)
   return {
-    erkek: num(pick(raw, ['erkek', 'Erkek', 'erkekSayisi'])),
-    kadin: num(pick(raw, ['kadin', 'Kadin', 'kadın', 'kadinSayisi'])),
+    erkek: num(pick(raw, ['erkek', 'Erkek'])),
+    kadin: num(pick(raw, ['kadin', 'Kadin', 'kadın'])),
     toplam: num(pick(raw, ['toplam', 'Toplam'])),
-  }
-}
-
-function toTotals(node: Raw): EkiciYasCinsiyetTotals {
-  // Sayılar seviyeye göre `counts` (alım noktası) veya `totals` (üst kırılım)
-  // sarmalayıcısının içinde gelir; yoksa düğümün kendisinden okunur (ör. genelToplam).
-  const c = asRecord(pick(node, ['counts', 'Counts', 'totals', 'Totals']) ?? node)
-  return {
-    band18_30: toBand(pick(c, ['band18_30', 'Band18_30', 'band1830', 'yas18_30'])),
-    band31_40: toBand(pick(c, ['band31_40', 'Band31_40', 'band3140', 'yas31_40'])),
-    band41_50: toBand(pick(c, ['band41_50', 'Band41_50', 'band4150', 'yas41_50'])),
-    band50Plus: toBand(pick(c, ['band50Plus', 'Band50Plus', 'band50plus', 'yas50Plus'])),
-    sozlesmeliEkiciToplam: num(
-      pick(c, ['sozlesmeliEkiciToplam', 'SozlesmeliEkiciToplam', 'genelToplam', 'toplam']),
-    ),
   }
 }
 
@@ -85,10 +70,27 @@ const ALIM_ARR = [
   'alimNoktalariList',
 ]
 
-export function normalizeEkiciYasCinsiyetReport(raw: unknown): EkiciYasCinsiyetReport {
+export function normalizeYasCinsiyetReport(
+  raw: unknown,
+  bandKeys: string[],
+  totalKey: string,
+): YasCinsiyetReport {
+  const totalKeys = [totalKey, 'genelToplam', 'toplam']
+
+  const toTotals = (node: Raw): YasCinsiyetTotals => {
+    // Sayılar seviyeye göre `counts` (alım noktası) veya `totals` (üst kırılım)
+    // içinde gelir; yoksa düğümün kendisinden okunur (ör. genelToplam).
+    const c = asRecord(pick(node, ['counts', 'Counts', 'totals', 'Totals']) ?? node)
+    const bands: Record<string, BandValue> = {}
+    for (const key of bandKeys) {
+      bands[key] = toBand(c[key])
+    }
+    return { bands, grupToplam: num(pick(c, totalKeys)) }
+  }
+
   const root = asRecord(raw)
   const menseiler = firstArray(root, ['menseiler', 'Menseiler'])
-  const rows: EkiciYasCinsiyetRow[] = []
+  const rows: YasCinsiyetRow[] = []
 
   const pushRow = (
     menseiAd: string,
@@ -105,7 +107,6 @@ export function normalizeEkiciYasCinsiyetReport(raw: unknown): EkiciYasCinsiyetR
     const menseiAd = name(mensei, MENSEI_NAME)
     const bolgeler = firstArray(mensei, BOLGE_ARR)
 
-    // Düz (flat) yapı: her kayıt tüm seviyeleri tek nesnede taşıyor
     if (bolgeler.length === 0) {
       pushRow(
         menseiAd,

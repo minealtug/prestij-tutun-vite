@@ -1,19 +1,10 @@
 import { Link } from 'react-router-dom'
-import { ChevronRight, ClipboardList, Database, Users } from 'lucide-react'
+import { ChevronRight, ClipboardList, Database } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 
 const REPORTS = [
-  {
-    to: '/raporlar/yas-cinsiyet',
-    title: 'Yaş–Cinsiyet Raporu',
-    description:
-      'Yetiştirici, hane ve üretim verilerini birleştirerek nüfus piramidi, yaş dağılımı ve hane yapısı analizi.',
-    icon: Users,
-    accent: 'from-primary-600 to-accent-500',
-    tags: ['KPI', 'Piramit', 'Karşılaştırma'],
-  },
   {
     to: '/raporlar/ham-veri',
     title: 'Ham Veri Raporu',

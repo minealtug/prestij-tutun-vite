@@ -1,24 +1,14 @@
 import * as XLSX from 'xlsx-js-style'
 
-import {
-  AGE_BANDS,
-  ROW_HEADERS,
-  SOURCE_LABEL,
-  SOURCE_TOTAL_LABEL,
-} from '../config/ham-veri-report'
+import { ROW_HEADERS, type YasCinsiyetTabConfig } from '../config/ham-veri-report'
 import type {
-  EkiciYasCinsiyetRow,
-  EkiciYasCinsiyetTotals,
-} from '../types/ekici-yas-cinsiyet.types'
+  YasCinsiyetRow,
+  YasCinsiyetTotals,
+} from '../types/yas-cinsiyet-report.types'
 
 const HEADER_FILL_RGB = '2A8F9E'
 const HEADER_FONT_RGB = 'FFFFFF'
 const TOTAL_FILL_RGB = 'E6F3F5'
-
-const GROUP_START_COL = ROW_HEADERS.length
-const GROUP_WIDTH = AGE_BANDS.length * 3 + 1
-const GROUP_TOTAL_COL = GROUP_START_COL + AGE_BANDS.length * 3
-const LAST_COL = GROUP_START_COL + GROUP_WIDTH - 1
 
 type Cell = XLSX.CellObject
 
@@ -65,67 +55,6 @@ function numberCell(value: number, total = false): Cell {
   }
 }
 
-function buildHeader(matrix: Cell[][], merges: XLSX.Range[]): void {
-  const row0: Cell[] = []
-  const row1: Cell[] = []
-  const row2: Cell[] = []
-
-  ROW_HEADERS.forEach((header, c) => {
-    row0[c] = headerCell(header)
-    row1[c] = headerCell('')
-    row2[c] = headerCell('')
-    merges.push({ s: { r: 0, c }, e: { r: 2, c } })
-  })
-
-  row0[GROUP_START_COL] = headerCell(SOURCE_LABEL)
-  merges.push({ s: { r: 0, c: GROUP_START_COL }, e: { r: 0, c: LAST_COL } })
-
-  AGE_BANDS.forEach((band, bi) => {
-    const base = GROUP_START_COL + bi * 3
-    row1[base] = headerCell(band.label)
-    row1[base + 1] = headerCell('')
-    merges.push({ s: { r: 1, c: base }, e: { r: 1, c: base + 1 } })
-
-    row1[base + 2] = headerCell(`${band.label} Toplam`)
-    row2[base + 2] = headerCell('')
-    merges.push({ s: { r: 1, c: base + 2 }, e: { r: 2, c: base + 2 } })
-
-    row2[base] = headerCell('Erkek')
-    row2[base + 1] = headerCell('Kadın')
-  })
-
-  row1[GROUP_TOTAL_COL] = headerCell(SOURCE_TOTAL_LABEL)
-  row2[GROUP_TOTAL_COL] = headerCell('')
-  merges.push({ s: { r: 1, c: GROUP_TOTAL_COL }, e: { r: 2, c: GROUP_TOTAL_COL } })
-
-  for (let c = 0; c <= LAST_COL; c += 1) {
-    row0[c] ??= headerCell('')
-    row1[c] ??= headerCell('')
-    row2[c] ??= headerCell('')
-  }
-
-  matrix.push(row0, row1, row2)
-}
-
-function buildTotalsCells(totals: EkiciYasCinsiyetTotals): Cell[] {
-  const cells: Cell[] = []
-  AGE_BANDS.forEach((band, bi) => {
-    const base = GROUP_START_COL + bi * 3
-    const value = totals[band.key]
-    cells[base] = numberCell(value.erkek)
-    cells[base + 1] = numberCell(value.kadin)
-    cells[base + 2] = numberCell(value.toplam, true)
-  })
-  cells[GROUP_TOTAL_COL] = numberCell(totals.sozlesmeliEkiciToplam, true)
-  return cells
-}
-
-function columnWidths(): XLSX.ColInfo[] {
-  const widths: XLSX.ColInfo[] = ROW_HEADERS.map(() => ({ wch: 16 }))
-  for (let c = GROUP_START_COL; c <= LAST_COL; c += 1) widths[c] = { wch: 11 }
-  return widths
-}
-
 function formatExportDate(): string {
   const now = new Date()
   const y = now.getFullYear()
@@ -148,24 +77,80 @@ function slugify(value: string): string {
 }
 
 export function exportHamVeriReportToExcel(
-  title: string,
-  rows: EkiciYasCinsiyetRow[],
-  genelToplam: EkiciYasCinsiyetTotals,
+  tab: YasCinsiyetTabConfig,
+  rows: YasCinsiyetRow[],
+  genelToplam: YasCinsiyetTotals,
 ): void {
+  const bands = tab.bands
+  const groupStart = ROW_HEADERS.length
+  const groupWidth = bands.length * 3 + 1
+  const groupTotalCol = groupStart + bands.length * 3
+  const lastCol = groupStart + groupWidth - 1
+
   const matrix: Cell[][] = []
   const merges: XLSX.Range[] = []
 
-  buildHeader(matrix, merges)
+  // Başlık (3 satır)
+  const row0: Cell[] = []
+  const row1: Cell[] = []
+  const row2: Cell[] = []
+
+  ROW_HEADERS.forEach((header, c) => {
+    row0[c] = headerCell(header)
+    row1[c] = headerCell('')
+    row2[c] = headerCell('')
+    merges.push({ s: { r: 0, c }, e: { r: 2, c } })
+  })
+
+  row0[groupStart] = headerCell(tab.sourceLabel)
+  merges.push({ s: { r: 0, c: groupStart }, e: { r: 0, c: lastCol } })
+
+  bands.forEach((band, bi) => {
+    const base = groupStart + bi * 3
+    row1[base] = headerCell(band.label)
+    row1[base + 1] = headerCell('')
+    merges.push({ s: { r: 1, c: base }, e: { r: 1, c: base + 1 } })
+
+    row1[base + 2] = headerCell(`${band.label} Toplam`)
+    row2[base + 2] = headerCell('')
+    merges.push({ s: { r: 1, c: base + 2 }, e: { r: 2, c: base + 2 } })
+
+    row2[base] = headerCell('Erkek')
+    row2[base + 1] = headerCell('Kadın')
+  })
+
+  row1[groupTotalCol] = headerCell(tab.totalLabel)
+  row2[groupTotalCol] = headerCell('')
+  merges.push({ s: { r: 1, c: groupTotalCol }, e: { r: 2, c: groupTotalCol } })
+
+  for (let c = 0; c <= lastCol; c += 1) {
+    row0[c] ??= headerCell('')
+    row1[c] ??= headerCell('')
+    row2[c] ??= headerCell('')
+  }
+  matrix.push(row0, row1, row2)
+
+  const buildTotalsCells = (totals: YasCinsiyetTotals): Cell[] => {
+    const cells: Cell[] = []
+    bands.forEach((band, bi) => {
+      const base = groupStart + bi * 3
+      const value = totals.bands[band.key] ?? { erkek: 0, kadin: 0, toplam: 0 }
+      cells[base] = numberCell(value.erkek)
+      cells[base + 1] = numberCell(value.kadin)
+      cells[base + 2] = numberCell(value.toplam, true)
+    })
+    cells[groupTotalCol] = numberCell(totals.grupToplam, true)
+    return cells
+  }
 
   rows.forEach((row) => {
-    const cells: Cell[] = [
+    matrix.push([
       textCell(row.menseiAd, false, false),
       textCell(row.bolgeAd, false, false),
       textCell(row.mintikaAd, false, false),
       textCell(row.alimNoktasiAd, false, false),
       ...buildTotalsCells(row),
-    ]
-    matrix.push(cells)
+    ])
   })
 
   const totalRow: Cell[] = [textCell('Genel Toplam', true, false)]
@@ -181,12 +166,15 @@ export function exportHamVeriReportToExcel(
 
   const worksheet = XLSX.utils.aoa_to_sheet(matrix)
   worksheet['!merges'] = merges
-  worksheet['!cols'] = columnWidths()
+  worksheet['!cols'] = [
+    ...ROW_HEADERS.map(() => ({ wch: 16 })),
+    ...Array.from({ length: groupWidth }, () => ({ wch: 11 })),
+  ]
 
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Rapor')
 
-  XLSX.writeFile(workbook, `${slugify(title)}-${formatExportDate()}.xlsx`, {
+  XLSX.writeFile(workbook, `${slugify(tab.title)}-${formatExportDate()}.xlsx`, {
     cellStyles: true,
   })
 }

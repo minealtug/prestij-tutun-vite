@@ -1,8 +1,8 @@
 import { apiClient } from '@/lib/api/api-client'
 import type { AnketCevaplariQueryParams } from '../types/anket-cevaplari.types'
-import type { EkiciYasCinsiyetQueryParams } from '../types/ekici-yas-cinsiyet.types'
+import type { YasCinsiyetQueryParams } from '../types/yas-cinsiyet-report.types'
 
-type ReportFilterParams = EkiciYasCinsiyetQueryParams | AnketCevaplariQueryParams
+type ReportFilterParams = YasCinsiyetQueryParams | AnketCevaplariQueryParams
 
 function toQueryRecord(params: ReportFilterParams): Record<string, unknown> {
   const record: Record<string, unknown> = {}
@@ -16,8 +16,8 @@ function toQueryRecord(params: ReportFilterParams): Record<string, unknown> {
 }
 
 export const reportsApi = {
-  getEkiciYasCinsiyet: (params: EkiciYasCinsiyetQueryParams = {}) =>
-    apiClient.get<unknown>('/api/Rapor/ekici-yas-cinsiyet', toQueryRecord(params)),
+  getYasCinsiyet: (endpoint: string, params: YasCinsiyetQueryParams = {}) =>
+    apiClient.get<unknown>(endpoint, toQueryRecord(params)),
 
   getAnketCevaplari: (params: AnketCevaplariQueryParams = {}) =>
     apiClient.get<unknown>('/api/Rapor/anket-cevaplari', toQueryRecord(params)),

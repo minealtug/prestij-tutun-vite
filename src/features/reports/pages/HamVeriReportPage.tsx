@@ -16,20 +16,15 @@ import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { cn } from '@/lib/utils/cn'
 
 import {
-  AGE_BANDS,
-  DATA_COL_COUNT,
   ROW_HEADERS,
-  SOURCE_LABEL,
-  SOURCE_TOTAL_LABEL,
   TABS,
-  TOTAL_COL_COUNT,
+  dataColCount,
+  totalColCount,
+  type BandDef,
   type TabKey,
 } from '../config/ham-veri-report'
-import { useEkiciYasCinsiyetReport } from '../hooks/use-ekici-yas-cinsiyet-report'
-import type {
-  EkiciYasCinsiyetRow,
-  EkiciYasCinsiyetTotals,
-} from '../types/ekici-yas-cinsiyet.types'
+import { useYasCinsiyetReport } from '../hooks/use-yas-cinsiyet-report'
+import type { YasCinsiyetRow, YasCinsiyetTotals } from '../types/yas-cinsiyet-report.types'
 import { exportHamVeriReportToExcel } from '../utils/export-ham-veri-report-excel'
 
 const thBase =
@@ -44,7 +39,7 @@ interface RowSpans {
   mintikaSpan?: number
 }
 
-function computeRowSpans(rows: EkiciYasCinsiyetRow[]): RowSpans[] {
+function computeRowSpans(rows: YasCinsiyetRow[]): RowSpans[] {
   const keyAt = (i: number, level: 0 | 1 | 2) => {
     const r = rows[i]
     if (level === 0) return r.menseiAd
@@ -70,11 +65,19 @@ function fmt(value: number): string {
   return value ? value.toLocaleString('tr-TR') : ''
 }
 
-function TotalsCells({ totals, strong }: { totals: EkiciYasCinsiyetTotals; strong?: boolean }) {
+function TotalsCells({
+  totals,
+  bands,
+  strong,
+}: {
+  totals: YasCinsiyetTotals
+  bands: BandDef[]
+  strong?: boolean
+}) {
   return (
     <>
-      {AGE_BANDS.map((band) => {
-        const v = totals[band.key]
+      {bands.map((band) => {
+        const v = totals.bands[band.key] ?? { erkek: 0, kadin: 0, toplam: 0 }
         return (
           <Fragment key={band.key}>
             <td className={cn(tdNum, strong && 'font-semibold')}>{fmt(v.erkek)}</td>
@@ -85,9 +88,7 @@ function TotalsCells({ totals, strong }: { totals: EkiciYasCinsiyetTotals; stron
           </Fragment>
         )
       })}
-      <td className={cn(tdNum, 'bg-primary-500/10 font-semibold')}>
-        {fmt(totals.sozlesmeliEkiciToplam)}
-      </td>
+      <td className={cn(tdNum, 'bg-primary-500/10 font-semibold')}>{fmt(totals.grupToplam)}</td>
     </>
   )
 }
@@ -114,18 +115,15 @@ export function HamVeriReportPage() {
     ]
   }, [surveysQuery.data])
 
+  const active = TABS.find((t) => t.key === activeTab) ?? TABS[0]
   const baslikIdNum = Number(selectedBaslikId)
-  const isEkiciTab = activeTab === 'ekici'
 
-  const reportQuery = useEkiciYasCinsiyetReport(
-    {
-      baslikId: Number.isFinite(baslikIdNum) && baslikIdNum > 0 ? baslikIdNum : undefined,
-      ...geoCascade.queryParams,
-    },
-    { enabled: isEkiciTab },
-  )
+  const reportQuery = useYasCinsiyetReport(active, {
+    baslikId: Number.isFinite(baslikIdNum) && baslikIdNum > 0 ? baslikIdNum : undefined,
+    ...geoCascade.queryParams,
+  })
 
-  const report = isEkiciTab ? reportQuery.data : undefined
+  const report = reportQuery.data
   const rows = report?.rows ?? []
   const spans = useMemo(() => computeRowSpans(rows), [rows])
 
@@ -139,11 +137,12 @@ export function HamVeriReportPage() {
 
   if (!canRead) return null
 
-  const active = TABS.find((t) => t.key === activeTab) ?? TABS[0]
+  const hasEndpoint = Boolean(active.endpoint)
+  const colCount = totalColCount(active)
 
   const handleExportExcel = () => {
     if (!report) return
-    exportHamVeriReportToExcel(active.title, report.rows, report.genelToplam)
+    exportHamVeriReportToExcel(active, report.rows, report.genelToplam)
   }
 
   return (
@@ -242,12 +241,12 @@ export function HamVeriReportPage() {
                     {header}
                   </th>
                 ))}
-                <th colSpan={DATA_COL_COUNT} className={thBase}>
-                  {SOURCE_LABEL}
+                <th colSpan={dataColCount(active)} className={thBase}>
+                  {active.sourceLabel}
                 </th>
               </tr>
               <tr>
-                {AGE_BANDS.map((band) => (
+                {active.bands.map((band) => (
                   <Fragment key={band.key}>
                     <th colSpan={2} className={thBase}>
                       {band.label}
@@ -258,11 +257,11 @@ export function HamVeriReportPage() {
                   </Fragment>
                 ))}
                 <th rowSpan={2} className={cn(thBase, 'bg-primary-500/10')}>
-                  {SOURCE_TOTAL_LABEL}
+                  {active.totalLabel}
                 </th>
               </tr>
               <tr>
-                {AGE_BANDS.map((band) => (
+                {active.bands.map((band) => (
                   <Fragment key={band.key}>
                     <th className={cn(thBase, 'font-medium')}>Erkek</th>
                     <th className={cn(thBase, 'font-medium')}>Kadın</th>
@@ -271,9 +270,9 @@ export function HamVeriReportPage() {
               </tr>
             </thead>
             <tbody>
-              {!isEkiciTab ? (
+              {!hasEndpoint ? (
                 <tr>
-                  <td colSpan={TOTAL_COL_COUNT} className={cn(tdBase, 'px-4 py-12 text-center')}>
+                  <td colSpan={colCount} className={cn(tdBase, 'px-4 py-12 text-center')}>
                     <p className="text-sm font-medium text-foreground">
                       Bu rapor için API henüz hazır değil
                     </p>
@@ -285,14 +284,14 @@ export function HamVeriReportPage() {
               ) : reportQuery.isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
-                    <td colSpan={TOTAL_COL_COUNT} className={cn(tdBase, '!py-0')}>
+                    <td colSpan={colCount} className={cn(tdBase, '!py-0')}>
                       <Skeleton className="my-1 h-6 w-full" />
                     </td>
                   </tr>
                 ))
               ) : reportQuery.isError ? (
                 <tr>
-                  <td colSpan={TOTAL_COL_COUNT} className={cn(tdBase, 'p-4')}>
+                  <td colSpan={colCount} className={cn(tdBase, 'p-4')}>
                     <ErrorState
                       error={reportQuery.error}
                       title="Rapor yüklenemedi"
@@ -303,7 +302,7 @@ export function HamVeriReportPage() {
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={TOTAL_COL_COUNT} className={cn(tdBase, 'px-4 py-12 text-center')}>
+                  <td colSpan={colCount} className={cn(tdBase, 'px-4 py-12 text-center')}>
                     <p className="text-sm font-medium text-foreground">Kayıt bulunamadı</p>
                     <p className="mt-1 text-xs text-muted">
                       Seçtiğiniz filtrelere uygun veri bulunmuyor.
@@ -312,7 +311,9 @@ export function HamVeriReportPage() {
                 </tr>
               ) : (
                 rows.map((row, i) => (
-                  <tr key={`${row.menseiAd}-${row.bolgeAd}-${row.mintikaAd}-${row.alimNoktasiAd}-${i}`}>
+                  <tr
+                    key={`${row.menseiAd}-${row.bolgeAd}-${row.mintikaAd}-${row.alimNoktasiAd}-${i}`}
+                  >
                     {spans[i].menseiSpan != null && (
                       <td rowSpan={spans[i].menseiSpan} className={cn(tdText, 'font-medium')}>
                         {row.menseiAd}
@@ -329,7 +330,7 @@ export function HamVeriReportPage() {
                       </td>
                     )}
                     <td className={tdText}>{row.alimNoktasiAd}</td>
-                    <TotalsCells totals={row} />
+                    <TotalsCells totals={row} bands={active.bands} />
                   </tr>
                 ))
               )}
@@ -340,9 +341,9 @@ export function HamVeriReportPage() {
                   Genel Toplam
                 </td>
                 {report ? (
-                  <TotalsCells totals={report.genelToplam} strong />
+                  <TotalsCells totals={report.genelToplam} bands={active.bands} strong />
                 ) : (
-                  Array.from({ length: DATA_COL_COUNT }).map((_, index) => (
+                  Array.from({ length: dataColCount(active) }).map((_, index) => (
                     <td key={index} className={cn(tdNum, 'text-muted')}>
                       —
                     </td>
