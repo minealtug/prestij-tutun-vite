@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BarChart3, ChevronRight, Users } from 'lucide-react'
+import { BarChart3, ChevronRight, Database, Users } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
@@ -13,6 +13,15 @@ const REPORTS = [
     icon: Users,
     accent: 'from-primary-600 to-accent-500',
     tags: ['KPI', 'Piramit', 'Karşılaştırma'],
+  },
+  {
+    to: '/raporlar/ham-veri',
+    title: 'Ham Veri Raporu',
+    description:
+      'Yetiştirici, hane ve üretim verilerinin filtrelenmemiş satır bazlı dökümü.',
+    icon: Database,
+    accent: 'from-primary-600 to-accent-500',
+    tags: ['Tablo', 'Ham Veri', 'Dışa Aktarım'],
   },
 ] as const
 
