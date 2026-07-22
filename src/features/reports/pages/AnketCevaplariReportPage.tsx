@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, FileSpreadsheet } from 'lucide-react'
+import { ArrowLeft, FileSpreadsheet, Filter } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
@@ -41,10 +41,19 @@ export function AnketCevaplariReportPage() {
   }, [surveysQuery.data])
 
   const baslikIdNum = Number(selectedBaslikId)
-  const reportQuery = useAnketCevaplariReport({
+  const params = {
     baslikId: Number.isFinite(baslikIdNum) && baslikIdNum > 0 ? baslikIdNum : undefined,
     ...geoCascade.queryParams,
-  })
+  }
+  const hasAnyFilter = Boolean(
+    params.baslikId ||
+      params.menseiId ||
+      params.bolgeId ||
+      params.mintikaId ||
+      params.alimNoktasiId ||
+      params.koyId,
+  )
+  const reportQuery = useAnketCevaplariReport(params, { enabled: hasAnyFilter })
 
   const report = reportQuery.data
   const rows = report?.satirlar ?? []
@@ -150,7 +159,15 @@ export function AnketCevaplariReportPage() {
         </Button>
       </div>
 
-      {reportQuery.isError ? (
+      {!hasAnyFilter ? (
+        <div className="glass-card flex flex-col items-center justify-center gap-2 !py-14 text-center">
+          <Filter className="h-8 w-8 text-primary-400" aria-hidden />
+          <p className="text-sm font-medium text-foreground">Lütfen filtre seçiniz</p>
+          <p className="max-w-md text-xs text-muted">
+            Raporu görüntülemek için en az bir filtre (Anket veya coğrafi kırılım) seçmelisiniz.
+          </p>
+        </div>
+      ) : reportQuery.isError ? (
         <ErrorState
           error={reportQuery.error}
           title="Rapor yüklenemedi"
