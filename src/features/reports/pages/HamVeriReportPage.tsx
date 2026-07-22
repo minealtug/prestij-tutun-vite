@@ -16,20 +16,81 @@ import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { cn } from '@/lib/utils/cn'
 
 import {
-  AGE_RANGES,
+  AGE_BANDS,
   DATA_COL_COUNT,
-  GROUP_COL_COUNT,
   ROW_HEADERS,
-  SOURCE_GROUPS,
+  SOURCE_LABEL,
+  SOURCE_TOTAL_LABEL,
   TABS,
   TOTAL_COL_COUNT,
-  type HamVeriPivotRow,
   type TabKey,
 } from '../config/ham-veri-report'
+import { useEkiciYasCinsiyetReport } from '../hooks/use-ekici-yas-cinsiyet-report'
+import type {
+  EkiciYasCinsiyetRow,
+  EkiciYasCinsiyetTotals,
+} from '../types/ekici-yas-cinsiyet.types'
 import { exportHamVeriReportToExcel } from '../utils/export-ham-veri-report-excel'
 
 const thBase =
   'border border-border/70 bg-surface px-2 py-1.5 text-center align-middle text-[11px] font-semibold text-foreground whitespace-nowrap'
+const tdBase = 'border border-border/70 px-2 py-1.5 text-[11px]'
+const tdText = cn(tdBase, 'text-left whitespace-nowrap align-top')
+const tdNum = cn(tdBase, 'text-center tabular-nums')
+
+interface RowSpans {
+  menseiSpan?: number
+  bolgeSpan?: number
+  mintikaSpan?: number
+}
+
+function computeRowSpans(rows: EkiciYasCinsiyetRow[]): RowSpans[] {
+  const keyAt = (i: number, level: 0 | 1 | 2) => {
+    const r = rows[i]
+    if (level === 0) return r.menseiAd
+    if (level === 1) return `${r.menseiAd}¦${r.bolgeAd}`
+    return `${r.menseiAd}¦${r.bolgeAd}¦${r.mintikaAd}`
+  }
+  const spans: RowSpans[] = rows.map(() => ({}))
+  const props = ['menseiSpan', 'bolgeSpan', 'mintikaSpan'] as const
+
+  for (let level = 0 as 0 | 1 | 2; level <= 2; level = (level + 1) as 0 | 1 | 2) {
+    let i = 0
+    while (i < rows.length) {
+      let j = i + 1
+      while (j < rows.length && keyAt(j, level) === keyAt(i, level)) j += 1
+      spans[i][props[level]] = j - i
+      i = j
+    }
+  }
+  return spans
+}
+
+function fmt(value: number): string {
+  return value ? value.toLocaleString('tr-TR') : ''
+}
+
+function TotalsCells({ totals, strong }: { totals: EkiciYasCinsiyetTotals; strong?: boolean }) {
+  return (
+    <>
+      {AGE_BANDS.map((band) => {
+        const v = totals[band.key]
+        return (
+          <Fragment key={band.key}>
+            <td className={cn(tdNum, strong && 'font-semibold')}>{fmt(v.erkek)}</td>
+            <td className={cn(tdNum, strong && 'font-semibold')}>{fmt(v.kadin)}</td>
+            <td className={cn(tdNum, 'bg-primary-500/5 font-medium', strong && 'font-semibold')}>
+              {fmt(v.toplam)}
+            </td>
+          </Fragment>
+        )
+      })}
+      <td className={cn(tdNum, 'bg-primary-500/10 font-semibold')}>
+        {fmt(totals.sozlesmeliEkiciToplam)}
+      </td>
+    </>
+  )
+}
 
 export function HamVeriReportPage() {
   const { canRead, loading: permissionLoading } = useRequirePagePermission()
@@ -53,6 +114,21 @@ export function HamVeriReportPage() {
     ]
   }, [surveysQuery.data])
 
+  const baslikIdNum = Number(selectedBaslikId)
+  const isEkiciTab = activeTab === 'ekici'
+
+  const reportQuery = useEkiciYasCinsiyetReport(
+    {
+      baslikId: Number.isFinite(baslikIdNum) && baslikIdNum > 0 ? baslikIdNum : undefined,
+      ...geoCascade.queryParams,
+    },
+    { enabled: isEkiciTab },
+  )
+
+  const report = isEkiciTab ? reportQuery.data : undefined
+  const rows = report?.rows ?? []
+  const spans = useMemo(() => computeRowSpans(rows), [rows])
+
   if (permissionLoading) {
     return (
       <PageContainer>
@@ -65,11 +141,9 @@ export function HamVeriReportPage() {
 
   const active = TABS.find((t) => t.key === activeTab) ?? TABS[0]
 
-  // API bağlanana kadar boş; veri geldiğinde bu diziyi doldurun.
-  const rows: HamVeriPivotRow[] = []
-
   const handleExportExcel = () => {
-    exportHamVeriReportToExcel(active.title, rows)
+    if (!report) return
+    exportHamVeriReportToExcel(active.title, report.rows, report.genelToplam)
   }
 
   return (
@@ -151,6 +225,7 @@ export function HamVeriReportPage() {
             size="sm"
             className="border-green-600 bg-transparent text-green-700 hover:bg-green-50"
             onClick={handleExportExcel}
+            disabled={!report || rows.length === 0}
           >
             <FileSpreadsheet className="h-4 w-4" aria-hidden />
             Excel'e Aktar
@@ -163,75 +238,116 @@ export function HamVeriReportPage() {
             <thead>
               <tr>
                 {ROW_HEADERS.map((header) => (
-                  <th key={header} rowSpan={3} className={cn(thBase, 'sticky left-0 z-10 text-left')}>
+                  <th key={header} rowSpan={3} className={cn(thBase, 'text-left')}>
                     {header}
                   </th>
                 ))}
-                {SOURCE_GROUPS.map((group) => (
-                  <th key={group.key} colSpan={GROUP_COL_COUNT} className={thBase}>
-                    {group.label}
-                  </th>
-                ))}
+                <th colSpan={DATA_COL_COUNT} className={thBase}>
+                  {SOURCE_LABEL}
+                </th>
               </tr>
               <tr>
-                {SOURCE_GROUPS.map((group) => (
-                  <Fragment key={group.key}>
-                    {AGE_RANGES.map((range) => (
-                      <Fragment key={`${group.key}-${range}`}>
-                        <th colSpan={2} className={thBase}>
-                          {range}
-                        </th>
-                        <th rowSpan={2} className={cn(thBase, 'bg-primary-500/5')}>
-                          {range} Toplam
-                        </th>
-                      </Fragment>
-                    ))}
-                    <th rowSpan={2} className={cn(thBase, 'bg-primary-500/10')}>
-                      {group.totalLabel}
+                {AGE_BANDS.map((band) => (
+                  <Fragment key={band.key}>
+                    <th colSpan={2} className={thBase}>
+                      {band.label}
+                    </th>
+                    <th rowSpan={2} className={cn(thBase, 'bg-primary-500/5')}>
+                      {band.label} Toplam
                     </th>
                   </Fragment>
                 ))}
+                <th rowSpan={2} className={cn(thBase, 'bg-primary-500/10')}>
+                  {SOURCE_TOTAL_LABEL}
+                </th>
               </tr>
               <tr>
-                {SOURCE_GROUPS.map((group) =>
-                  AGE_RANGES.map((range) => (
-                    <Fragment key={`${group.key}-${range}-g`}>
-                      <th className={cn(thBase, 'font-medium')}>Erkek</th>
-                      <th className={cn(thBase, 'font-medium')}>Kadın</th>
-                    </Fragment>
-                  )),
-                )}
+                {AGE_BANDS.map((band) => (
+                  <Fragment key={band.key}>
+                    <th className={cn(thBase, 'font-medium')}>Erkek</th>
+                    <th className={cn(thBase, 'font-medium')}>Kadın</th>
+                  </Fragment>
+                ))}
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td colSpan={TOTAL_COL_COUNT} className="border border-border/70 px-4 py-12">
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <p className="text-sm font-medium text-foreground">Henüz veri yok</p>
-                    <p className="mt-1 max-w-sm text-xs text-muted">
-                      Filtreleri seçip anket bağlandığında dağılım satırları burada
-                      listelenecek.
+              {!isEkiciTab ? (
+                <tr>
+                  <td colSpan={TOTAL_COL_COUNT} className={cn(tdBase, 'px-4 py-12 text-center')}>
+                    <p className="text-sm font-medium text-foreground">
+                      Bu rapor için API henüz hazır değil
                     </p>
-                  </div>
-                </td>
-              </tr>
+                    <p className="mt-1 text-xs text-muted">
+                      {active.label} verileri bağlandığında burada görüntülenecek.
+                    </p>
+                  </td>
+                </tr>
+              ) : reportQuery.isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan={TOTAL_COL_COUNT} className={cn(tdBase, '!py-0')}>
+                      <Skeleton className="my-1 h-6 w-full" />
+                    </td>
+                  </tr>
+                ))
+              ) : reportQuery.isError ? (
+                <tr>
+                  <td colSpan={TOTAL_COL_COUNT} className={cn(tdBase, 'p-4')}>
+                    <ErrorState
+                      error={reportQuery.error}
+                      title="Rapor yüklenemedi"
+                      onRetry={() => void reportQuery.refetch()}
+                      compact
+                    />
+                  </td>
+                </tr>
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan={TOTAL_COL_COUNT} className={cn(tdBase, 'px-4 py-12 text-center')}>
+                    <p className="text-sm font-medium text-foreground">Kayıt bulunamadı</p>
+                    <p className="mt-1 text-xs text-muted">
+                      Seçtiğiniz filtrelere uygun veri bulunmuyor.
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                rows.map((row, i) => (
+                  <tr key={`${row.menseiAd}-${row.bolgeAd}-${row.mintikaAd}-${row.alimNoktasiAd}-${i}`}>
+                    {spans[i].menseiSpan != null && (
+                      <td rowSpan={spans[i].menseiSpan} className={cn(tdText, 'font-medium')}>
+                        {row.menseiAd}
+                      </td>
+                    )}
+                    {spans[i].bolgeSpan != null && (
+                      <td rowSpan={spans[i].bolgeSpan} className={tdText}>
+                        {row.bolgeAd}
+                      </td>
+                    )}
+                    {spans[i].mintikaSpan != null && (
+                      <td rowSpan={spans[i].mintikaSpan} className={tdText}>
+                        {row.mintikaAd}
+                      </td>
+                    )}
+                    <td className={tdText}>{row.alimNoktasiAd}</td>
+                    <TotalsCells totals={row} />
+                  </tr>
+                ))
+              )}
             </tbody>
             <tfoot>
               <tr className="bg-primary-500/10 font-semibold">
-                <td
-                  colSpan={ROW_HEADERS.length}
-                  className="border border-border/70 px-2 py-1.5 text-left text-[11px] text-foreground"
-                >
+                <td colSpan={ROW_HEADERS.length} className={cn(tdBase, 'text-left')}>
                   Genel Toplam
                 </td>
-                {Array.from({ length: DATA_COL_COUNT }).map((_, index) => (
-                  <td
-                    key={index}
-                    className="border border-border/70 px-2 py-1.5 text-center text-[11px] text-muted"
-                  >
-                    —
-                  </td>
-                ))}
+                {report ? (
+                  <TotalsCells totals={report.genelToplam} strong />
+                ) : (
+                  Array.from({ length: DATA_COL_COUNT }).map((_, index) => (
+                    <td key={index} className={cn(tdNum, 'text-muted')}>
+                      —
+                    </td>
+                  ))
+                )}
               </tr>
             </tfoot>
           </table>

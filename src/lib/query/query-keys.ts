@@ -56,6 +56,10 @@ export const queryKeys = {
     options: ['cografi-filtre', 'options'] as const,
     mintikaOptions: ['cografi-filtre', 'mintika-options'] as const,
   },
+  reports: {
+    ekiciYasCinsiyet: (params?: object) =>
+      ['reports', 'ekici-yas-cinsiyet', JSON.stringify(params ?? {})] as const,
+  },
   surveyFill: {
     ekicilerRoot: ['survey-fill', 'ekiciler'] as const,
     ekiciler: (params?: object) =>

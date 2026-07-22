@@ -1,21 +1,31 @@
 import * as XLSX from 'xlsx-js-style'
 
 import {
-  AGE_RANGES,
+  AGE_BANDS,
   ROW_HEADERS,
-  SOURCE_GROUPS,
-  cellKey,
-  type HamVeriPivotRow,
+  SOURCE_LABEL,
+  SOURCE_TOTAL_LABEL,
 } from '../config/ham-veri-report'
+import type {
+  EkiciYasCinsiyetRow,
+  EkiciYasCinsiyetTotals,
+} from '../types/ekici-yas-cinsiyet.types'
 
 const HEADER_FILL_RGB = '2A8F9E'
 const HEADER_FONT_RGB = 'FFFFFF'
 const TOTAL_FILL_RGB = 'E6F3F5'
 
 const GROUP_START_COL = ROW_HEADERS.length
-const GROUP_WIDTH = AGE_RANGES.length * 3 + 1
+const GROUP_WIDTH = AGE_BANDS.length * 3 + 1
+const GROUP_TOTAL_COL = GROUP_START_COL + AGE_BANDS.length * 3
+const LAST_COL = GROUP_START_COL + GROUP_WIDTH - 1
 
 type Cell = XLSX.CellObject
+
+function thinBorder() {
+  const side = { style: 'thin' as const, color: { rgb: 'CCCCCC' } }
+  return { top: side, bottom: side, left: side, right: side }
+}
 
 function textCell(value: string, bold = false, center = true): Cell {
   return {
@@ -42,28 +52,17 @@ function headerCell(value: string): Cell {
   }
 }
 
-function numberCell(value: number, opts?: { total?: boolean }): Cell {
+function numberCell(value: number, total = false): Cell {
   return {
     t: 'n',
     v: value,
     s: {
-      font: { bold: Boolean(opts?.total) },
-      fill: opts?.total
-        ? { patternType: 'solid', fgColor: { rgb: TOTAL_FILL_RGB } }
-        : undefined,
+      font: { bold: total },
+      fill: total ? { patternType: 'solid', fgColor: { rgb: TOTAL_FILL_RGB } } : undefined,
       alignment: { horizontal: 'center', vertical: 'center' },
       border: thinBorder(),
     },
   }
-}
-
-function thinBorder() {
-  const side = { style: 'thin' as const, color: { rgb: 'CCCCCC' } }
-  return { top: side, bottom: side, left: side, right: side }
-}
-
-function groupStartCol(groupIndex: number): number {
-  return GROUP_START_COL + groupIndex * GROUP_WIDTH
 }
 
 function buildHeader(matrix: Cell[][], merges: XLSX.Range[]): void {
@@ -78,33 +77,28 @@ function buildHeader(matrix: Cell[][], merges: XLSX.Range[]): void {
     merges.push({ s: { r: 0, c }, e: { r: 2, c } })
   })
 
-  SOURCE_GROUPS.forEach((group, gi) => {
-    const start = groupStartCol(gi)
-    row0[start] = headerCell(group.label)
-    merges.push({ s: { r: 0, c: start }, e: { r: 0, c: start + GROUP_WIDTH - 1 } })
+  row0[GROUP_START_COL] = headerCell(SOURCE_LABEL)
+  merges.push({ s: { r: 0, c: GROUP_START_COL }, e: { r: 0, c: LAST_COL } })
 
-    AGE_RANGES.forEach((range, ri) => {
-      const base = start + ri * 3
-      row1[base] = headerCell(range)
-      row1[base + 1] = headerCell('')
-      merges.push({ s: { r: 1, c: base }, e: { r: 1, c: base + 1 } })
+  AGE_BANDS.forEach((band, bi) => {
+    const base = GROUP_START_COL + bi * 3
+    row1[base] = headerCell(band.label)
+    row1[base + 1] = headerCell('')
+    merges.push({ s: { r: 1, c: base }, e: { r: 1, c: base + 1 } })
 
-      row1[base + 2] = headerCell(`${range} Toplam`)
-      row2[base + 2] = headerCell('')
-      merges.push({ s: { r: 1, c: base + 2 }, e: { r: 2, c: base + 2 } })
+    row1[base + 2] = headerCell(`${band.label} Toplam`)
+    row2[base + 2] = headerCell('')
+    merges.push({ s: { r: 1, c: base + 2 }, e: { r: 2, c: base + 2 } })
 
-      row2[base] = headerCell('Erkek')
-      row2[base + 1] = headerCell('Kadın')
-    })
-
-    const totalCol = start + GROUP_WIDTH - 1
-    row1[totalCol] = headerCell(group.totalLabel)
-    row2[totalCol] = headerCell('')
-    merges.push({ s: { r: 1, c: totalCol }, e: { r: 2, c: totalCol } })
+    row2[base] = headerCell('Erkek')
+    row2[base + 1] = headerCell('Kadın')
   })
 
-  const width = groupStartCol(SOURCE_GROUPS.length)
-  for (let c = 0; c < width; c += 1) {
+  row1[GROUP_TOTAL_COL] = headerCell(SOURCE_TOTAL_LABEL)
+  row2[GROUP_TOTAL_COL] = headerCell('')
+  merges.push({ s: { r: 1, c: GROUP_TOTAL_COL }, e: { r: 2, c: GROUP_TOTAL_COL } })
+
+  for (let c = 0; c <= LAST_COL; c += 1) {
     row0[c] ??= headerCell('')
     row1[c] ??= headerCell('')
     row2[c] ??= headerCell('')
@@ -113,48 +107,22 @@ function buildHeader(matrix: Cell[][], merges: XLSX.Range[]): void {
   matrix.push(row0, row1, row2)
 }
 
-function buildDataRow(row: HamVeriPivotRow): { cells: Cell[]; totals: number[] } {
-  const cells: Cell[] = [
-    textCell(row.mensei, false, false),
-    textCell(row.bolge, false, false),
-    textCell(row.mintika, false, false),
-    textCell(row.akimNoktasi, false, false),
-  ]
-
-  const columnTotals: number[] = []
-
-  SOURCE_GROUPS.forEach((group, gi) => {
-    const start = groupStartCol(gi)
-    let groupTotal = 0
-
-    AGE_RANGES.forEach((range, ri) => {
-      const base = start + ri * 3
-      const cell = row.cells[cellKey(group.key, range)] ?? { erkek: 0, kadin: 0 }
-      const rangeTotal = cell.erkek + cell.kadin
-      groupTotal += rangeTotal
-
-      cells[base] = numberCell(cell.erkek)
-      cells[base + 1] = numberCell(cell.kadin)
-      cells[base + 2] = numberCell(rangeTotal, { total: true })
-
-      columnTotals[base] = (columnTotals[base] ?? 0) + cell.erkek
-      columnTotals[base + 1] = (columnTotals[base + 1] ?? 0) + cell.kadin
-      columnTotals[base + 2] = (columnTotals[base + 2] ?? 0) + rangeTotal
-    })
-
-    const totalCol = start + GROUP_WIDTH - 1
-    cells[totalCol] = numberCell(groupTotal, { total: true })
-    columnTotals[totalCol] = (columnTotals[totalCol] ?? 0) + groupTotal
+function buildTotalsCells(totals: EkiciYasCinsiyetTotals): Cell[] {
+  const cells: Cell[] = []
+  AGE_BANDS.forEach((band, bi) => {
+    const base = GROUP_START_COL + bi * 3
+    const value = totals[band.key]
+    cells[base] = numberCell(value.erkek)
+    cells[base + 1] = numberCell(value.kadin)
+    cells[base + 2] = numberCell(value.toplam, true)
   })
-
-  return { cells, totals: columnTotals }
+  cells[GROUP_TOTAL_COL] = numberCell(totals.sozlesmeliEkiciToplam, true)
+  return cells
 }
 
 function columnWidths(): XLSX.ColInfo[] {
   const widths: XLSX.ColInfo[] = ROW_HEADERS.map(() => ({ wch: 16 }))
-  for (let c = GROUP_START_COL; c < groupStartCol(SOURCE_GROUPS.length); c += 1) {
-    widths[c] = { wch: 10 }
-  }
+  for (let c = GROUP_START_COL; c <= LAST_COL; c += 1) widths[c] = { wch: 11 }
   return widths
 }
 
@@ -179,19 +147,25 @@ function slugify(value: string): string {
     .replace(/(^-|-$)/g, '')
 }
 
-export function exportHamVeriReportToExcel(title: string, rows: HamVeriPivotRow[]): void {
+export function exportHamVeriReportToExcel(
+  title: string,
+  rows: EkiciYasCinsiyetRow[],
+  genelToplam: EkiciYasCinsiyetTotals,
+): void {
   const matrix: Cell[][] = []
   const merges: XLSX.Range[] = []
 
   buildHeader(matrix, merges)
 
-  const grandTotals: number[] = []
   rows.forEach((row) => {
-    const { cells, totals } = buildDataRow(row)
+    const cells: Cell[] = [
+      textCell(row.menseiAd, false, false),
+      textCell(row.bolgeAd, false, false),
+      textCell(row.mintikaAd, false, false),
+      textCell(row.alimNoktasiAd, false, false),
+      ...buildTotalsCells(row),
+    ]
     matrix.push(cells)
-    totals.forEach((value, index) => {
-      grandTotals[index] = (grandTotals[index] ?? 0) + (value ?? 0)
-    })
   })
 
   const totalRow: Cell[] = [textCell('Genel Toplam', true, false)]
@@ -200,9 +174,9 @@ export function exportHamVeriReportToExcel(title: string, rows: HamVeriPivotRow[
     s: { r: matrix.length, c: 0 },
     e: { r: matrix.length, c: ROW_HEADERS.length - 1 },
   })
-  for (let c = GROUP_START_COL; c < groupStartCol(SOURCE_GROUPS.length); c += 1) {
-    totalRow[c] = numberCell(grandTotals[c] ?? 0, { total: true })
-  }
+  buildTotalsCells(genelToplam).forEach((cell, index) => {
+    totalRow[index] = cell
+  })
   matrix.push(totalRow)
 
   const worksheet = XLSX.utils.aoa_to_sheet(matrix)
