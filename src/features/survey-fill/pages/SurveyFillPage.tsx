@@ -113,7 +113,7 @@ export function SurveyFillPage() {
 
   const sessionReady = selectedBaslikId > 0
   const selectDisabled =
-    surveysQuery.isLoading && (surveysQuery.data?.length ?? 0) === 0
+    surveysQuery.isLoading && (surveysQuery.data ?? []).length === 0
 
   const activeDeepLink =
     deepLink && deepLink.baslikId === selectedBaslikId ? deepLink : null

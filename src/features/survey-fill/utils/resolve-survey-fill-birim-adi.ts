@@ -1,4 +1,3 @@
-import { resolveQuestionBirimAdi } from '@/features/questions/utils/resolve-question-birim-adi'
 import type { SurveyFillSoruView } from '../types/anket-yanit.types'
 
 export function resolveSurveyFillBirimAdi(
@@ -14,5 +13,5 @@ export function resolveSurveyFillBirimAdi(
     if (fromMap) return fromMap
   }
 
-  return resolveQuestionBirimAdi(question, unitsById)
+  return null
 }

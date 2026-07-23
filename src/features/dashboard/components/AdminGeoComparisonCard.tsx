@@ -85,9 +85,9 @@ export function AdminGeoComparisonCard({
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                 <Tooltip
-                  formatter={(value: number, name: string) => [
-                    value.toLocaleString('tr-TR'),
-                    name === 'tamamlanan' ? 'Tamamlanan' : name === 'yarim' ? 'Yarım' : name,
+                  formatter={(value, name) => [
+                    Number(value ?? 0).toLocaleString('tr-TR'),
+                    name === 'tamamlanan' ? 'Tamamlanan' : name === 'yarim' ? 'Yarım' : String(name),
                   ]}
                   labelFormatter={(_, payload) => {
                     const full = payload?.[0]?.payload?.fullName

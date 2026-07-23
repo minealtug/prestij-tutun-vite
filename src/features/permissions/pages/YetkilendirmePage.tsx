@@ -105,14 +105,6 @@ export function YetkilendirmePage() {
     )
   }, [menusQuery.data])
 
-  const userOptions = useMemo(
-    () =>
-      (usersQuery.data ?? [])
-        .filter((u) => u.aktif)
-        .map((u) => ({ value: String(u.id), label: `${u.fullName} (${u.userName})` })),
-    [usersQuery.data],
-  )
-
   const userSecimList = useMemo(
     () =>
       (usersQuery.data ?? [])
@@ -188,8 +180,6 @@ export function YetkilendirmePage() {
   const menuAtamalariLoading =
     uniqueMenuUrls.length > 0 &&
     menuAtamaQueries.some((query) => query.isLoading || query.isFetching)
-
-  const isAssignSubmitDisabled = !assignType
 
   const getAtamalarForMenu = (menu: MenuDto): MenuAtamaDto[] => {
     const key = `yetki:${menu.yetkiId}`
