@@ -7,12 +7,11 @@ import { useRequirePagePermission } from '@/features/permissions/hooks/use-requi
 const REPORTS = [
   {
     to: '/raporlar/ham-veri',
-    title: 'Ham Veri Raporu',
+    title: 'Yaş-Cinsiyet Raporları',
     description:
-      'Yetiştirici, hane ve üretim verilerinin filtrelenmemiş satır bazlı dökümü.',
+      'Ekici, çocuk ve aile bireyi yaş-cinsiyet raporları.',
     icon: Database,
     accent: 'from-primary-600 to-accent-500',
-    tags: ['Tablo', 'Ham Veri', 'Dışa Aktarım'],
   },
   {
     to: '/raporlar/anket-cevaplari',
@@ -21,16 +20,14 @@ const REPORTS = [
       'Seçilen ankete verilen tüm cevapların ekici bilgileriyle birlikte satır bazlı dökümü.',
     icon: ClipboardList,
     accent: 'from-primary-600 to-accent-500',
-    tags: ['Anket', 'Cevaplar', 'Dışa Aktarım'],
   },
   {
     to: '/raporlar/dashboard',
-    title: 'Dashboard Raporları',
+    title: 'Yaş-Cinsiyet Grafik Raporları',
     description:
       'Yaş-cinsiyet dağılımlarının pasta ve çubuk grafiklerle görselleştirildiği analiz paneli.',
     icon: ChartPie,
     accent: 'from-primary-600 to-accent-500',
-    tags: ['Grafik', 'Pie', 'Bar'],
   },
 ] as const
 
@@ -70,16 +67,6 @@ export function ReportsPage() {
                 {report.title}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-muted">{report.description}</p>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {report.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-foreground/5 px-2 py-0.5 text-[11px] font-medium text-muted"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
             </Card>
           </Link>
         ))}
