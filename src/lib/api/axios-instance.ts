@@ -4,9 +4,8 @@ import { usePermissionsStore } from '@/features/permissions/stores/permissions-s
 import { useAuthStore } from '@/stores/auth-store'
 
 export const api = axios.create({
-  // Dev'de istekler relative gider ve Vite proxy (/api, /uploads) backend'e yönlendirir;
-  // böylece CORS ve self-signed sertifika sorunları oluşmaz. Production'da mutlak URL kullanılır.
-  baseURL: import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_URL || '',
+  // Tüm ortamlar: istekler yalnızca .env içindeki VITE_API_BASE_URL'e gider.
+  baseURL: (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, ''),
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

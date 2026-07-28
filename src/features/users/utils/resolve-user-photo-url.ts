@@ -16,17 +16,6 @@ export function resolveUserPhotoUrl(
   }
 
   const normalizedPath = value.startsWith('/') ? value : `/${value}`
-
-  // Statik kullanıcı fotoğrafları: dev'de Vite /uploads proxy üzerinden gider.
-  if (normalizedPath.startsWith('/uploads/')) {
-    if (import.meta.env.DEV) {
-      return appendCacheKey(normalizedPath, cacheKey)
-    }
-
-    const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-    return appendCacheKey(apiBase ? `${apiBase}${normalizedPath}` : normalizedPath, cacheKey)
-  }
-
   const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
   const absolute = apiBase ? `${apiBase}${normalizedPath}` : normalizedPath
   return appendCacheKey(absolute, cacheKey)
