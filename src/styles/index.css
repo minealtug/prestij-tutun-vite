@@ -125,12 +125,20 @@
     @apply bg-primary-50;
   }
 
-  .app-table tbody tr.app-table-row--in-progress {
+  .app-table tbody tr.app-table-row--not-started {
     @apply bg-yellow-50;
   }
 
-  .app-table tbody tr.app-table-row--in-progress:hover {
+  .app-table tbody tr.app-table-row--not-started:hover {
     @apply bg-yellow-100/70;
+  }
+
+  .app-table tbody tr.app-table-row--in-progress {
+    @apply bg-orange-50;
+  }
+
+  .app-table tbody tr.app-table-row--in-progress:hover {
+    @apply bg-orange-100/70;
   }
 
   .app-table tbody tr.app-table-row--completed {

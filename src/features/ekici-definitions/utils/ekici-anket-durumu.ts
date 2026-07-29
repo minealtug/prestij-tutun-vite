@@ -34,5 +34,9 @@ export function getEkiciAnketRowClassName(durum: EkiciAnketDurumu): string | und
     return 'app-table-row--in-progress'
   }
 
+  if (durum === 'not_started') {
+    return 'app-table-row--not-started'
+  }
+
   return undefined
 }

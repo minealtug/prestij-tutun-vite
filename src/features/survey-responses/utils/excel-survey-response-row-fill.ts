@@ -2,10 +2,10 @@ import * as XLSX from 'xlsx-js-style'
 import type { AnketCevapOzetItem } from '../types/survey-response.types'
 import { getSurveyResponseRowClassName } from './map-anket-cevap'
 
-/** Tailwind green-50 / yellow-50 karşılıkları */
+/** Tailwind green-50 / orange-50 karşılıkları */
 export const SURVEY_RESPONSE_EXCEL_FILL = {
   completed: 'F0FDF4',
-  inProgress: 'FEFCE8',
+  inProgress: 'FFF7ED',
 } as const
 
 export function getSurveyResponseExcelFillRgb(
