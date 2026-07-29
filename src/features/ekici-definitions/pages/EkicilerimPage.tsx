@@ -66,6 +66,7 @@ export function EkicilerimPage() {
   const { canRead, loading: permissionLoading } = useRequirePagePermission()
   const userId = useAuthStore((state) => state.user?.id)
   const userMintikaId = useAuthStore((state) => state.user?.mintikaId)
+  const isAdmin = useAuthStore((state) => state.user?.admin === true)
   const hasUserMintika = Boolean(userMintikaId && userMintikaId > 0)
   const cografiFiltreQuery = useMintikaCografiFiltreOptions()
   const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
@@ -120,13 +121,28 @@ export function EkicilerimPage() {
         return true
       })
       .sort((a, b) => {
+        if (isAdmin) {
+          const menseiCmp = (a.menseiAdi ?? '').localeCompare(b.menseiAdi ?? '', 'tr-TR')
+          if (menseiCmp !== 0) return menseiCmp
+          const koyCmp = (a.koyAdi ?? '').localeCompare(b.koyAdi ?? '', 'tr-TR')
+          if (koyCmp !== 0) return koyCmp
+          return getEkiciFullName(a).localeCompare(getEkiciFullName(b), 'tr-TR')
+        }
+
+        const alimNoktasiCmp = (a.alimNoktasiAdi ?? '').localeCompare(
+          b.alimNoktasiAdi ?? '',
+          'tr-TR',
+        )
+        if (alimNoktasiCmp !== 0) return alimNoktasiCmp
+        const koyCmp = (a.koyAdi ?? '').localeCompare(b.koyAdi ?? '', 'tr-TR')
+        if (koyCmp !== 0) return koyCmp
         const menseiCmp = (a.menseiAdi ?? '').localeCompare(b.menseiAdi ?? '', 'tr-TR')
         if (menseiCmp !== 0) return menseiCmp
         return getEkiciFullName(a).localeCompare(getEkiciFullName(b), 'tr-TR')
       })
 
     return buildMyEkiciTableRows(filteredEkiciler, filteredCevaplar, anketSelected)
-  }, [aktifFilter, anketSelected, ekicilerQuery.data, filteredCevaplar, search])
+  }, [aktifFilter, anketSelected, ekicilerQuery.data, filteredCevaplar, isAdmin, search])
 
   const tableEmptyMessage =
     search.trim().length > 0 || hasGeoFilter || hasAktifFilter
