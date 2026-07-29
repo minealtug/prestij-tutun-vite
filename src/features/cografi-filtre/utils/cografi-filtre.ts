@@ -105,8 +105,10 @@ export function getKoylerForAlimNoktasi(
   options: CografiFiltreOptionsDto,
   alimNoktasiId?: number,
 ): KoyDto[] {
-  if (!alimNoktasiId) return options.koyler
-  return options.koyler.filter((item) => item.alimNoktasiId === alimNoktasiId)
+  const koyler = alimNoktasiId
+    ? options.koyler.filter((item) => item.alimNoktasiId === alimNoktasiId)
+    : options.koyler
+  return [...koyler].sort((a, b) => a.adi.localeCompare(b.adi, 'tr-TR'))
 }
 
 export function toSelectOptions(
