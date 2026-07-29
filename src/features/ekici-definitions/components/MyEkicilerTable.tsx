@@ -150,7 +150,7 @@ export function MyEkicilerTable({
       variant="plain"
       className="!rounded-none !border-0"
       tableClassName="app-table-cols"
-      pagination={{ pageSize: 20, pageSizeOptions: [20, 50, 100] }}
+      pagination={{ pageSize: 50, pageSizeOptions: [50, 100, 250, 500, 1000] }}
       getRowClassName={(row) =>
         cn(getEkiciAnketRowClassName(row.anketDurumu), onRowDoubleClick && 'select-none')
       }

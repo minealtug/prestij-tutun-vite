@@ -113,11 +113,17 @@ export function EkicilerimPage() {
   const tableRows = useMemo(() => {
     const ekiciler = ekicilerQuery.data ?? []
     const query = search.trim().toLocaleLowerCase('tr-TR')
-    const filteredEkiciler = ekiciler.filter((ekici) => {
-      if (!matchesAktifFilter(ekici, aktifFilter)) return false
-      if (query && !matchesEkiciSearch(ekici, query)) return false
-      return true
-    })
+    const filteredEkiciler = ekiciler
+      .filter((ekici) => {
+        if (!matchesAktifFilter(ekici, aktifFilter)) return false
+        if (query && !matchesEkiciSearch(ekici, query)) return false
+        return true
+      })
+      .sort((a, b) => {
+        const menseiCmp = (a.menseiAdi ?? '').localeCompare(b.menseiAdi ?? '', 'tr-TR')
+        if (menseiCmp !== 0) return menseiCmp
+        return getEkiciFullName(a).localeCompare(getEkiciFullName(b), 'tr-TR')
+      })
 
     return buildMyEkiciTableRows(filteredEkiciler, filteredCevaplar, anketSelected)
   }, [aktifFilter, anketSelected, ekicilerQuery.data, filteredCevaplar, search])
