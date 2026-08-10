@@ -60,8 +60,7 @@ function extractFieldErrors(data: unknown): Record<string, string[]> | undefined
 
 function extractResponseMessage(data: unknown): string | undefined {
   if (typeof data === 'string') {
-    const trimmed = data.trim()
-    return trimmed || undefined
+    return toUserFacingMessage(data)
   }
 
   if (!data || typeof data !== 'object') return undefined
@@ -79,8 +78,9 @@ function extractResponseMessage(data: unknown): string | undefined {
   ]
 
   for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim()) {
-      return candidate.trim()
+    if (typeof candidate === 'string') {
+      const message = toUserFacingMessage(candidate)
+      if (message) return message
     }
   }
 
@@ -88,18 +88,51 @@ function extractResponseMessage(data: unknown): string | undefined {
   if (fieldErrors) {
     for (const messages of Object.values(fieldErrors)) {
       const first = messages.find((item) => item.trim())
-      if (first) return first.trim()
+      if (first) {
+        const message = toUserFacingMessage(first)
+        if (message) return message
+      }
     }
   }
 
   return undefined
 }
 
+/** Reject IIS/ASP.NET HTML dumps and other non-user-facing payloads. */
+function toUserFacingMessage(raw: string): string | undefined {
+  const trimmed = raw.trim()
+  if (!trimmed) return undefined
+  if (isNonUserFacingMessage(trimmed)) return undefined
+  return trimmed
+}
+
+function isNonUserFacingMessage(message: string): boolean {
+  const trimmed = message.trim()
+  // IIS / reverse-proxy HTML error pages are long and not meant for end users.
+  if (trimmed.length > 400) return true
+
+  const lower = trimmed.toLowerCase()
+  return (
+    lower.startsWith('<!doctype') ||
+    lower.startsWith('<html') ||
+    /<\s*html\b/i.test(trimmed) ||
+    /<\s*head\b/i.test(trimmed) ||
+    /<\s*body\b/i.test(trimmed) ||
+    /<\s*style\b/i.test(trimmed) ||
+    /<\s*title\b/i.test(trimmed) ||
+    lower.includes('iis ') ||
+    lower.includes('detailed error') ||
+    lower.includes('server error in ') ||
+    /method not allowed/i.test(trimmed)
+  )
+}
+
 function isGenericHttpMessage(message: string): boolean {
   const trimmed = message.trim()
   return (
     /^request failed with status code \d+$/i.test(trimmed) ||
-    trimmed === 'Network Error'
+    trimmed === 'Network Error' ||
+    isNonUserFacingMessage(trimmed)
   )
 }
 
@@ -113,10 +146,17 @@ function getDefaultMessageForStatus(status: number): string {
       return 'Bu işlem için yetkiniz yok.'
     case 404:
       return 'İstenen kayıt bulunamadı.'
+    case 405:
+      return 'Bu işlem şu anda gerçekleştirilemiyor. Lütfen daha sonra tekrar deneyin.'
     case 409:
       return 'Bu işlem mevcut verilerle çakışıyor.'
+    case 415:
+      return 'Gönderilen içerik türü desteklenmiyor.'
     case 422:
       return 'Gönderilen veriler doğrulanamadı.'
+    case 502:
+    case 503:
+      return 'Sunucuya şu an ulaşılamıyor. Lütfen daha sonra tekrar deneyin.'
     default:
       if (status >= 500) {
         return 'Sunucuda bir hata oluştu. Lütfen daha sonra tekrar deneyin.'
