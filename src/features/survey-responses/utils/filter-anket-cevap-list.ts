@@ -8,13 +8,17 @@ function rowMatchesBaslikId(item: AnketCevapOzetItem, baslikId: number): boolean
   return item.baslikId != null && item.baslikId === baslikId
 }
 
-function rowMatchesAnketAdi(item: AnketCevapOzetItem, anketAdi: string): boolean {
-  const target = normalizeAnketAdi(anketAdi)
+function rowMatchesBaslikAdi(item: AnketCevapOzetItem, anketAdi: string): boolean {
   const baslik = item.baslikAdi?.trim()
-  if (baslik && normalizeAnketAdi(baslik) === target) return true
+  if (!baslik) return false
+  return normalizeAnketAdi(baslik) === normalizeAnketAdi(anketAdi)
+}
+
+function rowMatchesAnketAdi(item: AnketCevapOzetItem, anketAdi: string): boolean {
+  if (rowMatchesBaslikAdi(item, anketAdi)) return true
 
   const sablon = item.sablonAdi?.trim()
-  if (sablon && normalizeAnketAdi(sablon) === target) return true
+  if (sablon && normalizeAnketAdi(sablon) === normalizeAnketAdi(anketAdi)) return true
 
   return false
 }
@@ -27,7 +31,15 @@ export function filterAnketCevapList(
   if (baslikId == null && !anketAdi?.trim()) return items
 
   return items.filter((item) => {
-    if (baslikId != null && rowMatchesBaslikId(item, baslikId)) return true
+    // Önce baslikId; ad eşlemesi yalnızca kayıtta baslikId yoksa (eski/eksik veri)
+    if (baslikId != null) {
+      if (rowMatchesBaslikId(item, baslikId)) return true
+      if (item.baslikId == null && anketAdi?.trim() && rowMatchesBaslikAdi(item, anketAdi)) {
+        return true
+      }
+      return false
+    }
+
     if (anketAdi?.trim() && rowMatchesAnketAdi(item, anketAdi)) return true
     return false
   })

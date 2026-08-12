@@ -11,21 +11,30 @@ import { CografiFiltreFields } from '@/features/cografi-filtre/components/Cograf
 import { useCografiFiltreCascade } from '@/features/cografi-filtre/hooks/use-cografi-filtre-cascade'
 import { useMintikaCografiFiltreOptions } from '@/features/cografi-filtre/hooks/use-cografi-filtre-options'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
-import { useMySurveyResponses } from '@/features/survey-responses/hooks/use-survey-responses'
+import {
+  useAllSurveyResponses,
+  useMySurveyResponses,
+} from '@/features/survey-responses/hooks/use-survey-responses'
 import { filterAnketCevapList } from '@/features/survey-responses/utils/filter-anket-cevap-list'
 import { useSurveys } from '@/features/surveys/hooks/use-surveys'
+import { useQuestions } from '@/features/questions/hooks/use-questions'
 import { useAuthStore } from '@/stores/auth-store'
 import { MyEkicilerTable } from '../components/MyEkicilerTable'
 import { useMyEkiciler } from '../hooks/use-ekici-definitions'
 import type { EkiciDefinitionDto } from '../types/ekici-definition.types'
 import { getEkiciFullName } from '../utils/normalize-ekici-definition-api'
 import { buildMyEkiciTableRows, getLatestCevapForEkici } from '../utils/merge-ekici-anket-counts'
-import { DEFAULT_EKICILERIM_ANKET_BASLIK_ID } from '../utils/ekici-anket-durumu'
+import {
+  countAnketRootZorunluSorular,
+  DEFAULT_EKICILERIM_ANKET_BASLIK_ID,
+  type EkiciAnketDurumu,
+} from '../utils/ekici-anket-durumu'
 import { buildSurveyFillLinkFromEkici } from '@/features/survey-fill/utils/survey-fill-navigation'
 import type { MyEkiciTableRow } from '../components/MyEkicilerTable'
 import { exportMyEkicilerToExcel } from '../utils/export-my-ekiciler-excel'
 
 type AktifFilter = 'all' | 'aktif' | 'pasif'
+type AnketDurumFilter = 'all' | Extract<EkiciAnketDurumu, 'completed' | 'in_progress' | 'not_started'>
 
 const AKTIF_FILTER_OPTIONS = [
   { value: 'all', label: 'Tümü' },
@@ -33,10 +42,22 @@ const AKTIF_FILTER_OPTIONS = [
   { value: 'pasif', label: 'Pasif' },
 ] as const
 
+const ANKET_DURUM_FILTER_OPTIONS = [
+  { value: 'all', label: 'Tümü' },
+  { value: 'completed', label: 'Tamamlanan' },
+  { value: 'in_progress', label: 'Taslak' },
+  { value: 'not_started', label: 'Tamamlanmayan' },
+] as const
+
 function matchesAktifFilter(ekici: EkiciDefinitionDto, filter: AktifFilter) {
   if (filter === 'aktif') return ekici.aktif === 1
   if (filter === 'pasif') return ekici.aktif !== 1
   return true
+}
+
+function matchesAnketDurumFilter(row: MyEkiciTableRow, filter: AnketDurumFilter) {
+  if (filter === 'all') return true
+  return row.anketDurumu === filter
 }
 
 function matchesEkiciSearch(ekici: EkiciDefinitionDto, query: string) {
@@ -74,14 +95,27 @@ export function EkicilerimPage() {
     requireMintika: hasUserMintika,
   })
   const surveysQuery = useSurveys()
-  const cevaplarQuery = useMySurveyResponses(userId)
+  // Anasayfa admin özeti tüm cevapları kullanır; Ekicilerim'de de admin için aynı kaynak gerekli.
+  const myCevaplarQuery = useMySurveyResponses(isAdmin ? undefined : userId)
+  const allCevaplarQuery = useAllSurveyResponses(isAdmin)
+  const cevaplarQuery = isAdmin ? allCevaplarQuery : myCevaplarQuery
 
   const [search, setSearch] = useState('')
   const [aktifFilter, setAktifFilter] = useState<AktifFilter>('all')
+  const [anketDurumFilter, setAnketDurumFilter] = useState<AnketDurumFilter>('all')
   const [selectedBaslikId, setSelectedBaslikId] = useState(DEFAULT_EKICILERIM_ANKET_BASLIK_ID)
 
   const anketSelected = selectedBaslikId.trim().length > 0
   const selectedBaslikIdNum = Number(selectedBaslikId)
+  const questionsQuery = useQuestions(
+    anketSelected && Number.isFinite(selectedBaslikIdNum) && selectedBaslikIdNum > 0
+      ? selectedBaslikIdNum
+      : 0,
+  )
+  const minCompletedAnswerCount = useMemo(
+    () => countAnketRootZorunluSorular(questionsQuery.data ?? []),
+    [questionsQuery.data],
+  )
   const hasGeoFilter = Boolean(
     geoCascade.queryParams.menseiId ||
       geoCascade.queryParams.bolgeId ||
@@ -90,6 +124,7 @@ export function EkicilerimPage() {
       geoCascade.queryParams.koyId,
   )
   const hasAktifFilter = aktifFilter !== 'all'
+  const hasAnketDurumFilter = anketSelected && anketDurumFilter !== 'all'
 
   const anketOptions = useMemo(() => {
     const surveys = surveysQuery.data ?? []
@@ -104,12 +139,22 @@ export function EkicilerimPage() {
     ]
   }, [surveysQuery.data])
 
+  const selectedSurveyName = useMemo(() => {
+    if (!anketSelected) return undefined
+    const label = anketOptions.find((option) => option.value === selectedBaslikId)?.label?.trim()
+    return label || undefined
+  }, [anketOptions, anketSelected, selectedBaslikId])
+
   const filteredCevaplar = useMemo(() => {
     if (!anketSelected || !Number.isFinite(selectedBaslikIdNum) || selectedBaslikIdNum <= 0) {
       return []
     }
-    return filterAnketCevapList(cevaplarQuery.data ?? [], { baslikId: selectedBaslikIdNum })
-  }, [anketSelected, cevaplarQuery.data, selectedBaslikIdNum])
+    // baslikId yoksa veya uyuşmuyorsa anket adı ile de eşle (anasayfa ile tutarlılık)
+    return filterAnketCevapList(cevaplarQuery.data ?? [], {
+      baslikId: selectedBaslikIdNum,
+      anketAdi: selectedSurveyName,
+    })
+  }, [anketSelected, cevaplarQuery.data, selectedBaslikIdNum, selectedSurveyName])
 
   const tableRows = useMemo(() => {
     const ekiciler = ekicilerQuery.data ?? []
@@ -122,8 +167,8 @@ export function EkicilerimPage() {
       })
       .sort((a, b) => {
         if (isAdmin) {
-          const menseiCmp = (a.menseiAdi ?? '').localeCompare(b.menseiAdi ?? '', 'tr-TR')
-          if (menseiCmp !== 0) return menseiCmp
+          const mintikaCmp = (a.mintikaAdi ?? '').localeCompare(b.mintikaAdi ?? '', 'tr-TR')
+          if (mintikaCmp !== 0) return mintikaCmp
           const koyCmp = (a.koyAdi ?? '').localeCompare(b.koyAdi ?? '', 'tr-TR')
           if (koyCmp !== 0) return koyCmp
           return getEkiciFullName(a).localeCompare(getEkiciFullName(b), 'tr-TR')
@@ -141,20 +186,31 @@ export function EkicilerimPage() {
         return getEkiciFullName(a).localeCompare(getEkiciFullName(b), 'tr-TR')
       })
 
-    return buildMyEkiciTableRows(filteredEkiciler, filteredCevaplar, anketSelected)
-  }, [aktifFilter, anketSelected, ekicilerQuery.data, filteredCevaplar, isAdmin, search])
+    const rows = buildMyEkiciTableRows(
+      filteredEkiciler,
+      filteredCevaplar,
+      anketSelected,
+      minCompletedAnswerCount,
+    )
+    if (!anketSelected || anketDurumFilter === 'all') return rows
+    return rows.filter((row) => matchesAnketDurumFilter(row, anketDurumFilter))
+  }, [
+    aktifFilter,
+    anketDurumFilter,
+    anketSelected,
+    ekicilerQuery.data,
+    filteredCevaplar,
+    isAdmin,
+    minCompletedAnswerCount,
+    search,
+  ])
 
   const tableEmptyMessage =
-    search.trim().length > 0 || hasGeoFilter || hasAktifFilter
+    search.trim().length > 0 || hasGeoFilter || hasAktifFilter || hasAnketDurumFilter
       ? 'Arama kriterlerinize uygun ekici kaydı bulunamadı.'
       : hasUserMintika
         ? 'Mıntıkanızda kayıtlı ekici bulunmuyor.'
         : 'Kayıtlı ekici bulunmuyor.'
-
-  const selectedSurveyName = useMemo(() => {
-    if (!anketSelected) return undefined
-    return anketOptions.find((option) => option.value === selectedBaslikId)?.label
-  }, [anketOptions, anketSelected, selectedBaslikId])
 
   const isLoading =
     cografiFiltreQuery.isLoading ||
@@ -254,6 +310,15 @@ export function EkicilerimPage() {
                   value={aktifFilter}
                   onChange={(e) => setAktifFilter(e.target.value as AktifFilter)}
                   options={[...AKTIF_FILTER_OPTIONS]}
+                />
+              </div>
+              <div className="min-w-0 w-full sm:max-w-[11rem]">
+                <Select
+                  label="Anket Durumu"
+                  value={anketSelected ? anketDurumFilter : 'all'}
+                  onChange={(e) => setAnketDurumFilter(e.target.value as AnketDurumFilter)}
+                  options={[...ANKET_DURUM_FILTER_OPTIONS]}
+                  disabled={!anketSelected}
                 />
               </div>
               <div className="min-w-0 flex-1 sm:max-w-lg">

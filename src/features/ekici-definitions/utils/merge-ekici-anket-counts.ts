@@ -26,6 +26,7 @@ export function buildMyEkiciTableRows(
   ekiciler: EkiciDefinitionDto[],
   filteredCevaplar: AnketCevapOzetItem[],
   anketSelected: boolean,
+  minCompletedAnswerCount?: number,
 ): MyEkiciTableRow[] {
   const cevaplarByEkiciId = new Map<string, AnketCevapOzetItem[]>()
 
@@ -60,6 +61,7 @@ export function buildMyEkiciTableRows(
         yanitlananSoruSayisi,
         yanitlanmayanSoruSayisi,
         true,
+        minCompletedAnswerCount,
       ),
     }
   })
