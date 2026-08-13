@@ -30,6 +30,8 @@ export function enrichOturumQuestionsWithDefinitions(
 
     return {
       ...soru,
+      sira:
+        definition?.sira != null && definition.sira > 0 ? definition.sira : soru.sira,
       zorunlu: Boolean(definition?.zorunlu ?? soru.zorunlu),
       cevapGirdiTipAdi,
       cevapGirdiTipId,

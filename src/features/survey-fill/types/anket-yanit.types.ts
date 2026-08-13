@@ -106,4 +106,5 @@ export interface SurveyFillSoruView {
   altSecenekler?: AltSecenekOptionDto[]
   anketCevapBirimId?: number | null
   anketCevapBirimAdi?: string | null
+  sira?: number | null
 }

@@ -27,6 +27,7 @@ export interface QuestionDto {
   anketCevapBirimId?: number | null
   anketCevapBirimAdi?: string | null
   anketCevapBirim?: { id?: number | null; adi?: string | null } | null
+  sira?: number | null
   kaynak?: 'AppDb' | 'LegacyDb' | string
 }
 
@@ -63,6 +64,7 @@ export interface CreateQuestionRequest {
   anketCevapBirimId?: number
   bagliSoru: boolean
   bagliSorular?: CreateLinkedQuestionPayload[]
+  sira?: number
 }
 
 export interface CreateNewLinkedQuestionRequest {

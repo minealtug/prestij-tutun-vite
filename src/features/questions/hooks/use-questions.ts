@@ -6,13 +6,19 @@ import type {
   CreateNewLinkedQuestionRequest,
   CreateQuestionRequest,
   LinkExistingQuestionRequest,
+  QuestionDto,
   UpdateBagliKosulRequest,
 } from '../types/question.types'
+import { buildQuestionUpdatePayload } from '../utils/build-question-update-payload'
+import { persistQuestionOrder, sortQuestionsForSurvey } from '../utils/sort-questions'
 
 export function useQuestions(baslikId?: number) {
   return useQuery({
     queryKey: queryKeys.questions.all(baslikId),
-    queryFn: () => (baslikId ? questionsApi.getByBaslikId(baslikId) : questionsApi.getAll()),
+    queryFn: async () => {
+      const data = baslikId ? await questionsApi.getByBaslikId(baslikId) : await questionsApi.getAll()
+      return sortQuestionsForSurvey(data)
+    },
     enabled: baslikId === undefined || baslikId > 0,
   })
 }
@@ -129,6 +135,65 @@ export function useDeleteQuestion() {
     mutationFn: (id: string | number) => questionsApi.delete(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['questions'] })
+    },
+  })
+}
+
+export function useReorderQuestions() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      ordered,
+      previous,
+    }: {
+      ordered: QuestionDto[]
+      previous: QuestionDto[]
+    }) => {
+      persistQuestionOrder(ordered)
+
+      const previousSira = new Map(
+        previous.map((question) => [String(question.id), question.sira ?? null]),
+      )
+      let apiAccepted = true
+
+      for (const question of ordered) {
+        if (!apiAccepted) break
+        if ((previousSira.get(String(question.id)) ?? null) === (question.sira ?? null)) continue
+
+        const payload = buildQuestionUpdatePayload(question, { sira: question.sira ?? undefined })
+        if (!payload) continue
+        try {
+          await questionsApi.update(question.id, payload)
+        } catch {
+          apiAccepted = false
+        }
+      }
+
+      return { ordered, apiAccepted }
+    },
+    onMutate: async ({ ordered }) => {
+      persistQuestionOrder(ordered)
+      await queryClient.cancelQueries({ queryKey: ['questions'] })
+      queryClient.setQueriesData({ queryKey: ['questions'] }, (current: unknown) => {
+        if (!Array.isArray(current)) return current
+        const byId = new Map(ordered.map((question) => [String(question.id), question]))
+        const hasOverlap = current.some(
+          (item) => item && typeof item === 'object' && 'id' in item && byId.has(String(item.id)),
+        )
+        if (!hasOverlap) return current
+        return sortQuestionsForSurvey(
+          current.map((item) => {
+            const question = item as QuestionDto
+            return byId.get(String(question.id)) ?? question
+          }),
+        )
+      })
+    },
+    onSuccess: (result) => {
+      if (result.apiAccepted) {
+        void queryClient.invalidateQueries({ queryKey: ['questions'] })
+      }
     },
   })
 }

@@ -1,4 +1,4 @@
-import { Pencil, Ban, Trash2 } from 'lucide-react'
+import { Pencil, Ban, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
 import { useMemo } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Table, type TableColumn } from '@/components/ui/Table'
@@ -13,6 +13,7 @@ import {
   resolveCevapGirdiTipAdi,
   resolveCevapGirdiTipId,
 } from '../utils/resolve-question-cevap-girdi-tip'
+import type { QuestionMoveDirection } from '../utils/sort-questions'
 
 function resolveBaslikAdi(row: QuestionDto & { baslik?: { adi?: string | null } }) {
   return row.baslikAdi?.trim() || row.baslik?.adi?.trim() || null
@@ -48,6 +49,8 @@ interface QuestionsTableProps {
   onEdit?: (question: QuestionDto) => void
   onSetPassive?: (question: QuestionDto) => void
   onDelete?: (question: QuestionDto) => void
+  onMove?: (question: QuestionDto, direction: QuestionMoveDirection) => void
+  getMoveState?: (question: QuestionDto) => { canMoveUp: boolean; canMoveDown: boolean }
   isUpdating: boolean
 }
 
@@ -60,6 +63,8 @@ export function QuestionsTable({
   onEdit,
   onSetPassive,
   onDelete,
+  onMove,
+  getMoveState,
   isUpdating,
 }: QuestionsTableProps) {
   const answerUnitsQuery = useAnswerUnits()
@@ -72,6 +77,46 @@ export function QuestionsTable({
   }, [answerUnitsQuery.data])
 
   const columns: TableColumn<QuestionDto>[] = [
+    ...(onMove
+      ? [
+          {
+            key: 'sira',
+            header: 'SIRA',
+            className: 'w-28',
+            render: (row: QuestionDto) => {
+              const moveState = getMoveState?.(row) ?? { canMoveUp: false, canMoveDown: false }
+
+              return (
+                <div className="flex items-center gap-1">
+                  <span className="w-6 text-center text-xs font-semibold text-muted">
+                    {row.sira ?? '—'}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="!h-7 !w-7 !p-0"
+                    aria-label="Yukarı taşı"
+                    disabled={isUpdating || !moveState.canMoveUp}
+                    onClick={() => onMove(row, 'up')}
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="!h-7 !w-7 !p-0"
+                    aria-label="Aşağı taşı"
+                    disabled={isUpdating || !moveState.canMoveDown}
+                    onClick={() => onMove(row, 'down')}
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              )
+            },
+          } satisfies TableColumn<QuestionDto>,
+        ]
+      : []),
     {
       key: 'aktif',
       header: 'AKTİF',
@@ -96,7 +141,7 @@ export function QuestionsTable({
         const birimAdi = resolveQuestionBirimAdi(row, unitsById)
 
         return (
-          <span className="whitespace-normal break-words">
+          <span className={row.bagliSoru ? 'whitespace-normal break-words pl-4' : 'whitespace-normal break-words'}>
             {row.soruMetni}
             {birimAdi ? <span className="text-muted"> ({birimAdi})</span> : null}
           </span>
@@ -234,7 +279,7 @@ export function QuestionsTable({
           isLoading={isLoading}
           emptyMessage="Henüz soru yok."
           horizontalScroll
-          tableClassName="min-w-[68rem] app-table-cols"
+          tableClassName="min-w-[72rem] app-table-cols"
           variant="plain"
           compact
           className="!rounded-none !border-0"

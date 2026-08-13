@@ -64,7 +64,12 @@ export function buildPreviewQuestionsFromDefinitions(
   return sortOturumQuestionsForFill(
     definitions
       .filter((question) => question.aktif)
-      .map((question, index) => mapQuestionDefinitionToOturumPreview(question, index + 1))
+      .map((question, index) =>
+        mapQuestionDefinitionToOturumPreview(
+          question,
+          question.sira != null && question.sira > 0 ? question.sira : index + 1,
+        ),
+      )
       .filter((question) => !isEkiciProducerQuestion(question)),
   )
 }

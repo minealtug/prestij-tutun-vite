@@ -1,7 +1,11 @@
 import type { SurveyFillSoruView } from '../types/anket-yanit.types'
 import { isEkiciProducerQuestion } from './is-ekici-producer-question'
 
-function compareBySoruId<T extends SurveyFillSoruView>(left: T, right: T): number {
+/** Anket doldurma sırası: önce sira, yoksa soruId. */
+function compareFillQuestions<T extends SurveyFillSoruView>(left: T, right: T): number {
+  const leftSira = left.sira != null && left.sira > 0 ? left.sira : Number.MAX_SAFE_INTEGER
+  const rightSira = right.sira != null && right.sira > 0 ? right.sira : Number.MAX_SAFE_INTEGER
+  if (leftSira !== rightSira) return leftSira - rightSira
   return left.soruId - right.soruId
 }
 
@@ -24,7 +28,7 @@ export function sortQuestionsUnderParents<T extends SurveyFillSoruView>(question
   }
 
   for (const siblings of childrenByParent.values()) {
-    siblings.sort(compareBySoruId)
+    siblings.sort(compareFillQuestions)
   }
 
   const childIds = new Set<number>()
@@ -32,7 +36,7 @@ export function sortQuestionsUnderParents<T extends SurveyFillSoruView>(question
     for (const child of siblings) childIds.add(child.soruId)
   }
 
-  const roots = questions.filter((question) => !childIds.has(question.soruId)).sort(compareBySoruId)
+  const roots = questions.filter((question) => !childIds.has(question.soruId)).sort(compareFillQuestions)
 
   const result: T[] = []
   const visited = new Set<number>()

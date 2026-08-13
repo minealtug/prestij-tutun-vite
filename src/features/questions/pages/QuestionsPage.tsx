@@ -14,6 +14,7 @@ import {
   useUpdateBagliKosul,
   useUpdateQuestion,
   useDeleteQuestion,
+  useReorderQuestions,
 } from '../hooks/use-questions'
 import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { useAnswerUnits } from '@/features/answer-units/hooks/use-answer-units'
@@ -30,51 +31,13 @@ import { GORUNME_KOSULU_LABEL } from '../utils/question-field-labels'
 import { AltSecenekMultiSelect } from '../components/AltSecenekMultiSelect'
 import { needsSecenekGrup } from '../utils/needs-secenek-grup'
 import type { QuestionDto } from '../types/question.types'
-import { resolveCevapGirdiTipId } from '../utils/resolve-question-cevap-girdi-tip'
 import { resolveQuestionBirimId } from '../utils/resolve-question-birim-adi'
-
-function buildQuestionUpdatePayload(
-  question: QuestionDto,
-  values: {
-    soruMetni: string
-    aktif: boolean
-    zorunlu: boolean
-    anketCevapBirimId: string
-    altSecenekIds: number[]
-  },
-): Record<string, unknown> | null {
-  const cevapGirdiTipId = resolveCevapGirdiTipId(question)
-  if (cevapGirdiTipId == null) return null
-
-  const payload: Record<string, unknown> = {
-    soruMetni: values.soruMetni,
-    aktif: values.aktif,
-    zorunlu: values.zorunlu,
-    cevapGirdiTipId,
-    bagliSoru: question.bagliSoru,
-  }
-
-  if (question.kaynak === 'AppDb') {
-    payload.baslikId = question.baslikId
-  }
-
-  const altSoruMetni = question.altSoruMetni?.trim()
-  if (altSoruMetni) payload.altSoruMetni = altSoruMetni
-
-  if (question.secenekGrupId != null && question.secenekGrupId > 0) {
-    payload.secenekGrupId = question.secenekGrupId
-    if (question.kaynak === 'AppDb') {
-      payload.altSecenekIds = values.altSecenekIds
-    }
-  }
-
-  const parsedAnketCevapBirimId = Number(values.anketCevapBirimId)
-  if (Number.isFinite(parsedAnketCevapBirimId) && parsedAnketCevapBirimId > 0) {
-    payload.anketCevapBirimId = parsedAnketCevapBirimId
-  }
-
-  return payload
-}
+import { buildQuestionUpdatePayload } from '../utils/build-question-update-payload'
+import {
+  getQuestionMoveState,
+  moveQuestionInSurvey,
+  type QuestionMoveDirection,
+} from '../utils/sort-questions'
 
 function getParentQuestionSearchText(
   value: QuestionDto['bagliOlduguSoru'],
@@ -120,6 +83,7 @@ export function QuestionsPage() {
   const updateBagliKosul = useUpdateBagliKosul()
   const setQuestionActive = useSetQuestionActive()
   const deleteQuestion = useDeleteQuestion()
+  const reorderQuestions = useReorderQuestions()
   const [selectedSurveyId, setSelectedSurveyId] = useState(0)
   const [search, setSearch] = useState('')
   const [editingQuestion, setEditingQuestion] = useState<QuestionDto | null>(null)
@@ -289,7 +253,8 @@ export function QuestionsPage() {
     updateQuestion.isPending ||
     updateBagliKosul.isPending ||
     setQuestionActive.isPending ||
-    deleteQuestion.isPending
+    deleteQuestion.isPending ||
+    reorderQuestions.isPending
 
   const surveySelectOptions = (surveysQuery.data ?? []).map((survey) => ({
     key: `${survey.kaynak ?? 'unknown'}-${survey.id}`,
@@ -305,6 +270,14 @@ export function QuestionsPage() {
     if (!query) return currentQuestions
     return currentQuestions.filter((question) => matchesQuestionSearch(question, query))
   }, [currentQuestions, search])
+
+  const canReorder = canEdit && isDefinitionsPage && selectedSurveyId > 0 && !search.trim()
+
+  const handleMove = (question: QuestionDto, direction: QuestionMoveDirection) => {
+    if (!canReorder || reorderQuestions.isPending) return
+    const next = moveQuestionInSurvey(currentQuestions, question.id, direction)
+    reorderQuestions.mutate({ ordered: next, previous: currentQuestions })
+  }
 
   const refreshQuestions = () => {
     void questionsQuery.refetch()
@@ -364,6 +337,12 @@ export function QuestionsPage() {
         </div>
       )}
 
+      {isDefinitionsPage && canReorder ? (
+        <p className="-mt-2 text-xs text-muted">
+          Oklarla anket içindeki soru sırasını değiştirin. Bağlı sorular üst sorunun altında kalır.
+        </p>
+      ) : null}
+
       {isDefinitionsPage && (
         <QuestionsTable
           data={filteredQuestions}
@@ -374,6 +353,12 @@ export function QuestionsPage() {
           onEdit={canEdit ? openEditModal : undefined}
           onSetPassive={canEdit ? handleSetPassive : undefined}
           onDelete={canEdit ? (question) => void handleDelete(question) : undefined}
+          onMove={canReorder ? handleMove : undefined}
+          getMoveState={
+            canReorder
+              ? (question) => getQuestionMoveState(currentQuestions, question.id)
+              : undefined
+          }
           isUpdating={isMutating}
         />
       )}
