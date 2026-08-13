@@ -52,6 +52,17 @@ export interface AnketCevapDetayDto {
   yanitlanmayanSoruSayisi: number
 }
 
+export interface DeleteAnketCevapRequest {
+  ekiciIds: string[]
+  sablonId: number
+  soruIds: number[]
+}
+
+export interface DeleteAnketCevapResult {
+  message: string
+  silinenAdet: number
+}
+
 export interface SoruCevapDisplay {
   soruId: number
   sira: number

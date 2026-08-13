@@ -6,6 +6,8 @@ import type {
   AnketCevapDetayDto,
   AnketCevapOzetItem,
   CografiFiltreOptionsDto,
+  DeleteAnketCevapRequest,
+  DeleteAnketCevapResult,
   FilterOptionDto,
   SurveyResponsesQueryParams,
 } from '../types/survey-response.types'
@@ -22,6 +24,7 @@ import {
 import { anketYanitApi, isAnketCevapNotFoundError } from '@/features/survey-fill/api/anket-yanit-api'
 import { mapCografiFiltreOptionsFromApi } from '../utils/cografi-filtre'
 import { mapOturumToCevapDetay } from '../utils/map-oturum-to-cevap-detay'
+import { mapDeleteAnketCevapResult } from '../utils/delete-survey-responses'
 
 function isNetworkError(error: unknown): boolean {
   return (
@@ -52,6 +55,15 @@ function toQueryRecord(params: SurveyResponsesQueryParams): Record<string, unkno
   if (params.alimNoktasiId != null) record.alimNoktasiId = params.alimNoktasiId
   if (params.koyId != null) record.koyId = params.koyId
   return record
+}
+
+function getAnketCevapList(query: Record<string, unknown>) {
+  return apiClient.get<unknown[]>('/api/AnketCevap', query, {
+    headers: {
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
+    },
+  })
 }
 
 function mapAndFilterAnketCevapItems(
@@ -131,10 +143,7 @@ async function fetchAnketCevapListFromApi(
 
     const lists = await Promise.all(
       menseiler.map((mensei) =>
-        apiClient.get<unknown[]>(
-          '/api/AnketCevap',
-          toQueryRecord({ ...params, menseiId: mensei.id }),
-        ),
+        getAnketCevapList(toQueryRecord({ ...params, menseiId: mensei.id })),
       ),
     )
     const byId = new Map<string, AnketCevapOzetItem>()
@@ -144,21 +153,19 @@ async function fetchAnketCevapListFromApi(
     return sortAnketCevapOzetList([...byId.values()])
   }
 
-  const items = await apiClient.get<unknown[]>('/api/AnketCevap', toQueryRecord(params))
+  const items = await getAnketCevapList(toQueryRecord(params))
   return mapAndFilterAnketCevapItems(items, params)
 }
 
 async function fetchAllAnketCevapListFromApi(): Promise<AnketCevapOzetItem[]> {
   const menseiler = await fetchMenseilerForAnketOnlySearch()
   if (menseiler.length === 0) {
-    const items = await apiClient.get<unknown[]>('/api/AnketCevap', {})
+    const items = await getAnketCevapList({})
     return mapAndFilterAnketCevapItems(items, {})
   }
 
   const lists = await Promise.all(
-    menseiler.map((mensei) =>
-      apiClient.get<unknown[]>('/api/AnketCevap', toQueryRecord({ menseiId: mensei.id })),
-    ),
+    menseiler.map((mensei) => getAnketCevapList(toQueryRecord({ menseiId: mensei.id }))),
   )
   const byId = new Map<string, AnketCevapOzetItem>()
   for (const item of mapAndFilterAnketCevapItems(lists.flat(), {})) {
@@ -231,5 +238,21 @@ export const surveyResponsesApi = {
         return { sorular: [], yanitlanmayanSoruSayisi: 0 }
       },
       () => devResponsesStore.getDetail(ekiciId, sablonId),
+    ),
+
+  deleteCevaplar: async (payload: DeleteAnketCevapRequest): Promise<DeleteAnketCevapResult> =>
+    withDevFallback(
+      async () => {
+        const result = await apiClient.postResult<unknown>(
+          '/api/AnketCevap/sil',
+          payload,
+          { timeout: 60_000 },
+        )
+        return mapDeleteAnketCevapResult(result.data, result.message)
+      },
+      () => ({
+        message: 'Seçilen ekicilerin anket cevapları silindi.',
+        silinenAdet: payload.ekiciIds.length,
+      }),
     ),
 }

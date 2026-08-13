@@ -1,7 +1,11 @@
 import type { CografiFiltreQueryParams } from '@/features/cografi-filtre/types'
 import type { EkiciDefinitionDto } from '@/features/ekici-definitions/types/ekici-definition.types'
 import type { AnketCevapOzetItem } from '@/features/survey-responses/types/survey-response.types'
-import { getOzetKullaniciAdi, getOzetSurveyName } from '@/features/survey-responses/types/survey-response.types'
+import {
+  getOzetFullName,
+  getOzetKullaniciAdi,
+  getOzetSurveyName,
+} from '@/features/survey-responses/types/survey-response.types'
 import type { UserDto } from '@/features/users/types/user.types'
 import {
   getDaysSinceSonIslem,
@@ -32,6 +36,7 @@ export interface AdminGeoComparisonRow {
   partial: number
   total: number
   completionPercent: number
+  children?: AdminGeoComparisonRow[]
 }
 
 export interface AdminUserActivitySummary {
@@ -152,41 +157,101 @@ export function computeAdminFieldFillSummary(
   return { completed, partial, today, week }
 }
 
-function buildGeoComparisonRows(
-  items: AnketCevapOzetItem[],
-  getLabel: (item: AnketCevapOzetItem) => string,
-): AdminGeoComparisonRow[] {
-  const map = new Map<string, { label: string; completed: number; partial: number }>()
+type GeoCountBucket = { label: string; completed: number; partial: number }
 
-  for (const item of items) {
-    const label = getLabel(item).trim() || 'Belirtilmemiş'
-    const key = label.toLocaleLowerCase('tr-TR')
-    const current = map.get(key) ?? { label, completed: 0, partial: 0 }
-    const status = getSurveyResponseStatus(item)
-    if (status === 'completed') current.completed += 1
-    else if (status === 'partial') current.partial += 1
-    else continue
-    map.set(key, current)
+function toGeoComparisonRow(
+  key: string,
+  counts: GeoCountBucket,
+  children?: AdminGeoComparisonRow[],
+): AdminGeoComparisonRow {
+  const total = counts.completed + counts.partial
+  return {
+    key,
+    label: counts.label,
+    completed: counts.completed,
+    partial: counts.partial,
+    total,
+    completionPercent: total > 0 ? Math.round((counts.completed / total) * 100) : 0,
+    children,
   }
+}
 
-  return [...map.entries()]
-    .map(([key, counts]) => {
-      const total = counts.completed + counts.partial
-      return {
-        key,
-        label: counts.label,
-        completed: counts.completed,
-        partial: counts.partial,
-        total,
-        completionPercent: total > 0 ? Math.round((counts.completed / total) * 100) : 0,
-      }
-    })
+function sortGeoComparisonRows(rows: AdminGeoComparisonRow[]): AdminGeoComparisonRow[] {
+  return rows
     .filter((row) => row.total > 0)
     .sort((a, b) => b.completionPercent - a.completionPercent || b.total - a.total)
 }
 
+function incrementGeoCount(bucket: GeoCountBucket, status: 'completed' | 'partial') {
+  if (status === 'completed') bucket.completed += 1
+  else bucket.partial += 1
+}
+
+function buildGeoComparisonRows(
+  items: AnketCevapOzetItem[],
+  getLabel: (item: AnketCevapOzetItem) => string,
+): AdminGeoComparisonRow[] {
+  const map = new Map<string, GeoCountBucket>()
+
+  for (const item of items) {
+    const status = getSurveyResponseStatus(item)
+    if (status !== 'completed' && status !== 'partial') continue
+    const label = getLabel(item).trim() || 'Belirtilmemiş'
+    const key = label.toLocaleLowerCase('tr-TR')
+    const current = map.get(key) ?? { label, completed: 0, partial: 0 }
+    incrementGeoCount(current, status)
+    map.set(key, current)
+  }
+
+  return sortGeoComparisonRows(
+    [...map.entries()].map(([key, counts]) => toGeoComparisonRow(key, counts)),
+  )
+}
+
 export function computeMintikaComparison(items: AnketCevapOzetItem[]): AdminGeoComparisonRow[] {
-  return buildGeoComparisonRows(items, (item) => item.mintikaAdi?.trim() || 'Belirtilmemiş')
+  const map = new Map<
+    string,
+    GeoCountBucket & { ekiciler: Map<string, GeoCountBucket> }
+  >()
+
+  for (const item of items) {
+    const status = getSurveyResponseStatus(item)
+    if (status !== 'completed' && status !== 'partial') continue
+
+    const mintikaLabel = item.mintikaAdi?.trim() || 'Belirtilmemiş'
+    const mintikaKey = mintikaLabel.toLocaleLowerCase('tr-TR')
+    const current = map.get(mintikaKey) ?? {
+      label: mintikaLabel,
+      completed: 0,
+      partial: 0,
+      ekiciler: new Map(),
+    }
+    incrementGeoCount(current, status)
+
+    const ekiciId = item.ekiciId?.trim() || getOzetFullName(item)
+    const ekiciKey = ekiciId.toLocaleLowerCase('tr-TR')
+    const ekiciLabel = getOzetFullName(item)
+    const ekici = current.ekiciler.get(ekiciKey) ?? {
+      label: ekiciLabel,
+      completed: 0,
+      partial: 0,
+    }
+    incrementGeoCount(ekici, status)
+    if (ekiciLabel !== '-') ekici.label = ekiciLabel
+    current.ekiciler.set(ekiciKey, ekici)
+
+    map.set(mintikaKey, current)
+  }
+
+  return sortGeoComparisonRows(
+    [...map.entries()].map(([key, counts]) => {
+      const children = [...counts.ekiciler.entries()]
+        .map(([ekiciKey, ekici]) => toGeoComparisonRow(`${key}|${ekiciKey}`, ekici))
+        .filter((row) => row.total > 0)
+        .sort((a, b) => a.label.localeCompare(b.label, 'tr-TR'))
+      return toGeoComparisonRow(key, counts, children)
+    }),
+  )
 }
 
 export function computeBolgeComparison(items: AnketCevapOzetItem[]): AdminGeoComparisonRow[] {

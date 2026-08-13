@@ -21,6 +21,10 @@ interface SurveyResponsesTableProps {
   onRefresh: () => void
   columnBorders?: boolean
   showAnswerCounts?: boolean
+  selectable?: boolean
+  selectedIds?: ReadonlySet<string>
+  onToggleRow?: (id: string, checked: boolean) => void
+  onToggleAll?: (ids: string[], checked: boolean) => void
 }
 
 function formatAnswerCount(value: number) {
@@ -46,8 +50,12 @@ export function SurveyResponsesTable({
   onRefresh,
   columnBorders = false,
   showAnswerCounts = false,
+  selectable = false,
+  selectedIds,
+  onToggleRow,
+  onToggleAll,
 }: SurveyResponsesTableProps) {
-  const columnCount = showAnswerCounts ? 7 : 5
+  const columnCount = (showAnswerCounts ? 7 : 5) + (selectable ? 1 : 0)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
@@ -70,6 +78,12 @@ export function SurveyResponsesTable({
     if (visibleData.some((row) => row.id === expandedId)) return
     setExpandedId(null)
   }, [expandedId, visibleData])
+
+  const selectedCount = selectable
+    ? data.filter((row) => selectedIds?.has(row.id)).length
+    : 0
+  const allListedSelected = selectable && data.length > 0 && selectedCount === data.length
+  const someListedSelected = selectedCount > 0 && !allListedSelected
 
   if (isLoading) {
     return (
@@ -106,6 +120,21 @@ export function SurveyResponsesTable({
         >
           <thead>
             <tr>
+              {selectable && (
+                <th className="w-10 text-center">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-border text-primary-500 focus:ring-primary-500"
+                    checked={allListedSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someListedSelected
+                    }}
+                    onChange={(e) => onToggleAll?.(data.map((row) => row.id), e.target.checked)}
+                    aria-label="Listedeki tüm satırları seç"
+                    disabled={data.length === 0}
+                  />
+                </th>
+              )}
               <th>TARİH</th>
               <th>KULLANICI</th>
               <th>ADI SOYADI</th>
@@ -134,6 +163,7 @@ export function SurveyResponsesTable({
               visibleData.map((row) => {
                 const isOpen = expandedId === row.id
                 const kategoriAdi = row.baslikAdi?.trim() || 'Genel'
+                const isSelected = Boolean(selectedIds?.has(row.id))
 
                 return (
                   <Fragment key={row.id}>
@@ -154,6 +184,21 @@ export function SurveyResponsesTable({
                       role="button"
                       aria-expanded={isOpen}
                     >
+                      {selectable && (
+                        <td
+                          className="text-center"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-border text-primary-500 focus:ring-primary-500"
+                            checked={isSelected}
+                            onChange={(e) => onToggleRow?.(row.id, e.target.checked)}
+                            aria-label={`${getOzetFullName(row)} satırını seç`}
+                          />
+                        </td>
+                      )}
                       <td className="whitespace-nowrap">{formatSonIslemTarihi(row.sonIslemTarihi)}</td>
                       <td>{getOzetKullaniciAdi(row)}</td>
                       <td>{getOzetFullName(row)}</td>

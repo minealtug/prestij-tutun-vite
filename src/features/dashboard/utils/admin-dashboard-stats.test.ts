@@ -131,6 +131,65 @@ describe('admin-dashboard-stats', () => {
     expect(rows[1]?.completionPercent).toBe(0)
   })
 
+  it('groups ekiciler under mintika comparison rows', () => {
+    const rows = computeMintikaComparison([
+      makeSurvey({
+        id: '1',
+        ekiciId: 'e1',
+        ekiciAd: 'Ali',
+        ekiciSoyad: 'Yılmaz',
+        mintikaAdi: 'TAVAS',
+        yanitlananSoruSayisi: 5,
+        yanitlanmayanSoruSayisi: 0,
+      }),
+      makeSurvey({
+        id: '2',
+        ekiciId: 'e1',
+        ekiciAd: 'Ali',
+        ekiciSoyad: 'Yılmaz',
+        mintikaAdi: 'TAVAS',
+        sablonId: 2,
+        yanitlananSoruSayisi: 1,
+        yanitlanmayanSoruSayisi: 4,
+      }),
+      makeSurvey({
+        id: '3',
+        ekiciId: 'e2',
+        ekiciAd: 'Ayşe',
+        ekiciSoyad: 'Demir',
+        mintikaAdi: 'TAVAS',
+        yanitlananSoruSayisi: 1,
+        yanitlanmayanSoruSayisi: 3,
+      }),
+      makeSurvey({
+        id: '4',
+        ekiciId: 'e3',
+        ekiciAd: 'Mehmet',
+        ekiciSoyad: 'Kaya',
+        mintikaAdi: 'KARACASU',
+        yanitlananSoruSayisi: 2,
+        yanitlanmayanSoruSayisi: 2,
+      }),
+    ])
+
+    const tavas = rows.find((row) => row.label === 'TAVAS')
+    expect(tavas?.total).toBe(3)
+    expect(tavas?.children).toHaveLength(2)
+    expect(tavas?.children?.map((child) => child.label)).toEqual(['Ali Yılmaz', 'Ayşe Demir'])
+    expect(tavas?.children?.[0]).toMatchObject({
+      completed: 1,
+      partial: 1,
+      total: 2,
+      completionPercent: 50,
+    })
+    expect(tavas?.children?.[1]).toMatchObject({
+      completed: 0,
+      partial: 1,
+      total: 1,
+      completionPercent: 0,
+    })
+  })
+
   it('computes user activity and never-filled users', () => {
     const now = new Date(2026, 6, 21)
     const users = [

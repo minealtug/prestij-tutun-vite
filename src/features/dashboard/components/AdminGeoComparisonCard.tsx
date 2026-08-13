@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
+import { Minus, Plus } from 'lucide-react'
 import {
   Bar,
   BarChart,
@@ -25,13 +26,34 @@ const VIEW_LABELS: Record<GeoView, string> = {
   bolge: 'Bölge',
 }
 
+function completionBadgeClass(percent: number) {
+  if (percent >= 70) return 'bg-emerald-500/15 text-emerald-700'
+  if (percent >= 40) return 'bg-amber-500/15 text-amber-800'
+  return 'bg-red-500/15 text-red-700'
+}
+
+function CompletionBadge({ percent }: { percent: number }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex rounded-full px-2 py-0.5 text-xs font-semibold',
+        completionBadgeClass(percent),
+      )}
+    >
+      %{percent}
+    </span>
+  )
+}
+
 export function AdminGeoComparisonCard({
   mintikaRows,
   bolgeRows,
   isLoading = false,
 }: AdminGeoComparisonCardProps) {
   const [view, setView] = useState<GeoView>('mintika')
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(() => new Set())
   const rows = view === 'mintika' ? mintikaRows : bolgeRows
+  const canExpand = view === 'mintika'
 
   const chartData = useMemo(
     () =>
@@ -45,6 +67,20 @@ export function AdminGeoComparisonCard({
     [rows],
   )
 
+  const handleViewChange = (nextView: GeoView) => {
+    setView(nextView)
+    setExpandedKeys(new Set())
+  }
+
+  const toggleExpanded = (key: string) => {
+    setExpandedKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   return (
     <Card
       title="Mıntıka / bölge karşılaştırması"
@@ -57,7 +93,7 @@ export function AdminGeoComparisonCard({
           <button
             key={tab}
             type="button"
-            onClick={() => setView(tab)}
+            onClick={() => handleViewChange(tab)}
             className={cn(
               'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
               view === tab
@@ -112,28 +148,64 @@ export function AdminGeoComparisonCard({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
-                  <tr key={row.key}>
-                    <td className="font-medium">{row.label}</td>
-                    <td className="text-center">{row.completed.toLocaleString('tr-TR')}</td>
-                    <td className="text-center">{row.partial.toLocaleString('tr-TR')}</td>
-                    <td className="text-center">{row.total.toLocaleString('tr-TR')}</td>
-                    <td className="text-center">
-                      <span
-                        className={cn(
-                          'inline-flex rounded-full px-2 py-0.5 text-xs font-semibold',
-                          row.completionPercent >= 70
-                            ? 'bg-emerald-500/15 text-emerald-700'
-                            : row.completionPercent >= 40
-                              ? 'bg-amber-500/15 text-amber-800'
-                              : 'bg-red-500/15 text-red-700',
-                        )}
-                      >
-                        %{row.completionPercent}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {rows.map((row) => {
+                  const children = row.children ?? []
+                  const isOpen = expandedKeys.has(row.key)
+                  const showToggle = canExpand && children.length > 0
+
+                  return (
+                    <Fragment key={row.key}>
+                      <tr>
+                        <td className="font-medium">
+                          {showToggle ? (
+                            <span className="inline-flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleExpanded(row.key)}
+                                aria-expanded={isOpen}
+                                aria-label={
+                                  isOpen
+                                    ? `${row.label} ekicilerini gizle`
+                                    : `${row.label} ekicilerini göster`
+                                }
+                                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-surface-elevated text-foreground hover:bg-primary-50"
+                              >
+                                {isOpen ? (
+                                  <Minus className="h-3.5 w-3.5" />
+                                ) : (
+                                  <Plus className="h-3.5 w-3.5" />
+                                )}
+                              </button>
+                              {row.label}
+                            </span>
+                          ) : (
+                            row.label
+                          )}
+                        </td>
+                        <td className="text-center">{row.completed.toLocaleString('tr-TR')}</td>
+                        <td className="text-center">{row.partial.toLocaleString('tr-TR')}</td>
+                        <td className="text-center">{row.total.toLocaleString('tr-TR')}</td>
+                        <td className="text-center">
+                          <CompletionBadge percent={row.completionPercent} />
+                        </td>
+                      </tr>
+                      {isOpen &&
+                        children.map((child) => (
+                          <tr key={child.key} className="!bg-[#f5f8fb] hover:!bg-primary-50">
+                            <td className="pl-12 font-normal text-foreground/90">{child.label}</td>
+                            <td className="text-center">
+                              {child.completed.toLocaleString('tr-TR')}
+                            </td>
+                            <td className="text-center">{child.partial.toLocaleString('tr-TR')}</td>
+                            <td className="text-center">{child.total.toLocaleString('tr-TR')}</td>
+                            <td className="text-center">
+                              <CompletionBadge percent={child.completionPercent} />
+                            </td>
+                          </tr>
+                        ))}
+                    </Fragment>
+                  )
+                })}
               </tbody>
             </table>
           </div>
