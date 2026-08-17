@@ -32,8 +32,8 @@ export function mapQuestionFromApi(raw: unknown): QuestionDto {
 
   const secenekGrupRaw = pick(row, 'secenekGrupId', 'SecenekGrupId')
   const secenekGrupNum = Number(secenekGrupRaw)
-  const siraRaw = Number(pick(row, 'sira', 'Sira', 'siraNo', 'SiraNo') ?? 0)
-  const sira = Number.isFinite(siraRaw) && siraRaw > 0 ? siraRaw : null
+  const siraNoRaw = Number(pick(row, 'siraNo', 'SiraNo', 'sira', 'Sira') ?? 0)
+  const siraNo = Number.isFinite(siraNoRaw) && siraNoRaw > 0 ? siraNoRaw : null
 
   return {
     id: pick(row, 'id', 'Id') as string | number,
@@ -71,7 +71,7 @@ export function mapQuestionFromApi(raw: unknown): QuestionDto {
           adi: String(anketCevapBirim.adi ?? anketCevapBirim.Adi ?? ''),
         }
       : null,
-    sira,
+    siraNo,
     kaynak: (pick(row, 'kaynak', 'Kaynak') as QuestionDto['kaynak']) ?? undefined,
   }
 }

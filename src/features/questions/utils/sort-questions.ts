@@ -1,8 +1,4 @@
-import type { QuestionDto } from '../types/question.types'
-import {
-  questionOrderStorage,
-  type QuestionOrderStorage,
-} from './question-order-storage'
+import type { QuestionDto, UpdateAnketSoruSiraItem } from '../types/question.types'
 
 export type QuestionMoveDirection = 'up' | 'down'
 
@@ -20,34 +16,19 @@ function numericId(question: Pick<QuestionDto, 'id'>): number {
   return Number.isFinite(id) ? id : 0
 }
 
-function compareBySiraThenId(left: QuestionDto, right: QuestionDto): number {
-  const leftSira = left.sira != null && left.sira > 0 ? left.sira : Number.MAX_SAFE_INTEGER
-  const rightSira = right.sira != null && right.sira > 0 ? right.sira : Number.MAX_SAFE_INTEGER
+function compareBySiraNoThenId(left: QuestionDto, right: QuestionDto): number {
+  const leftSira = left.siraNo != null && left.siraNo > 0 ? left.siraNo : Number.MAX_SAFE_INTEGER
+  const rightSira = right.siraNo != null && right.siraNo > 0 ? right.siraNo : Number.MAX_SAFE_INTEGER
   if (leftSira !== rightSira) return leftSira - rightSira
   return numericId(left) - numericId(right)
 }
 
-export function assignQuestionSira(questions: QuestionDto[]): QuestionDto[] {
-  return questions.map((question, index) => ({ ...question, sira: index + 1 }))
-}
-
-function applyStoredOrder(questions: QuestionDto[], storedIds: string[]): QuestionDto[] {
-  const remaining = new Map(questions.map((question) => [questionKey(question), question]))
-  const ordered: QuestionDto[] = []
-
-  for (const id of storedIds) {
-    const question = remaining.get(String(id))
-    if (!question) continue
-    ordered.push(question)
-    remaining.delete(String(id))
-  }
-
-  const leftovers = [...remaining.values()].sort(compareBySiraThenId)
-  return assignQuestionSira([...ordered, ...leftovers])
+export function assignQuestionSiraNo(questions: QuestionDto[]): QuestionDto[] {
+  return questions.map((question, index) => ({ ...question, siraNo: index + 1 }))
 }
 
 function buildQuestionTree(questions: QuestionDto[]): QuestionNode[] {
-  const sorted = [...questions].sort(compareBySiraThenId)
+  const sorted = [...questions].sort(compareBySiraNoThenId)
   const ids = new Set(sorted.map((question) => numericId(question)))
   const nodes = new Map<string, QuestionNode>()
 
@@ -92,15 +73,8 @@ function flattenQuestionTree(nodes: QuestionNode[]): QuestionDto[] {
   return result
 }
 
-function sortQuestionGroup(questions: QuestionDto[]): QuestionDto[] {
-  return assignQuestionSira(flattenQuestionTree(buildQuestionTree(questions)))
-}
-
-export function sortQuestionsForSurvey(
-  questions: QuestionDto[],
-  storage: QuestionOrderStorage = questionOrderStorage,
-): QuestionDto[] {
-  if (questions.length <= 1) return assignQuestionSira(questions)
+export function sortQuestionsForSurvey(questions: QuestionDto[]): QuestionDto[] {
+  if (questions.length <= 1) return questions
 
   const groups = new Map<number, QuestionDto[]>()
   for (const question of questions) {
@@ -110,16 +84,9 @@ export function sortQuestionsForSurvey(
   }
 
   const result: QuestionDto[] = []
-  for (const [baslikId, group] of groups) {
-    const storedIds = storage.get(baslikId)
-    if (storedIds?.length) {
-      result.push(...sortQuestionGroup(applyStoredOrder(group, storedIds)))
-      continue
-    }
-
-    result.push(...sortQuestionGroup(group))
+  for (const group of groups.values()) {
+    result.push(...flattenQuestionTree(buildQuestionTree(group)))
   }
-
   return result
 }
 
@@ -176,9 +143,8 @@ function getSiblingMoveState(
 export function getQuestionMoveState(
   questions: QuestionDto[],
   id: string | number,
-  storage: QuestionOrderStorage = questionOrderStorage,
 ): { canMoveUp: boolean; canMoveDown: boolean } {
-  const ordered = sortQuestionsForSurvey(questions, storage)
+  const ordered = sortQuestionsForSurvey(questions)
   const state = getSiblingMoveState(buildQuestionTree(ordered), String(id))
   return state ?? { canMoveUp: false, canMoveDown: false }
 }
@@ -187,33 +153,18 @@ export function moveQuestionInSurvey(
   questions: QuestionDto[],
   id: string | number,
   direction: QuestionMoveDirection,
-  storage: QuestionOrderStorage = questionOrderStorage,
 ): QuestionDto[] {
-  const ordered = sortQuestionsForSurvey(questions, storage)
+  const ordered = sortQuestionsForSurvey(questions)
   const result = moveAmongSiblings(buildQuestionTree(ordered), String(id), direction)
   if (!result.moved) return ordered
-  return assignQuestionSira(flattenQuestionTree(result.nodes))
+  return assignQuestionSiraNo(flattenQuestionTree(result.nodes))
 }
 
-export function persistQuestionOrder(
-  questions: QuestionDto[],
-  storage: QuestionOrderStorage = questionOrderStorage,
-) {
-  const groups = new Map<number, string[]>()
-  for (const question of questions) {
-    const ids = groups.get(question.baslikId) ?? []
-    ids.push(questionKey(question))
-    groups.set(question.baslikId, ids)
-  }
-  for (const [baslikId, ids] of groups) {
-    storage.set(baslikId, ids)
-  }
-}
-
-export function nextQuestionSira(questions: QuestionDto[]): number {
-  let max = 0
-  for (const question of questions) {
-    if (question.sira != null && question.sira > max) max = question.sira
-  }
-  return max + 1
+export function toSiraUpdateItems(questions: QuestionDto[]): UpdateAnketSoruSiraItem[] {
+  return assignQuestionSiraNo(questions)
+    .map((question) => ({
+      id: numericId(question),
+      siraNo: question.siraNo ?? 0,
+    }))
+    .filter((item) => item.id > 0 && item.siraNo > 0)
 }

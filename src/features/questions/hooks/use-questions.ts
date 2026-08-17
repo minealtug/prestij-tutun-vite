@@ -9,8 +9,7 @@ import type {
   QuestionDto,
   UpdateBagliKosulRequest,
 } from '../types/question.types'
-import { buildQuestionUpdatePayload } from '../utils/build-question-update-payload'
-import { persistQuestionOrder, sortQuestionsForSurvey } from '../utils/sort-questions'
+import { sortQuestionsForSurvey, toSiraUpdateItems } from '../utils/sort-questions'
 
 export function useQuestions(baslikId?: number) {
   return useQuery({
@@ -143,57 +142,22 @@ export function useReorderQuestions() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({
-      ordered,
-      previous,
-    }: {
-      ordered: QuestionDto[]
-      previous: QuestionDto[]
-    }) => {
-      persistQuestionOrder(ordered)
-
-      const previousSira = new Map(
-        previous.map((question) => [String(question.id), question.sira ?? null]),
-      )
-      let apiAccepted = true
-
-      for (const question of ordered) {
-        if (!apiAccepted) break
-        if ((previousSira.get(String(question.id)) ?? null) === (question.sira ?? null)) continue
-
-        const payload = buildQuestionUpdatePayload(question, { sira: question.sira ?? undefined })
-        if (!payload) continue
-        try {
-          await questionsApi.update(question.id, payload)
-        } catch {
-          apiAccepted = false
-        }
-      }
-
-      return { ordered, apiAccepted }
+    mutationFn: async ({ ordered }: { ordered: QuestionDto[]; previous: QuestionDto[]; baslikId: number }) => {
+      await questionsApi.updateSira(toSiraUpdateItems(ordered))
+      return ordered
     },
-    onMutate: async ({ ordered }) => {
-      persistQuestionOrder(ordered)
-      await queryClient.cancelQueries({ queryKey: ['questions'] })
-      queryClient.setQueriesData({ queryKey: ['questions'] }, (current: unknown) => {
-        if (!Array.isArray(current)) return current
-        const byId = new Map(ordered.map((question) => [String(question.id), question]))
-        const hasOverlap = current.some(
-          (item) => item && typeof item === 'object' && 'id' in item && byId.has(String(item.id)),
-        )
-        if (!hasOverlap) return current
-        return sortQuestionsForSurvey(
-          current.map((item) => {
-            const question = item as QuestionDto
-            return byId.get(String(question.id)) ?? question
-          }),
-        )
-      })
+    onMutate: async ({ ordered, previous, baslikId }) => {
+      const queryKey = queryKeys.questions.all(baslikId)
+      await queryClient.cancelQueries({ queryKey })
+      queryClient.setQueryData(queryKey, ordered)
+      return { previous, baslikId }
     },
-    onSuccess: (result) => {
-      if (result.apiAccepted) {
-        void queryClient.invalidateQueries({ queryKey: ['questions'] })
-      }
+    onError: (_error, _variables, context) => {
+      if (!context) return
+      queryClient.setQueryData(queryKeys.questions.all(context.baslikId), context.previous)
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.questions.all(variables.baslikId) })
     },
   })
 }

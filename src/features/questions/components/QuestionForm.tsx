@@ -34,7 +34,6 @@ import {
   getBagliSoruTriggerLabel,
 } from '../utils/question-field-labels'
 import { clearLinkedChildTriggers, clearLinkedChildAltSecenekIds } from '../utils/clear-linked-child-triggers'
-import { nextQuestionSira } from '../utils/sort-questions'
 import { AltSecenekSelect } from './AltSecenekSelect'
 import { AltSecenekMultiSelect } from './AltSecenekMultiSelect'
 import {
@@ -213,7 +212,6 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
     soruMetni,
     zorunlu,
     aktif,
-    sira: nextQuestionSira(questionsBySurveyQuery.data ?? []),
     ...(anketCevapBirimId != null && anketCevapBirimId > 0 ? { anketCevapBirimId } : {}),
     ...(secenekGrupId != null && secenekGrupId > 0
       ? { secenekGrupId, altSecenekIds: selectedAltSecenekIds ?? [] }

@@ -13,6 +13,7 @@ export interface AltSecenekOptionDto {
 export interface AnketYanitSoruDto {
   soruId: number
   sira: number
+  siraNo?: number | null
   soruMetni: string
   altSoruMetni: string | null
   gorunur: boolean
@@ -107,4 +108,5 @@ export interface SurveyFillSoruView {
   anketCevapBirimId?: number | null
   anketCevapBirimAdi?: string | null
   sira?: number | null
+  siraNo?: number | null
 }

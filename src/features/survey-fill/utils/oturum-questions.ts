@@ -34,6 +34,7 @@ export function mapQuestionDefinitionToOturumPreview(
   return {
     soruId: Number(question.id),
     sira,
+    siraNo: question.siraNo != null && question.siraNo > 0 ? question.siraNo : sira,
     soruMetni: question.soruMetni,
     altSoruMetni: question.altSoruMetni,
     gorunur: true,
@@ -64,12 +65,7 @@ export function buildPreviewQuestionsFromDefinitions(
   return sortOturumQuestionsForFill(
     definitions
       .filter((question) => question.aktif)
-      .map((question, index) =>
-        mapQuestionDefinitionToOturumPreview(
-          question,
-          question.sira != null && question.sira > 0 ? question.sira : index + 1,
-        ),
-      )
+      .map((question, index) => mapQuestionDefinitionToOturumPreview(question, index + 1))
       .filter((question) => !isEkiciProducerQuestion(question)),
   )
 }
@@ -238,6 +234,7 @@ export function getQuestionDisplayNumber(
   question: AnketYanitSoruDto,
 ): number | undefined {
   if (isEkiciProducerQuestion(question)) return undefined
+  if (question.sira > 0) return question.sira
 
   const numberedBefore = questions
     .slice(0, questions.findIndex((item) => item.soruId === question.soruId))

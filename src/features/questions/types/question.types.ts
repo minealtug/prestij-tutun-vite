@@ -27,7 +27,7 @@ export interface QuestionDto {
   anketCevapBirimId?: number | null
   anketCevapBirimAdi?: string | null
   anketCevapBirim?: { id?: number | null; adi?: string | null } | null
-  sira?: number | null
+  siraNo?: number | null
   kaynak?: 'AppDb' | 'LegacyDb' | string
 }
 
@@ -64,7 +64,6 @@ export interface CreateQuestionRequest {
   anketCevapBirimId?: number
   bagliSoru: boolean
   bagliSorular?: CreateLinkedQuestionPayload[]
-  sira?: number
 }
 
 export interface CreateNewLinkedQuestionRequest {
@@ -112,4 +111,14 @@ export interface LinkedQuestionMigrateResultDto {
 export interface UpdateBagliKosulRequest {
   bagliKosulTipi?: string
   bagliAltSecenekId?: number | null
+}
+
+export interface UpdateAnketSoruSiraItem {
+  id: number
+  siraNo: number
+}
+
+export interface UpdateAnketSoruSiraResult {
+  message: string
+  updatedCount: number
 }

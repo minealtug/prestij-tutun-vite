@@ -10,7 +10,6 @@ export function buildQuestionUpdatePayload(
     zorunlu?: boolean
     anketCevapBirimId?: string
     altSecenekIds?: number[]
-    sira?: number
   },
 ): Record<string, unknown> | null {
   const cevapGirdiTipId = resolveCevapGirdiTipId(question)
@@ -20,7 +19,6 @@ export function buildQuestionUpdatePayload(
     values?.anketCevapBirimId !== undefined
       ? Number(values.anketCevapBirimId)
       : resolveQuestionBirimId(question)
-  const sira = values?.sira ?? question.sira
 
   const payload: Record<string, unknown> = {
     soruMetni: values?.soruMetni ?? question.soruMetni,
@@ -46,10 +44,6 @@ export function buildQuestionUpdatePayload(
 
   if (Number.isFinite(birimId) && (birimId as number) > 0) {
     payload.anketCevapBirimId = birimId
-  }
-
-  if (sira != null && sira > 0) {
-    payload.sira = sira
   }
 
   return payload

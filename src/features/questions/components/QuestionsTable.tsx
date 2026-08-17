@@ -85,32 +85,37 @@ export function QuestionsTable({
             className: 'w-28',
             render: (row: QuestionDto) => {
               const moveState = getMoveState?.(row) ?? { canMoveUp: false, canMoveDown: false }
+              const showMoveButtons = !row.bagliSoru
 
               return (
                 <div className="flex items-center gap-1">
                   <span className="w-6 text-center text-xs font-semibold text-muted">
-                    {row.sira ?? '—'}
+                    {row.siraNo ?? '—'}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="!h-7 !w-7 !p-0"
-                    aria-label="Yukarı taşı"
-                    disabled={isUpdating || !moveState.canMoveUp}
-                    onClick={() => onMove(row, 'up')}
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="!h-7 !w-7 !p-0"
-                    aria-label="Aşağı taşı"
-                    disabled={isUpdating || !moveState.canMoveDown}
-                    onClick={() => onMove(row, 'down')}
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
+                  {showMoveButtons ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="!h-7 !w-7 !p-0"
+                        aria-label="Yukarı taşı"
+                        disabled={isUpdating || !moveState.canMoveUp}
+                        onClick={() => onMove(row, 'up')}
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="!h-7 !w-7 !p-0"
+                        aria-label="Aşağı taşı"
+                        disabled={isUpdating || !moveState.canMoveDown}
+                        onClick={() => onMove(row, 'down')}
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
               )
             },

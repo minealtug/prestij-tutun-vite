@@ -1,10 +1,10 @@
 import type { SurveyFillSoruView } from '../types/anket-yanit.types'
 import { isEkiciProducerQuestion } from './is-ekici-producer-question'
 
-/** Anket doldurma sırası: önce sira, yoksa soruId. */
+/** Anket doldurma sırası: kalıcı siraNo, yoksa gelen dizi sırası. Gösterim numarası (sira) kullanılmaz. */
 function compareFillQuestions<T extends SurveyFillSoruView>(left: T, right: T): number {
-  const leftSira = left.sira != null && left.sira > 0 ? left.sira : Number.MAX_SAFE_INTEGER
-  const rightSira = right.sira != null && right.sira > 0 ? right.sira : Number.MAX_SAFE_INTEGER
+  const leftSira = left.siraNo != null && left.siraNo > 0 ? left.siraNo : Number.MAX_SAFE_INTEGER
+  const rightSira = right.siraNo != null && right.siraNo > 0 ? right.siraNo : Number.MAX_SAFE_INTEGER
   if (leftSira !== rightSira) return leftSira - rightSira
   return left.soruId - right.soruId
 }

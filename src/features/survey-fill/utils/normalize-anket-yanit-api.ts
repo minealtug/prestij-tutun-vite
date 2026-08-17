@@ -220,6 +220,7 @@ export function mapAnketYanitSoruFromApi(
   if (soruId == null || soruId <= 0) return null
 
   const sira = readNumber(pick(row, 'sira', 'Sira')) ?? 0
+  const siraNo = readNumber(pick(row, 'siraNo', 'SiraNo'))
   const cevapFields = readCevapFields(pick(row, 'cevap', 'Cevap'))
   const yanitlandi = Boolean(pick(row, 'yanitlandi', 'Yanitlandi'))
   const birimFields = readBirimFields(row)
@@ -227,6 +228,7 @@ export function mapAnketYanitSoruFromApi(
   const soru: AnketYanitSoruDto = {
     soruId,
     sira,
+    siraNo: siraNo != null && siraNo > 0 ? siraNo : null,
     soruMetni: String(pick(row, 'soruMetni', 'SoruMetni') ?? ''),
     altSoruMetni: pick(row, 'altSoruMetni', 'AltSoruMetni') ?? null,
     gorunur: resolveGorunur(
@@ -281,9 +283,12 @@ function mapYanitlanmayanSoruFromApi(raw: unknown): AnketYanitSoruDto | null {
 
   const birimFields = readBirimFields(row)
 
+  const siraNoRaw = readNumber(pick(row, 'siraNo', 'SiraNo'))
+
   return {
     soruId,
     sira: readNumber(pick(row, 'sira', 'Sira')) ?? 0,
+    siraNo: siraNoRaw != null && siraNoRaw > 0 ? siraNoRaw : null,
     soruMetni: String(pick(row, 'soruMetni', 'SoruMetni') ?? ''),
     altSoruMetni: pick(row, 'altSoruMetni', 'AltSoruMetni') ?? null,
     gorunur: true,
@@ -327,7 +332,12 @@ function buildMetadataMap(raw: unknown): Map<number, Record<string, unknown>> {
 }
 
 function sortSorular(sorular: AnketYanitSoruDto[]) {
-  return sorular.sort((a, b) => a.sira - b.sira || a.soruId - b.soruId)
+  return sorular.sort((a, b) => {
+    const left = a.siraNo != null && a.siraNo > 0 ? a.siraNo : Number.MAX_SAFE_INTEGER
+    const right = b.siraNo != null && b.siraNo > 0 ? b.siraNo : Number.MAX_SAFE_INTEGER
+    if (left !== right) return left - right
+    return 0
+  })
 }
 
 function readMintikaIdFromList(rawList: unknown[]): number | null {

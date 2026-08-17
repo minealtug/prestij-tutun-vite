@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
+import { Snackbar } from '@/components/feedback/Snackbar'
 import { getFriendlyQuestionErrorMessage } from '../utils/question-error-message'
 import { QuestionForm } from '../components/QuestionForm'
 import { QuestionsTable } from '../components/QuestionsTable'
@@ -97,6 +98,10 @@ export function QuestionsPage() {
   const [deleteError, setDeleteError] = useState<{ message: string; questionText: string } | null>(
     null,
   )
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: '',
+  })
   const questionsQuery = useQuestions(isDefinitionsPage ? selectedSurveyId : undefined)
 
   const birimOptions = useMemo(
@@ -274,10 +279,28 @@ export function QuestionsPage() {
   const canReorder = canEdit && isDefinitionsPage && selectedSurveyId > 0 && !search.trim()
 
   const handleMove = (question: QuestionDto, direction: QuestionMoveDirection) => {
-    if (!canReorder || reorderQuestions.isPending) return
+    if (!canReorder || reorderQuestions.isPending || question.bagliSoru) return
     const next = moveQuestionInSurvey(currentQuestions, question.id, direction)
-    reorderQuestions.mutate({ ordered: next, previous: currentQuestions })
+    const unchanged = next.every(
+      (item, index) => String(item.id) === String(currentQuestions[index]?.id),
+    )
+    if (unchanged) return
+    reorderQuestions.mutate(
+      { ordered: next, previous: currentQuestions, baslikId: selectedSurveyId },
+      {
+        onError: (error) => {
+          setSnackbar({
+            open: true,
+            message: getFriendlyQuestionErrorMessage(error, 'update'),
+          })
+        },
+      },
+    )
   }
+
+  const closeSnackbar = useCallback(() => {
+    setSnackbar((prev) => ({ ...prev, open: false }))
+  }, [])
 
   const refreshQuestions = () => {
     void questionsQuery.refetch()
@@ -482,6 +505,13 @@ export function QuestionsPage() {
           </p>
         </div>
       </Modal>
+
+      <Snackbar
+        open={snackbar.open}
+        message={snackbar.message}
+        variant="error"
+        onClose={closeSnackbar}
+      />
     </PageContainer>
   )
 }

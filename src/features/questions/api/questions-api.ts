@@ -9,6 +9,8 @@ import type {
   LinkedQuestionMigrateResultDto,
   QuestionConnectionDto,
   QuestionDto,
+  UpdateAnketSoruSiraItem,
+  UpdateAnketSoruSiraResult,
   UpdateBagliKosulRequest,
 } from '../types/question.types'
 
@@ -37,6 +39,9 @@ export const questionsApi = {
 
   update: async (id: string | number, payload: Record<string, unknown>) =>
     mapQuestionFromApi(await apiClient.put<unknown>(`/api/AnketSoru/${id}`, payload)),
+
+  updateSira: (items: UpdateAnketSoruSiraItem[]) =>
+    apiClient.put<UpdateAnketSoruSiraResult>('/api/AnketSoru/sira', items),
 
   setActive: (id: string | number, aktif: boolean) =>
     apiClient.patch<QuestionDto>(`/api/AnketSoru/${id}/aktif?aktif=${aktif}`),
