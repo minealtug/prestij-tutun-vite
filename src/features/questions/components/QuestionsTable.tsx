@@ -288,7 +288,7 @@ export function QuestionsTable({
           variant="plain"
           compact
           className="!rounded-none !border-0"
-          pagination={{ pageSize: 25, pageSizeOptions: [10, 25, 50, 100] }}
+          pagination={{ pageSize: 110, pageSizeOptions: [110, 150, 200] }}
         />
       )}
     </div>

@@ -229,15 +229,18 @@ export function buildInitialAnswersMap(
   return answers
 }
 
+/** Ekranda görünen sıraya göre 1, 2, 3… (gizli bağlı sorular ve eski sira atlanır). */
 export function getQuestionDisplayNumber(
   questions: AnketYanitSoruDto[],
   question: AnketYanitSoruDto,
 ): number | undefined {
   if (isEkiciProducerQuestion(question)) return undefined
-  if (question.sira > 0) return question.sira
+
+  const index = questions.findIndex((item) => item.soruId === question.soruId)
+  if (index < 0) return undefined
 
   const numberedBefore = questions
-    .slice(0, questions.findIndex((item) => item.soruId === question.soruId))
+    .slice(0, index)
     .filter((item) => !isEkiciProducerQuestion(item)).length
 
   return numberedBefore + 1
