@@ -59,14 +59,14 @@ export function CografiFiltreFields({
         value={values.mintikaId}
         onChange={(e) => onMintikaChange(e.target.value)}
         options={selectOptions.mintika}
-        disabled={fieldDisabled || lockedLevels?.mintika || !values.bolgeId}
+        disabled={fieldDisabled || lockedLevels?.mintika}
       />
       <Select
         label="Alım noktası"
         value={values.alimNoktasiId}
         onChange={(e) => onAlimNoktasiChange(e.target.value)}
         options={selectOptions.alimNoktasi}
-        disabled={fieldDisabled || !values.mintikaId}
+        disabled={fieldDisabled}
       />
       <Select
         label="Köy"

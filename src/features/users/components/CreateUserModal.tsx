@@ -19,6 +19,7 @@ import {
 } from '../types/user.types'
 import { departmanAdlariToSelectOptions } from '../utils/departman-options'
 import { validateCreateUserForm } from '../utils/validate-create-user'
+import { MintikaMultiSelect } from './MintikaMultiSelect'
 
 interface CreateUserModalProps {
   open: boolean
@@ -81,16 +82,7 @@ export function CreateUserModal({ open, onClose }: CreateUserModalProps) {
     [departmansQuery.data],
   )
 
-  const mintikaOptions = useMemo(
-    () => [
-      { value: '', label: 'Mıntıka seçin (opsiyonel)' },
-      ...(mintikasQuery.data ?? []).map((item) => ({
-        value: String(item.id),
-        label: item.adi,
-      })),
-    ],
-    [mintikasQuery.data],
-  )
+  const mintikaOptions = mintikasQuery.data ?? []
 
   const supervisorOptions = useMemo(
     () =>
@@ -246,14 +238,15 @@ export function CreateUserModal({ open, onClose }: CreateUserModalProps) {
               emptyMessage="Departman bulunamadı"
               disabled={departmansQuery.isLoading || departmansQuery.isError}
             />
-            <Select
-              label="Mıntıka"
-              value={form.mintikaId}
-              onChange={(e) => updateField('mintikaId', e.target.value)}
-              options={mintikaOptions}
-              disabled={mintikasQuery.isLoading}
-            />
           </div>
+          <MintikaMultiSelect
+            value={form.mintikaIds}
+            options={mintikaOptions}
+            onChange={(value) => updateField('mintikaIds', value)}
+            disabled={mintikasQuery.isLoading}
+            loading={mintikasQuery.isLoading}
+            error={errors.mintikaIds}
+          />
           <SearchableSelect
             label="Amir (supervisor)"
             value={form.supervisorUserId}

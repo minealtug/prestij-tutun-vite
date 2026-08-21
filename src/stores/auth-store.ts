@@ -4,6 +4,7 @@ import {
   isTokenExpired,
   resolveTokenExpiryMs,
 } from '@/features/auth/utils/token-expiry'
+import { resolveMintikaIds } from '@/features/users/utils/resolve-mintika-ids'
 
 export interface AuthUser {
   id: string
@@ -15,6 +16,7 @@ export interface AuthUser {
   departmanId: number | null
   departmanAdi: string | null
   mintikaId: number | null
+  mintikaIds: number[]
   fotografUrl: string | null
 }
 
@@ -51,6 +53,9 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'prestij-auth',
       onRehydrateStorage: () => (state) => {
+        if (state?.user && !Array.isArray(state.user.mintikaIds)) {
+          state.user.mintikaIds = resolveMintikaIds(state.user)
+        }
         if (state && !state.isAuthenticated()) {
           state.clearSession()
         }

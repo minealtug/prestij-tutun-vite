@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/query-keys'
 import { surveyResponsesApi } from '../api/survey-responses-api'
 import {
-  hasAnySurveyFilter,
   type DeleteAnketCevapRequest,
   type SurveyResponsesQueryParams,
 } from '../types/survey-response.types'
@@ -15,7 +14,7 @@ export function useSurveyResponses(params?: SurveyResponsesQueryParams) {
   return useQuery({
     queryKey: queryKeys.surveyResponses.all(params),
     queryFn: () => surveyResponsesApi.getList(params ?? {}),
-    enabled: hasAnySurveyFilter(params),
+    enabled: params != null,
     staleTime: 0,
   })
 }

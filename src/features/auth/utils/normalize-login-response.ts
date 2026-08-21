@@ -1,5 +1,6 @@
 import type { AuthMeResponse, AuthUserDto, LoginResponse } from '../types/auth.types'
 import { mapAllowedMenuUrlsFromApi } from '@/features/permissions/utils/permission-logic'
+import { resolveMintikaIds } from '@/features/users/utils/resolve-mintika-ids'
 import { parseApiExpiresAtMs } from './token-expiry'
 
 function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
@@ -28,6 +29,11 @@ function mapAuthUser(userRaw: Record<string, unknown>, fallbackUserName = ''): A
   const fullName = String(
     pick(userRaw, 'fullName', 'FullName', 'adSoyad', 'AdSoyad') ?? userName ?? 'Kullanıcı',
   )
+  const mintikaId = readNumber(pick(userRaw, 'mintikaId', 'MintikaId'))
+  const mintikaIds = resolveMintikaIds({
+    mintikaIds: pick(userRaw, 'mintikaIds', 'MintikaIds'),
+    mintikaId,
+  })
 
   return {
     id: String(idRaw ?? userName ?? 'user'),
@@ -38,7 +44,8 @@ function mapAuthUser(userRaw: Record<string, unknown>, fallbackUserName = ''): A
     admin: Boolean(pick(userRaw, 'admin', 'Admin') ?? false),
     departmanId: readNumber(pick(userRaw, 'departmanId', 'DepartmanId')),
     departmanAdi: pick(userRaw, 'departmanAdi', 'DepartmanAdi') ?? null,
-    mintikaId: readNumber(pick(userRaw, 'mintikaId', 'MintikaId')),
+    mintikaId: mintikaIds[0] ?? mintikaId,
+    mintikaIds,
     fotografUrl: pick(userRaw, 'fotografUrl', 'FotografUrl') ?? null,
   }
 }
@@ -72,6 +79,11 @@ export function normalizeAuthMeResponse(raw: unknown): AuthMeResponse {
   const permissionsRaw = pick<unknown[]>(row, 'permissions', 'Permissions') ?? []
   const yetkiIdsRaw =
     pick<unknown[]>(row, 'yetkiIds', 'YetkiIds', 'yetkiIdler', 'YetkiIdler') ?? []
+  const mintikaId = readNumber(pick(userRaw, 'mintikaId', 'MintikaId'))
+  const mintikaIds = resolveMintikaIds({
+    mintikaIds: pick(userRaw, 'mintikaIds', 'MintikaIds'),
+    mintikaId,
+  })
 
   return {
     user: {
@@ -81,7 +93,8 @@ export function normalizeAuthMeResponse(raw: unknown): AuthMeResponse {
       email: pick(userRaw, 'email', 'Email'),
       departmanId: readNumber(pick(userRaw, 'departmanId', 'DepartmanId')),
       departmanAdi: pick(userRaw, 'departmanAdi', 'DepartmanAdi') ?? null,
-      mintikaId: readNumber(pick(userRaw, 'mintikaId', 'MintikaId')),
+      mintikaId: mintikaIds[0] ?? mintikaId,
+      mintikaIds,
       aktif: Boolean(pick(userRaw, 'aktif', 'Aktif') ?? true),
       admin: Boolean(pick(userRaw, 'admin', 'Admin') ?? false),
       fotografUrl: pick(userRaw, 'fotografUrl', 'FotografUrl') ?? null,
@@ -92,6 +105,7 @@ export function normalizeAuthMeResponse(raw: unknown): AuthMeResponse {
 }
 
 export function mapAuthMeUserToSession(user: AuthMeResponse['user']) {
+  const mintikaIds = resolveMintikaIds(user)
   return {
     id: String(user.id),
     userName: user.userName,
@@ -100,7 +114,8 @@ export function mapAuthMeUserToSession(user: AuthMeResponse['user']) {
     admin: user.admin,
     departmanId: user.departmanId ?? null,
     departmanAdi: user.departmanAdi ?? null,
-    mintikaId: user.mintikaId ?? null,
+    mintikaId: mintikaIds[0] ?? user.mintikaId ?? null,
+    mintikaIds,
     fotografUrl: user.fotografUrl ?? null,
   }
 }

@@ -39,6 +39,8 @@ function makeUser(overrides: Partial<UserDto> & Pick<UserDto, 'id' | 'userName'>
     departmanId: null,
     departmanAdi: null,
     mintikaId: null,
+    mintikaIds: [],
+    mintikalar: [],
     mintikaAdi: null,
     supervisorUserId: null,
     insuranceNumber: null,

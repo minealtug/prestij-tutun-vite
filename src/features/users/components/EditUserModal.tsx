@@ -22,6 +22,7 @@ import {
 import { departmanAdlariToSelectOptions } from '../utils/departman-options'
 import { mapUserToFormState } from '../utils/map-user-form'
 import { validateUpdateUserForm } from '../utils/validate-create-user'
+import { MintikaMultiSelect } from './MintikaMultiSelect'
 import { UserPhotoField } from './UserPhotoField'
 
 interface EditUserModalProps {
@@ -71,12 +72,11 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
     setForm(
       mapUserToFormState(sourceUser, {
         userTypes: userTypesQuery.data,
-        mintikas: mintikasQuery.data,
       }),
     )
     setErrors({})
     setSubmitError('')
-  }, [open, sourceUser, userTypesQuery.data, mintikasQuery.data])
+  }, [open, sourceUser, userTypesQuery.data])
 
   const userTypeOptions = useMemo(
     () => [
@@ -94,16 +94,7 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
     [departmansQuery.data],
   )
 
-  const mintikaOptions = useMemo(
-    () => [
-      { value: '', label: 'Mıntıka seçin (opsiyonel)' },
-      ...(mintikasQuery.data ?? []).map((item) => ({
-        value: String(item.id),
-        label: item.adi,
-      })),
-    ],
-    [mintikasQuery.data],
-  )
+  const mintikaOptions = mintikasQuery.data ?? []
 
   const supervisorOptions = useMemo(
     () =>
@@ -122,12 +113,6 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
     if (fromOptions && form.userTypeId) return fromOptions
     return sourceUser?.userTypeDescription?.trim() || '—'
   }, [form.userTypeId, sourceUser?.userTypeDescription, userTypeOptions])
-
-  const selectedMintikaAdi = useMemo(() => {
-    const fromOptions = mintikaOptions.find((item) => item.value === form.mintikaId)?.label
-    if (fromOptions && form.mintikaId) return fromOptions
-    return sourceUser?.mintikaAdi?.trim() || '—'
-  }, [form.mintikaId, mintikaOptions, sourceUser?.mintikaAdi])
 
   const updateField = <K extends keyof CreateUserFormState>(
     key: K,
@@ -305,15 +290,15 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
                 emptyMessage="Departman bulunamadı"
                 disabled={departmansQuery.isLoading || departmansQuery.isError}
               />
-              <Select
-                label="Mıntıka"
-                value={form.mintikaId}
-                onChange={(e) => updateField('mintikaId', e.target.value)}
-                options={mintikaOptions}
-                disabled={mintikasQuery.isLoading}
-              />
             </div>
-            <Input label="Mıntıka adı" value={selectedMintikaAdi} disabled readOnly />
+            <MintikaMultiSelect
+              value={form.mintikaIds}
+              options={mintikaOptions}
+              onChange={(value) => updateField('mintikaIds', value)}
+              disabled={mintikasQuery.isLoading}
+              loading={mintikasQuery.isLoading}
+              error={errors.mintikaIds}
+            />
             <SearchableSelect
               label="Amir (supervisor)"
               value={form.supervisorUserId}

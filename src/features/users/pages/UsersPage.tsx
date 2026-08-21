@@ -22,6 +22,7 @@ import { useUsers } from '../hooks/use-users'
 import type { UserMigrationResponse } from '../types/user-migration.types'
 import type { UserDto } from '../types/user.types'
 import { exportUsersToExcel } from '../utils/export-users-excel'
+import { resolveMintikaIds } from '../utils/resolve-mintika-ids'
 
 type AktifFilter = 'all' | 'aktif' | 'pasif'
 
@@ -45,6 +46,7 @@ function matchesSearch(user: UserDto, query: string) {
     user.lokasyon,
     user.departmanAdi,
     user.mintikaAdi,
+    ...user.mintikalar.map((item) => item.adi),
     user.email,
     user.tel,
     user.aktif ? 'aktif' : 'pasif',
@@ -101,8 +103,9 @@ export function UsersPage() {
     const mintikaIdSet = mintikaIds ? new Set(mintikaIds) : null
 
     return items.filter((user) => {
-      if (mintikaIdSet && (user.mintikaId == null || !mintikaIdSet.has(user.mintikaId))) {
-        return false
+      if (mintikaIdSet) {
+        const userMintikaIds = resolveMintikaIds(user)
+        if (!userMintikaIds.some((id) => mintikaIdSet.has(id))) return false
       }
       if (!matchesAktifFilter(user, aktifFilter)) return false
       if (query && !matchesSearch(user, query)) return false

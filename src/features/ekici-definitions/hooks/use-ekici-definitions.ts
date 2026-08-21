@@ -24,16 +24,12 @@ export function useEkiciDurumOptions() {
 
 export function useMyEkiciler(
   params?: CografiFiltreQueryParams,
-  options?: { requireMintika?: boolean },
+  options?: { enabled?: boolean },
 ) {
-  const scoped = params !== undefined
-  const requireMintika = options?.requireMintika ?? scoped
-  const mintikaReady = Boolean(params?.mintikaId)
-
   return useQuery({
     queryKey: queryKeys.ekiciDefinitions.mintikam(params ?? {}),
     queryFn: () => ekiciDefinitionsApi.getByCurrentUserMintika(params),
-    enabled: !scoped || !requireMintika || mintikaReady,
+    enabled: options?.enabled ?? true,
   })
 }
 

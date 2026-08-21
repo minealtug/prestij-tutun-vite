@@ -10,6 +10,8 @@ export interface UserDto {
   departmanId: number | null
   departmanAdi: string | null
   mintikaId: number | null
+  mintikaIds: number[]
+  mintikalar: MintikaOptionDto[]
   mintikaAdi: string | null
   supervisorUserId: number | null
   insuranceNumber: string | null
@@ -48,6 +50,7 @@ export interface UserWriteRequest {
   departmanId: number | null
   supervisorUserId: number | null
   mintikaId: number | null
+  mintikaIds: number[]
   uretimMerkeziYetki: boolean
   email: string | null
   tel: string | null
@@ -73,7 +76,7 @@ export interface CreateUserFormState {
   lokasyon: string
   departmanAdi: string
   supervisorUserId: string
-  mintikaId: string
+  mintikaIds: number[]
   uretimMerkeziYetki: boolean
   email: string
   tel: string
@@ -93,7 +96,7 @@ export const defaultCreateUserFormState: CreateUserFormState = {
   lokasyon: '',
   departmanAdi: '',
   supervisorUserId: '',
-  mintikaId: '',
+  mintikaIds: [],
   uretimMerkeziYetki: true,
   email: '',
   tel: '',

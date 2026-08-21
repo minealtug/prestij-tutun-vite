@@ -19,6 +19,7 @@ import { filterAnketCevapList } from '@/features/survey-responses/utils/filter-a
 import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { useQuestions } from '@/features/questions/hooks/use-questions'
 import { useAuthStore } from '@/stores/auth-store'
+import { userHasMintikaAssignment } from '@/features/users/utils/resolve-mintika-ids'
 import { MyEkicilerTable } from '../components/MyEkicilerTable'
 import { useMyEkiciler } from '../hooks/use-ekici-definitions'
 import type { EkiciDefinitionDto } from '../types/ekici-definition.types'
@@ -86,13 +87,13 @@ export function EkicilerimPage() {
   const navigate = useNavigate()
   const { canRead, loading: permissionLoading } = useRequirePagePermission()
   const userId = useAuthStore((state) => state.user?.id)
-  const userMintikaId = useAuthStore((state) => state.user?.mintikaId)
-  const isAdmin = useAuthStore((state) => state.user?.admin === true)
-  const hasUserMintika = Boolean(userMintikaId && userMintikaId > 0)
-  const cografiFiltreQuery = useMintikaCografiFiltreOptions()
+  const authUser = useAuthStore((state) => state.user)
+  const isAdmin = authUser?.admin === true
+  const hasMintikaAssignment = userHasMintikaAssignment(authUser ?? {})
+  const cografiFiltreQuery = useMintikaCografiFiltreOptions(isAdmin || hasMintikaAssignment)
   const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
   const ekicilerQuery = useMyEkiciler(geoCascade.queryParams, {
-    requireMintika: hasUserMintika,
+    enabled: isAdmin || hasMintikaAssignment,
   })
   const surveysQuery = useSurveys()
   // Anasayfa admin özeti tüm cevapları kullanır; Ekicilerim'de de admin için aynı kaynak gerekli.
@@ -208,9 +209,9 @@ export function EkicilerimPage() {
   const tableEmptyMessage =
     search.trim().length > 0 || hasGeoFilter || hasAktifFilter || hasAnketDurumFilter
       ? 'Arama kriterlerinize uygun ekici kaydı bulunamadı.'
-      : hasUserMintika
+      : hasMintikaAssignment
         ? 'Mıntıkanızda kayıtlı ekici bulunmuyor.'
-        : 'Kayıtlı ekici bulunmuyor.'
+        : 'Atanmış mıntıka bulunamadı. Ekici listesi için kullanıcıya mıntıka yetkisi verilmelidir.'
 
   const isLoading =
     cografiFiltreQuery.isLoading ||

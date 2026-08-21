@@ -13,6 +13,7 @@ import {
   useMyEkiciler,
 } from '@/features/ekici-definitions/hooks/use-ekici-definitions'
 import { useMintikas } from '@/features/users/hooks/use-users'
+import { userHasMintikaAssignment } from '@/features/users/utils/resolve-mintika-ids'
 import { computeSurveyResponseStats } from '@/features/survey-responses/utils/compute-survey-response-stats'
 import { UserSurveyStatusPieChart } from '../components/UserSurveyStatusPieChart'
 import { UserSurveyMetricChartCard } from '../components/UserSurveyMetricChartCard'
@@ -39,7 +40,9 @@ export function UserDashboardPage() {
   const user = useAuthStore((state) => state.user)
   const userId = user?.id
   const responsesQuery = useMySurveyResponses(userId)
-  const myEkicilerQuery = useMyEkiciler()
+  const myEkicilerQuery = useMyEkiciler(undefined, {
+    enabled: userHasMintikaAssignment(user ?? {}),
+  })
   const ekicilerQuery = useEkiciDefinitions()
   const mintikasQuery = useMintikas()
 

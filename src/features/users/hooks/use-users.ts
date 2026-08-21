@@ -16,6 +16,7 @@ function syncAuthUserIfSelf(updatedUser: UserDto | null) {
     departmanId: updatedUser.departmanId,
     departmanAdi: updatedUser.departmanAdi,
     mintikaId: updatedUser.mintikaId,
+    mintikaIds: updatedUser.mintikaIds,
     fotografUrl: updatedUser.fotografUrl,
   })
 }

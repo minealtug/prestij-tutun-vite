@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx-js-style'
 import { applyExcelHeaderStyles } from '@/lib/utils/excel-header-style'
 import type { UserDto } from '../types/user.types'
+import { formatMintikaAdi } from './resolve-mintika-ids'
 
 function formatExportDate(): string {
   const now = new Date()
@@ -19,7 +20,7 @@ export function exportUsersToExcel(rows: UserDto[]): void {
     Tip: row.userTypeDescription || '',
     Lokasyon: row.lokasyon || '',
     Departman: row.departmanAdi || '',
-    Mıntıka: row.mintikaAdi || '',
+    Mıntıka: formatMintikaAdi(row.mintikaAdi, row.mintikalar),
     'Üretim Merkezi': row.uretimMerkeziYetki ? 'Var' : 'Yok',
     'E-posta': row.email || '',
     Tel: row.tel || '',

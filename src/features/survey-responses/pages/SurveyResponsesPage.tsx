@@ -22,7 +22,9 @@ import { useDeleteSurveyResponses, useSurveyResponses } from '../hooks/use-surve
 import { PageContainer } from '@/components/layout/PageContainer'
 import { usePermissions } from '@/features/permissions/hooks/use-permissions'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
+import { userHasMintikaAssignment } from '@/features/users/utils/resolve-mintika-ids'
 import { getErrorMessage } from '@/lib/api/api-error'
+import { useAuthStore } from '@/stores/auth-store'
 import type { SurveyResponsesQueryParams } from '../types/survey-response.types'
 import { hasGeoSurveyFilter } from '../types/survey-response.types'
 import { formatAppliedFilterSummary } from '../utils/format-applied-filter-summary'
@@ -34,10 +36,14 @@ import {
 export function SurveyResponsesPage() {
   const { canRead, loading: pagePermissionLoading } = useRequirePagePermission()
   const { isAdmin, loading: permissionLoading } = usePermissions()
+  const authUser = useAuthStore((s) => s.user)
+  const hasMintikaAssignment = userHasMintikaAssignment(authUser ?? {})
   const permissionsReady = !permissionLoading && !pagePermissionLoading
 
   const globalOptionsQuery = useCografiFiltreOptions(permissionsReady && isAdmin)
-  const mintikaOptionsQuery = useMintikaCografiFiltreOptions(permissionsReady && !isAdmin)
+  const mintikaOptionsQuery = useMintikaCografiFiltreOptions(
+    permissionsReady && !isAdmin && hasMintikaAssignment,
+  )
   const cografiFiltreQuery = isAdmin ? globalOptionsQuery : mintikaOptionsQuery
 
   const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
@@ -79,7 +85,9 @@ export function SurveyResponsesPage() {
 
   const responsesQuery = useSurveyResponses(appliedFilters ?? undefined)
   const deleteMutation = useDeleteSurveyResponses()
-  const filtersReady = hasGeoSurveyFilter(appliedFilters ?? undefined)
+  const filtersReady = isAdmin
+    ? hasGeoSurveyFilter(appliedFilters ?? undefined)
+    : appliedFilters != null && hasMintikaAssignment
   const listData = responsesQuery.data
 
   const selectedRows = useMemo(
@@ -89,13 +97,14 @@ export function SurveyResponsesPage() {
 
   const applyFilters = useCallback(
     (params: SurveyResponsesQueryParams) => {
-      if (!hasGeoSurveyFilter(params)) return
+      if (isAdmin && !hasGeoSurveyFilter(params)) return
+      if (!isAdmin && !hasMintikaAssignment) return
       setAppliedFilters(params)
       setAppliedFilterSummary(formatAppliedFilterSummary(params, filterLookups))
       setSelectedIds(new Set())
       setConfirmStep(null)
     },
-    [filterLookups],
+    [filterLookups, hasMintikaAssignment, isAdmin],
   )
 
   const handleApplyFilters = () => {
@@ -104,12 +113,12 @@ export function SurveyResponsesPage() {
 
   useEffect(() => {
     if (!permissionsReady || isAdmin) return
-    if (!draftFiltersReady) return
+    if (!hasMintikaAssignment) return
     applyFilters(geoCascade.queryParams)
   }, [
     permissionsReady,
     isAdmin,
-    draftFiltersReady,
+    hasMintikaAssignment,
     applyFilters,
     geoCascade.queryParams,
   ])
@@ -242,9 +251,11 @@ export function SurveyResponsesPage() {
           <p className="px-5 py-5 text-sm text-muted">
             {isAdmin
               ? "Listelemek için en az bir coğrafi filtre (menşei, bölge, mıntıka vb.) seçin ve Filtrele'ye tıklayın."
-              : cografiFiltreQuery.isLoading
-                ? 'Mıntıka filtreleri yükleniyor…'
-                : 'Mıntıka bilgisi yüklenemedi veya tanımlı değil.'}
+              : !hasMintikaAssignment
+                ? 'Atanmış mıntıka bulunamadı. Anket listesi için kullanıcıya mıntıka yetkisi verilmelidir.'
+                : cografiFiltreQuery.isLoading
+                  ? 'Mıntıka filtreleri yükleniyor…'
+                  : 'Mıntıka bilgisi yüklenemedi veya tanımlı değil.'}
           </p>
         ) : (
           <>

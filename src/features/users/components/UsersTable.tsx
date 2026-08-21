@@ -6,6 +6,7 @@ import { Table, type TableColumn } from '@/components/ui/Table'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { Skeleton } from '@/components/feedback/Skeleton'
 import type { UserDto } from '../types/user.types'
+import { formatMintikaAdi } from '../utils/resolve-mintika-ids'
 import { UserAvatar } from './UserAvatar'
 
 interface UsersTableProps {
@@ -132,7 +133,8 @@ function UsersMobileCard({
   onEdit?: (user: UserDto) => void
   isUpdating?: boolean
 }) {
-  const meta = [user.departmanAdi, user.mintikaAdi, user.lokasyon].filter(Boolean)
+  const mintikaAdi = formatMintikaAdi(user.mintikaAdi, user.mintikalar)
+  const meta = [user.departmanAdi, mintikaAdi, user.lokasyon].filter(Boolean)
 
   return (
     <article
@@ -358,7 +360,9 @@ function buildColumns(
       header: 'Mıntıka',
       className: 'hidden xl:table-cell min-w-[7rem]',
       render: (row) => (
-        <span className="break-words leading-snug">{displayValue(row.mintikaAdi)}</span>
+        <span className="break-words leading-snug">
+          {displayValue(formatMintikaAdi(row.mintikaAdi, row.mintikalar))}
+        </span>
       ),
     },
     {

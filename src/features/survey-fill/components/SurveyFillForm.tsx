@@ -12,6 +12,7 @@ import { useAnswerInputTypes, useQuestions } from '@/features/questions/hooks/us
 import { useAnswerUnits } from '@/features/answer-units/hooks/use-answer-units'
 import { useAuthStore } from '@/stores/auth-store'
 import { useUser } from '@/features/users/hooks/use-users'
+import { userHasMintikaAssignment } from '@/features/users/utils/resolve-mintika-ids'
 import { getErrorMessage } from '@/lib/api/api-error'
 import { SurveyFillQuestionField } from './SurveyFillQuestionField'
 import {
@@ -114,10 +115,11 @@ export function SurveyFillForm({
       ),
     [answerUnitsQuery.data],
   )
-  const cografiFiltreQuery = useMintikaCografiFiltreOptions()
-  const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
-  const ekicilerQuery = useEkiciler(geoCascade.queryParams)
   const authUser = useAuthStore((state) => state.user)
+  const canLoadMintikam = userHasMintikaAssignment(authUser ?? {})
+  const cografiFiltreQuery = useMintikaCografiFiltreOptions(canLoadMintikam)
+  const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
+  const ekicilerQuery = useEkiciler(geoCascade.queryParams, canLoadMintikam)
   const authUserId = authUser?.id ? Number(authUser.id) : null
   const currentUserQuery = useUser(
     authUserId != null && Number.isFinite(authUserId) ? authUserId : null,
@@ -374,7 +376,6 @@ export function SurveyFillForm({
 
   useEffect(() => {
     if (!initialEkiciId || ekicilerQuery.isLoading) return
-    if (!geoCascade.queryParams.mintikaId) return
 
     const ekiciExists = (ekicilerQuery.data ?? []).some((ekici) => ekici.id === initialEkiciId)
     if (ekiciExists) {
@@ -384,7 +385,6 @@ export function SurveyFillForm({
     initialEkiciId,
     ekicilerQuery.isLoading,
     ekicilerQuery.data,
-    geoCascade.queryParams.mintikaId,
     deepLinkBootstrapKey,
   ])
 
@@ -858,14 +858,16 @@ export function SurveyFillForm({
                 value={sessionEkiciId ?? ''}
                 onChange={handleEkiciChange}
                 options={ekiciOptions}
-                disabled={ekicilerQuery.isLoading || !geoCascade.queryParams.mintikaId}
+                disabled={ekicilerQuery.isLoading || !canLoadMintikam}
                 placeholder="Ad veya soyad ile ekici ara..."
                 emptyMessage={
-                  geoCascade.queryParams.koyId
-                    ? 'Seçilen köyde ekici bulunamadı'
-                    : geoCascade.queryParams.alimNoktasiId
-                      ? 'Seçilen alım noktasında ekici bulunamadı'
-                      : 'Eşleşen ekici bulunamadı'
+                  !canLoadMintikam
+                    ? 'Atanmış mıntıka bulunamadı'
+                    : geoCascade.queryParams.koyId
+                      ? 'Seçilen köyde ekici bulunamadı'
+                      : geoCascade.queryParams.alimNoktasiId
+                        ? 'Seçilen alım noktasında ekici bulunamadı'
+                        : 'Eşleşen ekici bulunamadı'
                 }
               />
             </div>

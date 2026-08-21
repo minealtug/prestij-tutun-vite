@@ -1,4 +1,5 @@
-import type { UserDto } from '../types/user.types'
+import type { MintikaOptionDto, UserDto } from '../types/user.types'
+import { formatMintikaAdi, resolveMintikaIds } from './resolve-mintika-ids'
 
 function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
   for (const key of keys) {
@@ -23,6 +24,15 @@ export function mapUserFromApi(raw: unknown): UserDto | null {
     return Number.isFinite(num) && num > 0 ? num : null
   }
 
+  const mintikalar = mapMintikalarFromApi(pick(row, 'mintikalar', 'Mintikalar'))
+  const mintikaId = readOptionalId('mintikaId', 'MintikaId')
+  const mintikaIds = resolveMintikaIds({
+    mintikaIds: pick(row, 'mintikaIds', 'MintikaIds'),
+    mintikaId,
+    mintikalar,
+  })
+  const mintikaAdiRaw = pick<string>(row, 'mintikaAdi', 'MintikaAdi')
+
   return {
     id,
     userName: String(pick(row, 'userName', 'UserName') ?? ''),
@@ -34,8 +44,10 @@ export function mapUserFromApi(raw: unknown): UserDto | null {
     lokasyon: pick(row, 'lokasyon', 'Lokasyon') ?? null,
     departmanId: readOptionalId('departmanId', 'DepartmanId'),
     departmanAdi: pick(row, 'departmanAdi', 'DepartmanAdi') ?? null,
-    mintikaId: readOptionalId('mintikaId', 'MintikaId'),
-    mintikaAdi: pick(row, 'mintikaAdi', 'MintikaAdi') ?? null,
+    mintikaId: mintikaIds[0] ?? mintikaId,
+    mintikaIds,
+    mintikalar,
+    mintikaAdi: formatMintikaAdi(mintikaAdiRaw, mintikalar) || null,
     supervisorUserId: readOptionalId('supervisorUserId', 'SupervisorUserId'),
     insuranceNumber: pick(row, 'insuranceNumber', 'InsuranceNumber') ?? null,
     icraOdemeUyari: Boolean(pick(row, 'icraOdemeUyari', 'IcraOdemeUyari')),
@@ -44,6 +56,21 @@ export function mapUserFromApi(raw: unknown): UserDto | null {
     tel: pick(row, 'tel', 'Tel') ?? null,
     fotografUrl: pick(row, 'fotografUrl', 'FotografUrl') ?? null,
   }
+}
+
+function mapMintikalarFromApi(raw: unknown): MintikaOptionDto[] {
+  if (!Array.isArray(raw)) return []
+  const items: MintikaOptionDto[] = []
+  const seen = new Set<number>()
+  for (const item of raw) {
+    const row = asRecord(item)
+    const id = Number(pick(row, 'id', 'Id'))
+    const adi = String(pick(row, 'adi', 'Adi') ?? '').trim()
+    if (!Number.isFinite(id) || id <= 0 || seen.has(id)) continue
+    seen.add(id)
+    items.push({ id, adi })
+  }
+  return items
 }
 
 export function mapUsersFromApi(raw: unknown): UserDto[] {
