@@ -8,10 +8,11 @@ export function useAnketCevaplariReport(
   params: AnketCevaplariQueryParams,
   options?: { enabled?: boolean },
 ) {
+  const baslikId = params.baslikId
   return useQuery({
-    queryKey: queryKeys.reports.anketCevaplari(params),
-    queryFn: () => reportsApi.getAnketCevaplari(params),
+    queryKey: queryKeys.reports.anketCevaplari({ baslikId }),
+    queryFn: () => reportsApi.getAnketCevaplari({ baslikId }),
     select: normalizeAnketCevaplariReport,
-    enabled: options?.enabled ?? true,
+    enabled: (options?.enabled ?? true) && Boolean(baslikId && baslikId > 0),
   })
 }

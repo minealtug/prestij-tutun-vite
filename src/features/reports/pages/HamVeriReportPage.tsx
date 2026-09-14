@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, FileSpreadsheet } from 'lucide-react'
 
@@ -15,6 +15,7 @@ import { useRequirePagePermission } from '@/features/permissions/hooks/use-requi
 import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { cn } from '@/lib/utils/cn'
 
+import { ColumnHeaderFilter } from '../components/ColumnHeaderFilter'
 import {
   ROW_HEADERS,
   TABS,
@@ -26,12 +27,22 @@ import {
 import { useYasCinsiyetReport } from '../hooks/use-yas-cinsiyet-report'
 import type { YasCinsiyetRow, YasCinsiyetTotals } from '../types/yas-cinsiyet-report.types'
 import { exportHamVeriReportToExcel } from '../utils/export-ham-veri-report-excel'
+import {
+  applyHamVeriHeaderFilters,
+  HAM_VERI_FILTER_COLUMNS,
+  hamVeriRowsForColumnOptions,
+  sumHamVeriTotals,
+  uniqueHamVeriValues,
+  type HamVeriFilterKey,
+  type HamVeriHeaderFilters,
+} from '../utils/ham-veri-header-filters'
 
 const thBase =
-  'border border-border/70 bg-surface px-2 py-1.5 text-center align-middle text-[11px] font-semibold text-foreground whitespace-nowrap'
+  'border border-border/70 bg-white px-2 py-1.5 text-center align-middle text-[11px] font-semibold text-foreground whitespace-nowrap'
 const tdBase = 'border border-border/70 px-2 py-1.5 text-[11px]'
 const tdText = cn(tdBase, 'text-left whitespace-nowrap align-top')
 const tdNum = cn(tdBase, 'text-center tabular-nums')
+const EMPTY_ROWS: YasCinsiyetRow[] = []
 
 interface RowSpans {
   menseiSpan?: number
@@ -101,6 +112,8 @@ export function HamVeriReportPage() {
   const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
   const surveysQuery = useSurveys()
   const [selectedBaslikId, setSelectedBaslikId] = useState('')
+  const [columnFilters, setColumnFilters] = useState<HamVeriHeaderFilters>({})
+  const [openHeaderFilter, setOpenHeaderFilter] = useState<HamVeriFilterKey | null>(null)
 
   const anketOptions = useMemo(() => {
     const surveys = surveysQuery.data ?? []
@@ -124,8 +137,31 @@ export function HamVeriReportPage() {
   })
 
   const report = reportQuery.data
-  const rows = report?.rows ?? []
+  const sourceRows = report?.rows ?? EMPTY_ROWS
+  const rows = useMemo(
+    () => applyHamVeriHeaderFilters(sourceRows, columnFilters),
+    [columnFilters, sourceRows],
+  )
+  const uniqueByColumn = useMemo(() => {
+    const map = {} as Record<HamVeriFilterKey, string[]>
+    for (const { key } of HAM_VERI_FILTER_COLUMNS) {
+      map[key] = uniqueHamVeriValues(
+        hamVeriRowsForColumnOptions(sourceRows, columnFilters, key),
+        key,
+      )
+    }
+    return map
+  }, [columnFilters, sourceRows])
+  const filteredTotals = useMemo(
+    () => sumHamVeriTotals(rows, active.bands.map((band) => band.key)),
+    [active.bands, rows],
+  )
   const spans = useMemo(() => computeRowSpans(rows), [rows])
+
+  useEffect(() => {
+    setColumnFilters({})
+    setOpenHeaderFilter(null)
+  }, [activeTab, selectedBaslikId])
 
   if (permissionLoading) {
     return (
@@ -142,21 +178,21 @@ export function HamVeriReportPage() {
 
   const handleExportExcel = () => {
     if (!report) return
-    exportHamVeriReportToExcel(active, report.rows, report.genelToplam)
+    exportHamVeriReportToExcel(active, rows, filteredTotals)
   }
 
   return (
-    <PageContainer>
+    <PageContainer className="h-full min-h-0 overflow-hidden max-md:h-auto max-md:overflow-visible">
       <Link
         to="/raporlar"
-        className="inline-flex w-fit items-center gap-1.5 text-sm text-muted transition-colors hover:text-primary-600"
+        className="inline-flex w-fit shrink-0 items-center gap-1.5 text-sm text-muted transition-colors hover:text-primary-600"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
         Tüm raporlar
       </Link>
 
       {/* Filtreler */}
-      <div className="glass-card flex flex-col gap-3 !p-4">
+      <div className="glass-card flex shrink-0 flex-col gap-3 !p-4">
         {cografiFiltreQuery.isError && (
           <ErrorState
             error={cografiFiltreQuery.error}
@@ -197,7 +233,7 @@ export function HamVeriReportPage() {
       </div>
 
       {/* Sekmeler */}
-      <div className="flex flex-wrap gap-1 border-b border-border">
+      <div className="flex shrink-0 flex-wrap gap-1 border-b border-border">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -215,8 +251,8 @@ export function HamVeriReportPage() {
         ))}
       </div>
 
-      <Card className="overflow-hidden !p-0">
-        <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
+      <Card interactive={false} className="flex min-h-0 flex-1 flex-col overflow-hidden !p-0">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
           <h2 className="text-sm font-semibold text-foreground">{active.title}</h2>
           <Button
             type="button"
@@ -232,13 +268,27 @@ export function HamVeriReportPage() {
         </div>
 
         {/* Pivot tablo */}
-        <div className="overflow-x-auto scrollbar-visible">
-          <table className="w-full border-collapse text-[11px]">
+        <div className="min-h-0 flex-1 overflow-auto scrollbar-visible max-md:max-h-[50vh]">
+          <table className="report-pivot-table w-full text-[11px]">
             <thead>
               <tr>
-                {ROW_HEADERS.map((header) => (
-                  <th key={header} rowSpan={3} className={cn(thBase, 'text-left')}>
-                    {header}
+                {HAM_VERI_FILTER_COLUMNS.map(({ key, header }) => (
+                  <th key={key} rowSpan={3} className={cn(thBase, 'align-top text-left')}>
+                    <ColumnHeaderFilter
+                      label={header}
+                      values={uniqueByColumn[key]}
+                      selected={columnFilters[key]}
+                      open={openHeaderFilter === key}
+                      onOpenChange={(open) => setOpenHeaderFilter(open ? key : null)}
+                      onChange={(next) =>
+                        setColumnFilters((prev) => {
+                          const copy = { ...prev }
+                          if (next !== undefined) copy[key] = next
+                          else delete copy[key]
+                          return copy
+                        })
+                      }
+                    />
                   </th>
                 ))}
                 <th colSpan={dataColCount(active)} className={thBase}>
@@ -251,12 +301,12 @@ export function HamVeriReportPage() {
                     <th colSpan={2} className={thBase}>
                       {band.label}
                     </th>
-                    <th rowSpan={2} className={cn(thBase, 'bg-primary-500/5')}>
+                    <th rowSpan={2} className={cn(thBase, 'bg-primary-50')}>
                       {band.label} Toplam
                     </th>
                   </Fragment>
                 ))}
-                <th rowSpan={2} className={cn(thBase, 'bg-primary-500/10')}>
+                <th rowSpan={2} className={cn(thBase, 'bg-primary-100')}>
                   {active.totalLabel}
                 </th>
               </tr>
@@ -341,7 +391,7 @@ export function HamVeriReportPage() {
                   Genel Toplam
                 </td>
                 {report ? (
-                  <TotalsCells totals={report.genelToplam} bands={active.bands} strong />
+                  <TotalsCells totals={filteredTotals} bands={active.bands} strong />
                 ) : (
                   Array.from({ length: dataColCount(active) }).map((_, index) => (
                     <td key={index} className={cn(tdNum, 'text-muted')}>

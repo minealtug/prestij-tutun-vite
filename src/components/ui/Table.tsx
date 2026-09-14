@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Inbox } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { Skeleton } from '@/components/feedback/Skeleton'
@@ -7,8 +7,12 @@ import { Button } from './Button'
 export interface TableColumn<T> {
   key: string
   header: string
+  /** Başlık hücresinde metin yerine özel içerik (filtre butonu vb.) */
+  headerContent?: ReactNode
   render: (row: T) => ReactNode
   className?: string
+  /** Yatay kaydırmada kolon solda sabit kalsın */
+  stickyLeft?: boolean
 }
 
 export interface TableProps<T> {
@@ -28,6 +32,8 @@ export interface TableProps<T> {
   compact?: boolean
   /** Tablo öğesine ek sınıflar (ör. min genişlik) */
   tableClassName?: string
+  /** Sayfa kaydırılınca thead görünür kalsın */
+  stickyHeader?: boolean
   pagination?: {
     pageSize: number
     pageSizeOptions?: number[]
@@ -48,11 +54,18 @@ export function Table<T>({
   variant = 'card',
   compact = false,
   tableClassName,
+  stickyHeader = false,
   pagination,
   onRowDoubleClick,
 }: TableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedPageSize, setSelectedPageSize] = useState<number | null>(null)
+  const tableRef = useRef<HTMLTableElement>(null)
+
+  const stickyLeftKeys = useMemo(
+    () => columns.filter((column) => column.stickyLeft).map((column) => column.key),
+    [columns],
+  )
 
   const pageSize = Math.max(1, selectedPageSize ?? pagination?.pageSize ?? data.length)
   const totalPages = Math.max(1, Math.ceil(data.length / pageSize))
@@ -75,8 +88,40 @@ export function Table<T>({
     return data.slice(start, start + pageSize)
   }, [currentPage, data, pageSize, pagination])
 
+  useLayoutEffect(() => {
+    const table = tableRef.current
+    if (!table || stickyLeftKeys.length === 0) return
+
+    const applyOffsets = () => {
+      let acc = 0
+      stickyLeftKeys.forEach((key, index) => {
+        if (index > 0) table.style.setProperty(`--sticky-left-${index}`, `${acc}px`)
+        const header = table.querySelector(`th[data-sticky-key="${key}"]`)
+        acc += header?.getBoundingClientRect().width ?? 0
+      })
+    }
+
+    applyOffsets()
+    const observer = new ResizeObserver(applyOffsets)
+    observer.observe(table)
+    return () => observer.disconnect()
+  }, [compact, stickyLeftKeys, visibleData])
+
+  const stickyLeftStyle = (key: string): CSSProperties | undefined => {
+    const index = stickyLeftKeys.indexOf(key)
+    if (index < 0) return undefined
+    return { left: index === 0 ? 0 : `var(--sticky-left-${index})` }
+  }
+
+  const stickyLeftClass = (key: string) => {
+    const index = stickyLeftKeys.indexOf(key)
+    if (index < 0) return undefined
+    return cn('app-table-sticky-col', index === stickyLeftKeys.length - 1 && 'app-table-sticky-col-last')
+  }
+
   const shellClassName = cn(
     'w-full overflow-hidden',
+    stickyHeader && 'flex min-h-0 flex-1 flex-col',
     variant === 'card' && 'app-table-shell',
     variant === 'plain' && '!p-0',
     className,
@@ -101,13 +146,19 @@ export function Table<T>({
       <div
         className={cn(
           'w-full',
-          horizontalScroll ? 'overflow-x-auto scrollbar-visible' : 'overflow-x-hidden',
+          stickyHeader
+            ? 'min-h-0 flex-1 overflow-auto scrollbar-visible max-md:max-h-[50vh]'
+            : horizontalScroll
+              ? 'overflow-x-auto scrollbar-visible'
+              : 'overflow-x-hidden',
         )}
       >
         <table
+          ref={tableRef}
           className={cn(
             'app-table',
             compact && 'app-table-compact',
+            stickyHeader && 'app-table-sticky-header',
             horizontalScroll ? 'min-w-[640px]' : 'min-w-0 table-fixed',
             tableClassName,
           )}
@@ -115,8 +166,13 @@ export function Table<T>({
           <thead>
             <tr>
               {columns.map((col) => (
-                <th key={col.key} className={col.className}>
-                  {col.header}
+                <th
+                  key={col.key}
+                  data-sticky-key={col.stickyLeft ? col.key : undefined}
+                  className={cn(col.className, stickyLeftClass(col.key))}
+                  style={stickyLeftStyle(col.key)}
+                >
+                  {col.headerContent ?? col.header}
                 </th>
               ))}
             </tr>
@@ -144,7 +200,11 @@ export function Table<T>({
                   onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row) : undefined}
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className={col.className}>
+                    <td
+                      key={col.key}
+                      className={cn(col.className, stickyLeftClass(col.key))}
+                      style={stickyLeftStyle(col.key)}
+                    >
                       {col.render(row)}
                     </td>
                   ))}

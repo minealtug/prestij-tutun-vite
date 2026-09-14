@@ -25,8 +25,6 @@ export function exportAnketCevaplariToExcel(
   const worksheet = XLSX.utils.aoa_to_sheet([header, ...body])
   applyExcelHeaderStyles(worksheet)
 
-  worksheet['!cols'] = header.map((h) => ({ wch: Math.min(40, Math.max(12, h.length + 2)) }))
-
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Anket Cevapları')
 

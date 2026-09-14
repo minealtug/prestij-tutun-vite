@@ -47,6 +47,7 @@ export function Header() {
           <UserAvatar
             fullName={user?.fullName ?? 'Kullanıcı'}
             fotografUrl={user?.fotografUrl}
+            userId={user?.id}
             cacheKey={user?.id}
             className="h-8 w-8 border-0 bg-transparent"
             imageClassName="h-8 w-8"

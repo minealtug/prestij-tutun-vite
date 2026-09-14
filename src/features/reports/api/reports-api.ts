@@ -2,9 +2,7 @@ import { apiClient } from '@/lib/api/api-client'
 import type { AnketCevaplariQueryParams } from '../types/anket-cevaplari.types'
 import type { YasCinsiyetQueryParams } from '../types/yas-cinsiyet-report.types'
 
-type ReportFilterParams = YasCinsiyetQueryParams | AnketCevaplariQueryParams
-
-function toQueryRecord(params: ReportFilterParams): Record<string, unknown> {
+function toQueryRecord(params: YasCinsiyetQueryParams): Record<string, unknown> {
   const record: Record<string, unknown> = {}
   if (params.baslikId != null) record.baslikId = params.baslikId
   if (params.menseiId != null) record.menseiId = params.menseiId
@@ -20,5 +18,9 @@ export const reportsApi = {
     apiClient.get<unknown>(endpoint, toQueryRecord(params)),
 
   getAnketCevaplari: (params: AnketCevaplariQueryParams = {}) =>
-    apiClient.get<unknown>('/api/Rapor/anket-cevaplari', toQueryRecord(params)),
+    apiClient.get<unknown>(
+      '/api/Rapor/anket-cevaplari',
+      params.baslikId != null ? { baslikId: params.baslikId } : {},
+      { timeout: 120_000 },
+    ),
 }

@@ -6,6 +6,7 @@ import { resolveUserPhotoUrl } from '../utils/resolve-user-photo-url'
 interface UserAvatarProps {
   fullName: string
   fotografUrl?: string | null
+  userId?: string | number | null
   cacheKey?: string | number | null
   className?: string
   imageClassName?: string
@@ -15,17 +16,18 @@ interface UserAvatarProps {
 export function UserAvatar({
   fullName,
   fotografUrl,
+  userId,
   cacheKey,
   className,
   imageClassName,
   initialsClassName,
 }: UserAvatarProps) {
   const [imageFailed, setImageFailed] = useState(false)
-  const photoSrc = resolveUserPhotoUrl(fotografUrl, cacheKey)
+  const photoSrc = resolveUserPhotoUrl(fotografUrl, cacheKey, userId)
 
   useEffect(() => {
     setImageFailed(false)
-  }, [fotografUrl, cacheKey, photoSrc])
+  }, [fotografUrl, cacheKey, photoSrc, userId])
 
   const showPhoto = Boolean(photoSrc) && !imageFailed
   const initials = fullName

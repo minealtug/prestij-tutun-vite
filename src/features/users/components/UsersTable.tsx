@@ -146,6 +146,7 @@ function UsersMobileCard({
       <UserAvatar
         fullName={user.fullName}
         fotografUrl={user.fotografUrl}
+        userId={user.id}
         cacheKey={user.id}
         className="h-11 w-11"
         imageClassName="h-11 w-11"
@@ -284,7 +285,7 @@ function buildColumns(
       header: 'Foto',
       className: 'w-14',
       render: (row) => (
-        <UserAvatar fullName={row.fullName} fotografUrl={row.fotografUrl} cacheKey={row.id} />
+        <UserAvatar fullName={row.fullName} fotografUrl={row.fotografUrl} userId={row.id} cacheKey={row.id} />
       ),
     },
     {

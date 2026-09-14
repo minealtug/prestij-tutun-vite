@@ -18,7 +18,6 @@ export const FIXED_COLUMNS: FixedColumn[] = [
   { key: 'dogumTarihi', header: 'Doğum Tarihi' },
   { key: 'cinsiyet', header: 'Cinsiyet' },
   { key: 'ekiciYasAraligi', header: 'Yaş Aralığı' },
-  { key: 'uretimiYapan', header: 'Üretimi Yapan' },
   { key: 'sozlesmeKg', header: 'Sözleşme Kg' },
   { key: 'donum', header: 'Dönüm' },
 ]

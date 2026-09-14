@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx-js-style'
+import { applyExcelHeaderStyles } from '@/lib/utils/excel-header-style'
 
 import { ROW_HEADERS, type YasCinsiyetTabConfig } from '../config/ham-veri-report'
 import type {
@@ -164,10 +165,7 @@ export function exportHamVeriReportToExcel(
 
   const worksheet = XLSX.utils.aoa_to_sheet(matrix)
   worksheet['!merges'] = merges
-  worksheet['!cols'] = [
-    ...ROW_HEADERS.map(() => ({ wch: 16 })),
-    ...Array.from({ length: groupWidth }, () => ({ wch: 11 })),
-  ]
+  applyExcelHeaderStyles(worksheet, { headerRows: 3 })
 
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Rapor')

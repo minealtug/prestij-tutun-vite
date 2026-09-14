@@ -95,6 +95,7 @@ export function UserPhotoField({
         <UserAvatar
           fullName={fullName}
           fotografUrl={currentPhotoUrl}
+          userId={userId}
           cacheKey={cacheKey}
           className="h-20 w-20"
           imageClassName="h-20 w-20"

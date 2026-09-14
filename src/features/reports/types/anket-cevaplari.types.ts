@@ -4,6 +4,11 @@ export interface AnketCevapRow {
   baslikId: number
   sablonId: number
   anketAdi: string
+  menseiId: number
+  bolgeId: number
+  mintikaId: number
+  alimNoktasiId: number
+  koyId: number
   mensei: string
   mintika: string
   alimNoktasi: string
@@ -27,9 +32,4 @@ export interface AnketCevaplariReport {
 
 export interface AnketCevaplariQueryParams {
   baslikId?: number
-  menseiId?: number
-  bolgeId?: number
-  mintikaId?: number
-  alimNoktasiId?: number
-  koyId?: number
 }
