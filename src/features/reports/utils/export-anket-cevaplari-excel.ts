@@ -2,6 +2,8 @@ import * as XLSX from 'xlsx-js-style'
 import { applyExcelHeaderStyles } from '@/lib/utils/excel-header-style'
 import { FIXED_COLUMNS } from '../config/anket-cevaplari'
 import type { AnketCevapRow } from '../types/anket-cevaplari.types'
+import { formatAnketCevapCell } from './format-anket-cevap-cell'
+import { getVisibleSoruKolonlari } from './visible-soru-kolonlari'
 
 function formatExportDate(): string {
   const now = new Date()
@@ -15,11 +17,12 @@ export function exportAnketCevaplariToExcel(
   soruKolonlari: string[],
   satirlar: AnketCevapRow[],
 ): void {
-  const header = [...FIXED_COLUMNS.map((c) => c.header), ...soruKolonlari]
+  const visibleSoruKolonlari = getVisibleSoruKolonlari(soruKolonlari)
+  const header = [...FIXED_COLUMNS.map((c) => c.header), ...visibleSoruKolonlari.map((c) => c.header)]
 
   const body = satirlar.map((row) => [
     ...FIXED_COLUMNS.map((c) => row[c.key] ?? ''),
-    ...soruKolonlari.map((_, i) => row.cevaplar[i] ?? ''),
+    ...visibleSoruKolonlari.map((col) => formatAnketCevapCell(col.header, row.cevaplar[col.index])),
   ])
 
   const worksheet = XLSX.utils.aoa_to_sheet([header, ...body])

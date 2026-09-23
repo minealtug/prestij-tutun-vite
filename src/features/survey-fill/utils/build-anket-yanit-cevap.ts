@@ -58,10 +58,14 @@ export function buildAnketYanitCevapRequest(
   }
 
   if (kind === 'number') {
-    const numeric = Number(value)
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return withBirim({ ...base, cevapNumeric: null, cevapText: null })
+    }
+    const numeric = Number(trimmed)
     return Number.isFinite(numeric)
-      ? withBirim({ ...base, cevapNumeric: numeric, cevapText: value.trim() || null })
-      : withBirim({ ...base, cevapText: value.trim() || null })
+      ? withBirim({ ...base, cevapNumeric: numeric, cevapText: trimmed })
+      : withBirim({ ...base, cevapText: trimmed })
   }
 
   if (kind === 'date') {

@@ -34,7 +34,9 @@ import {
   type HeaderFilterKey,
 } from '../utils/column-header-filters'
 import { exportAnketCevaplariToExcel } from '../utils/export-anket-cevaplari-excel'
+import { formatAnketCevapCell } from '../utils/format-anket-cevap-cell'
 import { filterAnketCevapRows } from '../utils/filter-anket-cevaplari'
+import { getVisibleSoruKolonlari } from '../utils/visible-soru-kolonlari'
 
 export function AnketCevaplariReportPage() {
   const { canRead, loading: permissionLoading } = useRequirePagePermission()
@@ -94,6 +96,10 @@ export function AnketCevaplariReportPage() {
     return map
   }, [columnFilters, geoRows])
   const soruKolonlari = report?.soruKolonlari ?? []
+  const visibleSoruKolonlari = useMemo(
+    () => getVisibleSoruKolonlari(soruKolonlari),
+    [soruKolonlari],
+  )
 
   useEffect(() => {
     setColumnFilters({})
@@ -128,14 +134,14 @@ export function AnketCevaplariReportPage() {
         className: 'whitespace-nowrap',
       }
     })
-    const dynamic: TableColumn<AnketCevapRow>[] = soruKolonlari.map((q, i) => ({
-      key: `q${i}`,
-      header: q,
-      render: (row) => row.cevaplar[i] ?? '',
+    const dynamic: TableColumn<AnketCevapRow>[] = visibleSoruKolonlari.map((col) => ({
+      key: `q${col.index}`,
+      header: col.header,
+      render: (row) => formatAnketCevapCell(col.header, row.cevaplar[col.index]),
       className: 'whitespace-nowrap',
     }))
     return [...fixed, ...dynamic]
-  }, [columnFilters, openHeaderFilter, soruKolonlari, uniqueByColumn])
+  }, [columnFilters, openHeaderFilter, uniqueByColumn, visibleSoruKolonlari])
 
   if (permissionLoading || adminPermissionLoading) {
     return (

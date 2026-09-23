@@ -46,8 +46,11 @@ function readCevapTextFromFields(cevap: Record<string, unknown>): string | null 
   }
 
   const cevapNumeric = pick(cevap, 'cevapNumeric', 'CevapNumeric')
-  if (cevapNumeric != null && Number.isFinite(Number(cevapNumeric))) {
-    return String(cevapNumeric)
+  if (cevapNumeric != null && String(cevapNumeric).trim() !== '') {
+    const numeric = Number(cevapNumeric)
+    if (Number.isFinite(numeric) && numeric !== 0) {
+      return String(cevapNumeric)
+    }
   }
 
   const cevapDatetime = pick(cevap, 'cevapDatetime', 'CevapDatetime')

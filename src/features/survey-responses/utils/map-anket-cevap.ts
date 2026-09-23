@@ -40,8 +40,9 @@ function looksLikeIsoDatetime(value: string): boolean {
 export function formatCevapDisplay(cevap?: AnketCevapDegerDto | null): string {
   if (!cevap) return UNANSWERED_ANSWER_LABEL
 
+  const text = cevap.cevapText?.trim() ?? ''
   const gosterim = cevap.cevapGosterimMetni?.trim()
-  if (gosterim) return gosterim
+  if (gosterim && !(gosterim === '0' && !text)) return gosterim
 
   if (cevap.cevapAltSecenekAdi?.trim()) return cevap.cevapAltSecenekAdi.trim()
 
@@ -50,7 +51,6 @@ export function formatCevapDisplay(cevap?: AnketCevapDegerDto | null): string {
     return formatCevapDatetime(datetimeRaw) ?? datetimeRaw
   }
 
-  const text = cevap.cevapText?.trim()
   if (text) {
     if (looksLikeIsoDatetime(text)) {
       return formatCevapDatetime(text) ?? text
@@ -58,7 +58,11 @@ export function formatCevapDisplay(cevap?: AnketCevapDegerDto | null): string {
     return text
   }
 
-  if (cevap.cevapNumeric != null && Number.isFinite(cevap.cevapNumeric)) {
+  if (
+    cevap.cevapNumeric != null &&
+    Number.isFinite(cevap.cevapNumeric) &&
+    cevap.cevapNumeric !== 0
+  ) {
     return String(cevap.cevapNumeric)
   }
 
