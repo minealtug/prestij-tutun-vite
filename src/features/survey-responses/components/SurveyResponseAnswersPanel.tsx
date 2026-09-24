@@ -1,12 +1,19 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { Skeleton } from '@/components/feedback/Skeleton'
 import { cn } from '@/lib/utils/cn'
+import { useOptionGroups } from '@/features/option-groups/hooks/use-option-groups'
+import { useQuestions } from '@/features/questions/hooks/use-questions'
 import { useSurveyResponseDetail } from '../hooks/use-survey-response-detail'
 import { UNANSWERED_ANSWER_LABEL } from '../types/survey-response.types'
 import { exportSurveyResponseAnswersToExcel } from '../utils/export-survey-response-answers-excel'
+import {
+  enrichMultiSelectAnswers,
+  filterDuplicateKontratSahibiAnswers,
+  labelLinkedAnswerTree,
+} from '../utils/format-linked-answer-label'
 import { buildSoruCevapTree, flattenSoruCevapTree } from '../utils/map-anket-cevap'
 
 interface SurveyResponseAnswersPanelProps {
@@ -67,6 +74,21 @@ export function SurveyResponseAnswersPanel({
   columnBorders = false,
 }: SurveyResponseAnswersPanelProps) {
   const detailQuery = useSurveyResponseDetail(ekiciId, sablonId, enabled, baslikId)
+  const questionsQuery = useQuestions(baslikId != null && baslikId > 0 ? baslikId : undefined)
+  const optionGroupsQuery = useOptionGroups()
+  const optionNameById = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const group of optionGroupsQuery.data ?? []) {
+      for (const option of group.altSecenekler) {
+        map.set(option.id, option.adi)
+      }
+    }
+    return map
+  }, [optionGroupsQuery.data])
+  const questionsById = useMemo(
+    () => new Map((questionsQuery.data ?? []).map((question) => [Number(question.id), question])),
+    [questionsQuery.data],
+  )
 
   if (detailQuery.isLoading) {
     return (
@@ -104,16 +126,23 @@ export function SurveyResponseAnswersPanel({
     )
   }
 
-  const tree = buildSoruCevapTree(detail.sorular)
+  const rawTree = enrichMultiSelectAnswers(
+    filterDuplicateKontratSahibiAnswers(buildSoruCevapTree(detail.sorular)),
+    questionsById,
+    optionNameById,
+  )
+  const tree = labelLinkedAnswerTree(rawTree, questionsById, optionNameById)
   const rows = flattenSoruCevapTree(tree, kategoriAdi)
 
   const handleExportExcel = () => {
-    if (tree.length === 0) return
+    if (rawTree.length === 0) return
 
-    exportSurveyResponseAnswersToExcel(tree, {
+    exportSurveyResponseAnswersToExcel(rawTree, {
       ekiciAdi,
       anketAdi,
       kategoriAdi,
+      questions: questionsQuery.data ?? [],
+      optionNameById,
     })
   }
 

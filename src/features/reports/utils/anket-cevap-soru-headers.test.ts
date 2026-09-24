@@ -66,10 +66,10 @@ describe('resolveAnketCevapSoruColumns', () => {
     expect(columns[1]).toMatchObject({
       isChild: true,
       parentHeader: 'Üretici yaşam koşulları?',
-      subHeader: 'Tuvalet: Bireylerin bu koşula erişme imkanı var mı?',
+      subHeader: 'Tuvalet — Bireylerin bu koşula erişme imkanı var mı?',
       groupKey: 'q-10',
     })
-    expect(columns[2]?.subHeader).toBe('Duş: Bireylerin bu koşula erişme imkanı var mı?')
+    expect(columns[2]?.subHeader).toBe('Duş — Bireylerin bu koşula erişme imkanı var mı?')
     expect(groupAnketCevapSoruColumns(columns)).toHaveLength(1)
     expect(getAnketCevapSoruTableHeader(columns[1]!)).toContain('Tuvalet')
   })

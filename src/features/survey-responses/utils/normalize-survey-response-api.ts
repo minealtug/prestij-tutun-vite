@@ -18,6 +18,16 @@ function asRecord(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
 }
 
+function readIdList(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((item) => Number(item)).filter((id) => Number.isFinite(id) && id > 0)
+}
+
+function readNameList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((item) => String(item).trim()).filter(Boolean)
+}
+
 function normalizeCevapDeger(raw: unknown): AnketCevapDegerDto | null {
   if (!raw || typeof raw !== 'object') return null
   const row = raw as Record<string, unknown>
@@ -25,6 +35,10 @@ function normalizeCevapDeger(raw: unknown): AnketCevapDegerDto | null {
 
   return {
     cevapAltSecenekAdi: pick(row, 'cevapAltSecenekAdi', 'CevapAltSecenekAdi') ?? null,
+    cevapAltSecenekAdlari: readNameList(
+      pick(row, 'cevapAltSecenekAdlari', 'CevapAltSecenekAdlari'),
+    ),
+    cevapAltSecenekIds: readIdList(pick(row, 'cevapAltSecenekIds', 'CevapAltSecenekIds')),
     cevapText: pick(row, 'cevapText', 'CevapText') ?? null,
     cevapGosterimMetni: pick(row, 'cevapGosterimMetni', 'CevapGosterimMetni') ?? null,
     cevapDatetime: pick(row, 'cevapDatetime', 'CevapDatetime') ?? null,
@@ -46,6 +60,10 @@ function normalizeSoruCevap(raw: unknown): AnketSoruCevapDto | null {
     altSoruMetni: pick(row, 'altSoruMetni', 'AltSoruMetni') ?? null,
     bagliSoru: Boolean(pick(row, 'bagliSoru', 'BagliSoru') ?? false),
     bagliOlduguSoruId: pick(row, 'bagliOlduguSoruId', 'BagliOlduguSoruId') ?? null,
+    bagliAltSecenekId: (() => {
+      const raw = Number(pick(row, 'bagliAltSecenekId', 'BagliAltSecenekId') ?? NaN)
+      return Number.isFinite(raw) && raw > 0 ? raw : null
+    })(),
     yanitlandi: Boolean(pick(row, 'yanitlandi', 'Yanitlandi') ?? false),
     cevap: cevapRaw ? normalizeCevapDeger(cevapRaw) : null,
   }

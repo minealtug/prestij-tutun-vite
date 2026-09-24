@@ -37,14 +37,33 @@ function looksLikeIsoDatetime(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}T/.test(value.trim())
 }
 
+function uniqueCevapAdlari(values: Array<string | null | undefined>): string[] {
+  const seen = new Set<string>()
+  const names: string[] = []
+  for (const value of values) {
+    const text = value?.trim() ?? ''
+    if (!text) continue
+    const key = text.toLocaleLowerCase('tr-TR')
+    if (seen.has(key)) continue
+    seen.add(key)
+    names.push(text)
+  }
+  return names
+}
+
 export function formatCevapDisplay(cevap?: AnketCevapDegerDto | null): string {
   if (!cevap) return UNANSWERED_ANSWER_LABEL
 
   const text = cevap.cevapText?.trim() ?? ''
+  const secenekAdlari = uniqueCevapAdlari([
+    ...(cevap.cevapAltSecenekAdlari ?? []),
+    cevap.cevapAltSecenekAdi,
+  ])
+  if (secenekAdlari.length > 1) return secenekAdlari.join(', ')
+  if (secenekAdlari.length === 1) return secenekAdlari[0]
+
   const gosterim = cevap.cevapGosterimMetni?.trim()
   if (gosterim && !(gosterim === '0' && !text)) return gosterim
-
-  if (cevap.cevapAltSecenekAdi?.trim()) return cevap.cevapAltSecenekAdi.trim()
 
   const datetimeRaw = cevap.cevapDatetime?.trim()
   if (datetimeRaw) {
@@ -78,6 +97,7 @@ function mapSoruToDisplay(soru: AnketSoruCevapDto): SoruCevapDisplay {
     yanitlandi: soru.yanitlandi,
     cevapMetni: soru.yanitlandi ? formatCevapDisplay(soru.cevap) : UNANSWERED_ANSWER_LABEL,
     bagliSoru: Boolean(soru.bagliSoru),
+    bagliAltSecenekId: soru.bagliAltSecenekId ?? null,
     children: [],
   }
 }

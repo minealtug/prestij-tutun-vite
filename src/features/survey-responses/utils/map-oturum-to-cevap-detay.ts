@@ -6,17 +6,24 @@ export function mapOturumToCevapDetay(oturum: AnketYanitOturumDto): AnketCevapDe
   const sorular = oturum.sorular
     .filter((soru) => soru.gorunur !== false)
     .map((soru) => {
-      const cevapAltSecenekAdi =
-        soru.cevapAltSecenekId != null
-          ? soru.altSecenekler.find((option) => option.id === soru.cevapAltSecenekId)?.adi ??
-            null
-          : null
+      const selectedIds =
+        (soru.cevapAltSecenekIds?.length ?? 0) > 0
+          ? soru.cevapAltSecenekIds!
+          : soru.cevapAltSecenekId != null
+            ? [soru.cevapAltSecenekId]
+            : []
+      const cevapAltSecenekAdlari = selectedIds
+        .map((id) => soru.altSecenekler.find((option) => option.id === id)?.adi?.trim() ?? '')
+        .filter(Boolean)
+      const cevapAltSecenekAdi = cevapAltSecenekAdlari[0] ?? null
 
       const cevapPayload =
-        soru.yanitlandi && (soru.cevapText || cevapAltSecenekAdi)
+        soru.yanitlandi && (soru.cevapText || cevapAltSecenekAdlari.length > 0)
           ? {
               cevapText: soru.cevapText,
               cevapAltSecenekAdi,
+              cevapAltSecenekAdlari,
+              cevapAltSecenekIds: selectedIds,
             }
           : null
 
@@ -33,6 +40,8 @@ export function mapOturumToCevapDetay(oturum: AnketYanitOturumDto): AnketCevapDe
         soruMetni: soru.soruMetni,
         altSoruMetni: soru.altSoruMetni,
         bagliSoru: soru.bagliSoru,
+        bagliOlduguSoruId: soru.bagliOlduguSoruId,
+        bagliAltSecenekId: soru.bagliAltSecenekId,
         yanitlandi: soru.yanitlandi,
         cevap,
       }

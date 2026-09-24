@@ -11,6 +11,8 @@ import type { CografiFiltreQueryParams } from '@/features/cografi-filtre/types'
 
 export interface AnketCevapDegerDto {
   cevapAltSecenekAdi: string | null
+  cevapAltSecenekAdlari?: string[]
+  cevapAltSecenekIds?: number[]
   cevapText: string | null
   cevapGosterimMetni?: string | null
   cevapDatetime?: string | null
@@ -24,6 +26,7 @@ export interface AnketSoruCevapDto {
   altSoruMetni?: string | null
   bagliSoru?: boolean
   bagliOlduguSoruId?: number | null
+  bagliAltSecenekId?: number | null
   yanitlandi: boolean
   cevap?: AnketCevapDegerDto | null
 }
@@ -71,6 +74,7 @@ export interface SoruCevapDisplay {
   yanitlandi: boolean
   cevapMetni: string
   bagliSoru: boolean
+  bagliAltSecenekId?: number | null
   children: SoruCevapDisplay[]
 }
 

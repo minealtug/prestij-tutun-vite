@@ -1,4 +1,5 @@
 import type { QuestionDto } from '@/features/questions/types/question.types'
+import { composeLinkedQuestionLabel } from './compose-linked-question-label'
 import type { VisibleSoruKolonu } from './visible-soru-kolonlari'
 
 export interface AnketCevapSoruColumn {
@@ -95,7 +96,7 @@ export function resolveAnketCevapSoruColumns(
     const parentHeader = question && isLinked ? resolveParentQuestionText(question, questions) : column.header
     const optionAdi =
       question?.bagliAltSecenekId != null ? optionNameById.get(question.bagliAltSecenekId)?.trim() : ''
-    const subHeader = optionAdi ? `${optionAdi}: ${column.header}` : column.header
+    const subHeader = composeLinkedQuestionLabel(column.header, optionAdi)
 
     return {
       index: column.index,
