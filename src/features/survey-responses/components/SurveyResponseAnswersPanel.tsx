@@ -104,14 +104,16 @@ export function SurveyResponseAnswersPanel({
     )
   }
 
-  const rows = flattenSoruCevapTree(buildSoruCevapTree(detail.sorular), kategoriAdi)
+  const tree = buildSoruCevapTree(detail.sorular)
+  const rows = flattenSoruCevapTree(tree, kategoriAdi)
 
   const handleExportExcel = () => {
-    if (rows.length === 0) return
+    if (tree.length === 0) return
 
-    exportSurveyResponseAnswersToExcel(rows, {
+    exportSurveyResponseAnswersToExcel(tree, {
       ekiciAdi,
       anketAdi,
+      kategoriAdi,
     })
   }
 

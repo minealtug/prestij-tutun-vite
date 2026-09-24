@@ -16,6 +16,8 @@ import {
 } from '@/features/cografi-filtre/hooks/use-cografi-filtre-options'
 import { usePermissions } from '@/features/permissions/hooks/use-permissions'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
+import { useOptionGroups } from '@/features/option-groups/hooks/use-option-groups'
+import { useQuestions } from '@/features/questions/hooks/use-questions'
 import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { userHasMintikaAssignment } from '@/features/users/utils/resolve-mintika-ids'
 import { useAuthStore } from '@/stores/auth-store'
@@ -33,6 +35,10 @@ import {
   type ColumnHeaderFilters,
   type HeaderFilterKey,
 } from '../utils/column-header-filters'
+import {
+  getAnketCevapSoruTableHeader,
+  resolveAnketCevapSoruColumns,
+} from '../utils/anket-cevap-soru-headers'
 import { exportAnketCevaplariToExcel } from '../utils/export-anket-cevaplari-excel'
 import { formatAnketCevapCell } from '../utils/format-anket-cevap-cell'
 import { filterAnketCevapRows } from '../utils/filter-anket-cevaplari'
@@ -52,6 +58,7 @@ export function AnketCevaplariReportPage() {
   const cografiFiltreQuery = isAdmin ? globalOptionsQuery : mintikaOptionsQuery
   const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
   const surveysQuery = useSurveys()
+  const optionGroupsQuery = useOptionGroups()
   const [selectedBaslikId, setSelectedBaslikId] = useState('')
   const [columnFilters, setColumnFilters] = useState<ColumnHeaderFilters>({})
   const [openHeaderFilter, setOpenHeaderFilter] = useState<HeaderFilterKey | null>(null)
@@ -74,6 +81,7 @@ export function AnketCevaplariReportPage() {
 
   const baslikIdNum = Number(effectiveBaslikId)
   const hasBaslik = Number.isFinite(baslikIdNum) && baslikIdNum > 0
+  const questionsQuery = useQuestions(hasBaslik ? baslikIdNum : undefined)
   const reportQuery = useAnketCevaplariReport(
     { baslikId: hasBaslik ? baslikIdNum : undefined },
     { enabled: hasBaslik },
@@ -99,6 +107,19 @@ export function AnketCevaplariReportPage() {
   const visibleSoruKolonlari = useMemo(
     () => getVisibleSoruKolonlari(soruKolonlari),
     [soruKolonlari],
+  )
+  const optionNameById = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const group of optionGroupsQuery.data ?? []) {
+      for (const option of group.altSecenekler) {
+        map.set(option.id, option.adi)
+      }
+    }
+    return map
+  }, [optionGroupsQuery.data])
+  const soruColumns = useMemo(
+    () => resolveAnketCevapSoruColumns(visibleSoruKolonlari, questionsQuery.data ?? [], optionNameById),
+    [optionNameById, questionsQuery.data, visibleSoruKolonlari],
   )
 
   useEffect(() => {
@@ -134,14 +155,14 @@ export function AnketCevaplariReportPage() {
         className: 'whitespace-nowrap',
       }
     })
-    const dynamic: TableColumn<AnketCevapRow>[] = visibleSoruKolonlari.map((col) => ({
+    const dynamic: TableColumn<AnketCevapRow>[] = soruColumns.map((col) => ({
       key: `q${col.index}`,
-      header: col.header,
+      header: getAnketCevapSoruTableHeader(col),
       render: (row) => formatAnketCevapCell(col.header, row.cevaplar[col.index]),
       className: 'whitespace-nowrap',
     }))
     return [...fixed, ...dynamic]
-  }, [columnFilters, openHeaderFilter, uniqueByColumn, visibleSoruKolonlari])
+  }, [columnFilters, openHeaderFilter, soruColumns, uniqueByColumn])
 
   if (permissionLoading || adminPermissionLoading) {
     return (
@@ -155,7 +176,10 @@ export function AnketCevaplariReportPage() {
 
   const handleExportExcel = () => {
     if (!report || rows.length === 0) return
-    exportAnketCevaplariToExcel(soruKolonlari, rows)
+    exportAnketCevaplariToExcel(soruKolonlari, rows, {
+      questions: questionsQuery.data ?? [],
+      optionNameById,
+    })
   }
 
   const waitingForSurveys = surveysQuery.isLoading && !hasBaslik
