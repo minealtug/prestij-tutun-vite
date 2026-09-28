@@ -18,6 +18,7 @@ import {
   resolveEffectiveQuestionInputKind,
   type QuestionInputKind,
 } from '../utils/resolve-question-input-kind'
+import { isBakmaklaYukumluBireySayisi } from '../utils/validate-survey-fill-answers'
 
 interface SurveyFillQuestionFieldProps {
   question: SurveyFillSoruView
@@ -51,6 +52,9 @@ function renderAnswerControl(
     ekiciLoading: boolean
     label?: string
     selectOptions?: { value: string; label: string }[]
+    min?: number
+    step?: number
+    hint?: string
   },
 ) {
   const {
@@ -63,6 +67,9 @@ function renderAnswerControl(
     ekiciLoading,
     label,
     selectOptions = [],
+    min,
+    step,
+    hint,
   } = props
 
   if (kind === 'ekici') {
@@ -177,7 +184,10 @@ function renderAnswerControl(
       onChange={(e) => onChange(e.target.value)}
       placeholder="Cevabınızı girin"
       error={error}
+      hint={hint}
       disabled={disabled}
+      min={kind === 'number' ? min : undefined}
+      step={kind === 'number' ? step : undefined}
     />
   )
 }
@@ -206,6 +216,7 @@ export function SurveyFillQuestionField({
     kind === 'select' && hasSecenekGrupDropdown(question) && !useManualEntry
   const questionLabel = getSurveyFillQuestionLabel(question)
   const birimAdi = resolveSurveyFillBirimAdi(question, answerUnitsById)
+  const requiresMinOne = isBakmaklaYukumluBireySayisi(question)
   const answerHint = question.cevapGirdiTipAdi
     ? getFriendlyAnswerTypeLabel(question.cevapGirdiTipAdi)
     : undefined
@@ -241,7 +252,7 @@ export function SurveyFillQuestionField({
           )}
           {locked && <p className="text-xs text-muted">Ekici bilgisinden otomatik dolduruldu.</p>}
         </div>
-        {question.zorunlu && (
+        {(question.zorunlu || requiresMinOne) && (
           <span className="shrink-0 whitespace-nowrap text-xs font-medium text-red-600">
             <span
               className="mr-1 text-lg font-semibold leading-none text-red-500"
@@ -324,6 +335,9 @@ export function SurveyFillQuestionField({
               ekiciLoading,
               label: kind === 'ekici' ? undefined : 'Cevap',
               selectOptions,
+              min: requiresMinOne ? 1 : undefined,
+              step: requiresMinOne ? 1 : undefined,
+              hint: requiresMinOne ? 'En az 1 giriniz' : undefined,
             })}
           </>
         )}

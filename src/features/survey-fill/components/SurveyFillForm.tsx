@@ -46,7 +46,12 @@ import {
 import { sortSurveyFillQuestions } from '../utils/sort-survey-fill-questions'
 import { getQuestionKey } from '../utils/question-key'
 import { resolveSurveyFillMintikaId } from '../utils/resolve-survey-fill-mintika-id'
-import { validateSurveyFillAnswers, buildRequiredAnswersSubmitError } from '../utils/validate-survey-fill-answers'
+import {
+  validateSurveyFillAnswers,
+  validateSurveyFillAnswer,
+  buildRequiredAnswersSubmitError,
+  isBakmaklaYukumluBireySayisi,
+} from '../utils/validate-survey-fill-answers'
 import {
   applyManualEntryInitialAnswers,
   detectInitialManualEntryKeys,
@@ -537,7 +542,18 @@ export function SurveyFillForm({
 
   const handleAnswerChange = (key: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [key]: value }))
+    const question = visibleQuestions.find((item) => getQuestionKey(item) === key)
+    const minOneError =
+      question && isBakmaklaYukumluBireySayisi(question) && value.trim()
+        ? validateSurveyFillAnswer(
+            question,
+            value,
+            answerTypeLookup,
+            manualEntryByKey[key] ?? false,
+          )
+        : undefined
     setFieldErrors((prev) => {
+      if (minOneError) return { ...prev, [key]: minOneError }
       if (!prev[key]) return prev
       const next = { ...prev }
       delete next[key]

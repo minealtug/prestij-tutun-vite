@@ -4,15 +4,39 @@ import { isMultiSelectValueAnswered } from './multi-select-value'
 import { resolveEffectiveQuestionInputKind } from './resolve-question-input-kind'
 import { getQuestionKey } from './question-key'
 
+export function isBakmaklaYukumluBireySayisi(question: Pick<SurveyFillSoruView, 'soruMetni'>): boolean {
+  const normalized = question.soruMetni.toLocaleLowerCase('tr-TR')
+  return (
+    normalized.includes('yükümlü') ||
+    normalized.includes('yukumlu') ||
+    normalized.includes('bakmakla')
+  )
+}
+
+function parsePositiveCount(value: string): number | null {
+  const trimmed = value.trim().replace(',', '.')
+  if (!trimmed) return null
+  const numeric = Number(trimmed)
+  return Number.isFinite(numeric) ? numeric : null
+}
+
 export function validateSurveyFillAnswer(
   question: SurveyFillSoruView,
   value: string,
   answerTypeLookup?: AnswerTypeKindLookup,
   useManualEntry = false,
 ): string | undefined {
-  if (!question.zorunlu) return undefined
-
   const kind = resolveEffectiveQuestionInputKind(question, answerTypeLookup, useManualEntry)
+
+  if (isBakmaklaYukumluBireySayisi(question)) {
+    const numeric = parsePositiveCount(value)
+    if (numeric == null || numeric < 1) {
+      return 'Bakmakla yükümlü olunan birey sayısı en az 1 olmalıdır.'
+    }
+    return undefined
+  }
+
+  if (!question.zorunlu) return undefined
 
   if (kind === 'checkbox') {
     return value === 'true' ? undefined : 'Bu soru zorunludur.'
@@ -29,7 +53,6 @@ export function validateSurveyFillAnswer(
   if (kind === 'select') {
     const optionId = Number(value)
     if (Number.isFinite(optionId) && optionId > 0) return undefined
-    if (!question.zorunlu) return undefined
     if (!question.secenekGrupId && (question.altSecenekler?.length ?? 0) === 0) {
       return 'Bu soru için seçenek grubu tanımlı değil.'
     }
