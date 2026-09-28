@@ -1,10 +1,4 @@
-export type AnswerInputKind =
-  | 'text'
-  | 'textarea'
-  | 'number'
-  | 'date'
-  | 'checkbox'
-  | 'select'
+export type AnswerInputKind = 'text' | 'textarea' | 'number' | 'date' | 'checkbox' | 'select'
 
 export function resolveAnswerInputKind(cevapGirdiTipAdi?: string): AnswerInputKind {
   const normalized = (cevapGirdiTipAdi ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
@@ -50,7 +44,8 @@ export function resolveAnswerInputKind(cevapGirdiTipAdi?: string): AnswerInputKi
     normalized.includes('datetime') ||
     normalized.includes('date time') ||
     normalized.includes('date') ||
-    normalized.includes('tarih')
+    normalized.includes('tarih') ||
+    normalized.includes('takvim')
   ) {
     return 'date'
   }

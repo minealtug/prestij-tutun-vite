@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils/cn'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { SearchableSelect, type SearchableSelectOption } from '@/components/ui/SearchableSelect'
@@ -11,10 +12,7 @@ import { getFriendlyAnswerTypeLabel } from '@/features/questions/utils/answer-ty
 import { getQuestionKey } from '../utils/question-key'
 import { getSurveyFillQuestionLabel } from '../utils/is-ekici-producer-question'
 import { resolveSurveyFillBirimAdi } from '../utils/resolve-survey-fill-birim-adi'
-import {
-  parseMultiSelectValue,
-  toggleMultiSelectValue,
-} from '../utils/multi-select-value'
+import { parseMultiSelectValue, toggleMultiSelectValue } from '../utils/multi-select-value'
 import {
   hasSecenekGrupDropdown,
   resolveEffectiveQuestionInputKind,
@@ -121,6 +119,19 @@ function renderAnswerControl(
     )
   }
 
+  if (kind === 'date') {
+    return (
+      <DatePicker
+        id={fieldId}
+        label={label}
+        value={value}
+        onChange={onChange}
+        error={error}
+        disabled={disabled}
+      />
+    )
+  }
+
   if (kind === 'multiSelect') {
     const selectedIds = new Set(parseMultiSelectValue(value))
 
@@ -132,26 +143,24 @@ function renderAnswerControl(
             <p className="text-sm text-muted">Seçenek bulunamadı</p>
           ) : (
             selectOptions.map((option) => (
-            <label
-              key={option.value}
-              className={cn(
-                'flex items-start gap-3 rounded-md px-1 py-1.5',
-                disabled ? 'cursor-not-allowed' : 'cursor-pointer',
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={selectedIds.has(Number(option.value))}
-                disabled={disabled}
-                onChange={(e) =>
-                  onChange(
-                    toggleMultiSelectValue(value, Number(option.value), e.target.checked),
-                  )
-                }
-                className="mt-0.5 h-4 w-4 rounded border-border text-primary-500 focus:ring-primary-500"
-              />
-              <span className="text-sm text-foreground">{option.label}</span>
-            </label>
+              <label
+                key={option.value}
+                className={cn(
+                  'flex items-start gap-3 rounded-md px-1 py-1.5',
+                  disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(Number(option.value))}
+                  disabled={disabled}
+                  onChange={(e) =>
+                    onChange(toggleMultiSelectValue(value, Number(option.value), e.target.checked))
+                  }
+                  className="mt-0.5 h-4 w-4 rounded border-border text-primary-500 focus:ring-primary-500"
+                />
+                <span className="text-sm text-foreground">{option.label}</span>
+              </label>
             ))
           )}
         </div>
@@ -163,7 +172,7 @@ function renderAnswerControl(
     <Input
       id={fieldId}
       label={label}
-      type={kind === 'number' ? 'number' : kind === 'date' ? 'date' : 'text'}
+      type={kind === 'number' ? 'number' : 'text'}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder="Cevabınızı girin"
@@ -230,9 +239,7 @@ export function SurveyFillQuestionField({
               Birim: <span className="font-medium text-foreground">{birimAdi}</span>
             </p>
           )}
-          {locked && (
-            <p className="text-xs text-muted">Ekici bilgisinden otomatik dolduruldu.</p>
-          )}
+          {locked && <p className="text-xs text-muted">Ekici bilgisinden otomatik dolduruldu.</p>}
         </div>
         {question.zorunlu && (
           <span className="shrink-0 whitespace-nowrap text-xs font-medium text-red-600">
@@ -331,9 +338,7 @@ export function SurveyFillQuestionField({
           kind !== 'checkbox' &&
           kind !== 'multiSelect' &&
           kind !== 'ekici' &&
-          !showSecenekDropdown && (
-            <p className="mt-1.5 text-xs text-muted">{answerHint}</p>
-          )}
+          !showSecenekDropdown && <p className="mt-1.5 text-xs text-muted">{answerHint}</p>}
       </div>
     </article>
   )
