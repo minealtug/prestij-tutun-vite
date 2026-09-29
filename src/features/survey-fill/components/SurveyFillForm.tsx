@@ -12,7 +12,7 @@ import { useAnswerInputTypes, useQuestions } from '@/features/questions/hooks/us
 import { useAnswerUnits } from '@/features/answer-units/hooks/use-answer-units'
 import { useAuthStore } from '@/stores/auth-store'
 import { useUser } from '@/features/users/hooks/use-users'
-import { userHasMintikaAssignment } from '@/features/users/utils/resolve-mintika-ids'
+import { resolveMintikaIds } from '@/features/users/utils/resolve-mintika-ids'
 import { getErrorMessage } from '@/lib/api/api-error'
 import { SurveyFillQuestionField } from './SurveyFillQuestionField'
 import {
@@ -121,14 +121,60 @@ export function SurveyFillForm({
     [answerUnitsQuery.data],
   )
   const authUser = useAuthStore((state) => state.user)
-  const canLoadMintikam = userHasMintikaAssignment(authUser ?? {})
-  const cografiFiltreQuery = useMintikaCografiFiltreOptions(canLoadMintikam)
-  const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
-  const ekicilerQuery = useEkiciler(geoCascade.queryParams, canLoadMintikam)
   const authUserId = authUser?.id ? Number(authUser.id) : null
   const currentUserQuery = useUser(
     authUserId != null && Number.isFinite(authUserId) ? authUserId : null,
   )
+  const assignedMintikaIds = useMemo(() => {
+    const fromAuth = resolveMintikaIds({
+      mintikaIds: authUser?.mintikaIds,
+      mintikaId: authUser?.mintikaId,
+    })
+    if (fromAuth.length > 0) return fromAuth
+    return resolveMintikaIds({
+      mintikaIds: currentUserQuery.data?.mintikaIds,
+      mintikaId: currentUserQuery.data?.mintikaId,
+      mintikalar: currentUserQuery.data?.mintikalar,
+    })
+  }, [
+    authUser?.mintikaId,
+    authUser?.mintikaIds,
+    currentUserQuery.data?.mintikaId,
+    currentUserQuery.data?.mintikaIds,
+    currentUserQuery.data?.mintikalar,
+  ])
+  const canLoadMintikam = authUser?.admin === true || assignedMintikaIds.length > 0
+  const mintikaAssignmentLoading =
+    !authUser || (!canLoadMintikam && currentUserQuery.isLoading)
+  const cografiFiltreQuery = useMintikaCografiFiltreOptions(canLoadMintikam)
+  const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
+  const ekiciQueryParams = useMemo(() => {
+    const params = geoCascade.queryParams
+    const requestedMintikaId = params.mintikaId
+    if (
+      requestedMintikaId != null &&
+      assignedMintikaIds.length > 0 &&
+      !assignedMintikaIds.includes(requestedMintikaId)
+    ) {
+      return {}
+    }
+
+    const options = cografiFiltreQuery.data
+    if (
+      options &&
+      requestedMintikaId != null &&
+      !options.mintikalar.some((mintika) => mintika.id === requestedMintikaId)
+    ) {
+      return {}
+    }
+
+    return params
+  }, [assignedMintikaIds, cografiFiltreQuery.data, geoCascade.queryParams])
+  const ekicilerEnabled =
+    canLoadMintikam &&
+    !cografiFiltreQuery.isLoading &&
+    (cografiFiltreQuery.isSuccess || cografiFiltreQuery.isError)
+  const ekicilerQuery = useEkiciler(ekiciQueryParams, ekicilerEnabled)
 
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [initialAnswers, setInitialAnswers] = useState<Record<string, string>>({})
@@ -336,15 +382,28 @@ export function SurveyFillForm({
     ].join('|')
   }, [kontratSahibiActive, questionsWithOptions, selectedEkici])
 
+  const scopedInitialGeoFilters = useMemo(() => {
+    if (!initialGeoFilters) return null
+    const mintikaId = initialGeoFilters.mintikaId
+    if (
+      mintikaId != null &&
+      assignedMintikaIds.length > 0 &&
+      !assignedMintikaIds.includes(mintikaId)
+    ) {
+      return { ...initialGeoFilters, mintikaId: undefined }
+    }
+    return initialGeoFilters
+  }, [assignedMintikaIds, initialGeoFilters])
+
   const deepLinkBootstrapKey = useMemo(
     () =>
       JSON.stringify({
         baslikId,
         sablonId,
         initialEkiciId,
-        initialGeoFilters,
+        scopedInitialGeoFilters,
       }),
-    [baslikId, sablonId, initialEkiciId, initialGeoFilters],
+    [baslikId, sablonId, initialEkiciId, scopedInitialGeoFilters],
   )
 
   useEffect(() => {
@@ -359,21 +418,21 @@ export function SurveyFillForm({
     setSuccessModalOpen(false)
     deepLinkBootstrapKeyRef.current = ''
 
-    if (!initialGeoFilters) {
+    if (!scopedInitialGeoFilters) {
       skipNextGeoClearRef.current = true
       geoCascade.resetToScopedDefaults()
     }
-  }, [baslikId, initialGeoFilters, geoCascade.resetToScopedDefaults])
+  }, [baslikId, scopedInitialGeoFilters, geoCascade.resetToScopedDefaults])
 
   useEffect(() => {
-    if (!initialGeoFilters || !cografiFiltreQuery.data) return
+    if (!scopedInitialGeoFilters || !cografiFiltreQuery.data) return
     if (deepLinkBootstrapKeyRef.current === deepLinkBootstrapKey) return
 
     skipNextGeoClearRef.current = true
-    geoCascade.applyFromQueryParams(initialGeoFilters)
+    geoCascade.applyFromQueryParams(scopedInitialGeoFilters)
     deepLinkBootstrapKeyRef.current = deepLinkBootstrapKey
   }, [
-    initialGeoFilters,
+    scopedInitialGeoFilters,
     cografiFiltreQuery.data,
     deepLinkBootstrapKey,
     geoCascade.applyFromQueryParams,
@@ -865,7 +924,7 @@ export function SurveyFillForm({
             />
           )}
 
-          {ekicilerQuery.isLoading ? (
+          {mintikaAssignmentLoading || cografiFiltreQuery.isLoading || ekicilerQuery.isLoading ? (
             <Skeleton className="h-11 w-full rounded-lg" />
           ) : (
             <div className="space-y-1">
@@ -874,7 +933,7 @@ export function SurveyFillForm({
                 value={sessionEkiciId ?? ''}
                 onChange={handleEkiciChange}
                 options={ekiciOptions}
-                disabled={ekicilerQuery.isLoading || !canLoadMintikam}
+                disabled={!canLoadMintikam || !ekicilerEnabled}
                 placeholder="Ad veya soyad ile ekici ara..."
                 emptyMessage={
                   !canLoadMintikam

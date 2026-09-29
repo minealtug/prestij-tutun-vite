@@ -8,11 +8,11 @@ export async function resolveMintikaFromUserProfile(
     mintikaIds?: number[] | null
   },
 ): Promise<{ mintikaId: number | null; mintikaIds: number[] }> {
-  if (Array.isArray(current?.mintikaIds)) {
-    const mintikaIds = resolveMintikaIds(current)
+  const existingMintikaIds = resolveMintikaIds(current ?? {})
+  if (existingMintikaIds.length > 0) {
     return {
-      mintikaId: mintikaIds[0] ?? current.mintikaId ?? null,
-      mintikaIds,
+      mintikaId: existingMintikaIds[0] ?? current?.mintikaId ?? null,
+      mintikaIds: existingMintikaIds,
     }
   }
 
