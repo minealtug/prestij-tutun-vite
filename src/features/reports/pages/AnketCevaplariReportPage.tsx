@@ -179,6 +179,7 @@ export function AnketCevaplariReportPage() {
     exportAnketCevaplariToExcel(soruKolonlari, rows, {
       questions: questionsQuery.data ?? [],
       optionNameById,
+      optionGroups: optionGroupsQuery.data ?? [],
     })
   }
 
