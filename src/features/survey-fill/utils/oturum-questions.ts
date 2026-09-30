@@ -8,7 +8,7 @@ import {
   formatMultiSelectValue,
   isMultiSelectValueAnswered,
 } from './multi-select-value'
-import { toDateInputValue } from './date-input-value'
+import { formatDisplayDate } from './date-input-value'
 import { getQuestionKey } from './question-key'
 import { resolveEffectiveQuestionInputKind } from './resolve-question-input-kind'
 import { sortQuestionsUnderParents } from './sort-survey-fill-questions'
@@ -203,7 +203,7 @@ export function getInitialAnswerValue(
   }
 
   if (kind === 'date') {
-    return toDateInputValue(soru.cevapText)
+    return formatDisplayDate(soru.cevapText) || soru.cevapText?.trim() || ''
   }
 
   if (soru.cevapText) return soru.cevapText

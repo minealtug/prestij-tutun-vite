@@ -1,7 +1,6 @@
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils/cn'
-import { DatePicker } from '@/components/ui/DatePicker'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { SearchableSelect, type SearchableSelectOption } from '@/components/ui/SearchableSelect'
@@ -126,19 +125,6 @@ function renderAnswerControl(
     )
   }
 
-  if (kind === 'date') {
-    return (
-      <DatePicker
-        id={fieldId}
-        label={label}
-        value={value}
-        onChange={onChange}
-        error={error}
-        disabled={disabled}
-      />
-    )
-  }
-
   if (kind === 'multiSelect') {
     const selectedIds = new Set(parseMultiSelectValue(value))
 
@@ -182,7 +168,7 @@ function renderAnswerControl(
       type={kind === 'number' ? 'number' : 'text'}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      placeholder="Cevabınızı girin"
+      placeholder={kind === 'date' ? 'GG.AA.YYYY' : 'Cevabınızı girin'}
       error={error}
       hint={hint}
       disabled={disabled}
