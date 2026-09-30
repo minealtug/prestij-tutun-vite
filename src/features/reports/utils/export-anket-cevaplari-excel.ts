@@ -6,13 +6,14 @@ import {
   type AnketCevapExcelColumn,
 } from '../config/anket-cevaplari-excel-columns'
 import {
-  ANKET_CEVAPLARI_EXCEL_COL_COUNT,
   ANKET_CEVAPLARI_EXCEL_COL_WIDTHS,
   ANKET_CEVAPLARI_EXCEL_DATE_NUMFMT,
+  ANKET_CEVAPLARI_EXCEL_FIXED_TITLE_COUNT,
   ANKET_CEVAPLARI_EXCEL_MERGES,
   ANKET_CEVAPLARI_EXCEL_ROW_HEIGHT,
   ANKET_CEVAPLARI_EXCEL_SHEET_NAME,
   ANKET_CEVAPLARI_EXCEL_TEXT_NUMFMT,
+  excelColumnLetter,
   EXCEL_STYLE_DATA_GRAY,
   EXCEL_STYLE_DATA_WHITE,
   EXCEL_STYLE_HEADER_DECIMAL,
@@ -56,7 +57,9 @@ function headerStyle(column: AnketCevapExcelColumn) {
 }
 
 function titleStyle(colIndex: number) {
-  return colIndex < 12 ? EXCEL_STYLE_HEADER_TITLE_FIXED : EXCEL_STYLE_HEADER_TITLE_QUESTION
+  return colIndex < ANKET_CEVAPLARI_EXCEL_FIXED_TITLE_COUNT
+    ? EXCEL_STYLE_HEADER_TITLE_FIXED
+    : EXCEL_STYLE_HEADER_TITLE_QUESTION
 }
 
 function dataStyle(column: AnketCevapExcelColumn) {
@@ -100,7 +103,7 @@ function writeHeaderRows(worksheet: XLSX.WorkSheet): void {
       )
     }
 
-    const titleFmt = col < 12 ? ANKET_CEVAPLARI_EXCEL_TEXT_NUMFMT : undefined
+    const titleFmt = col < ANKET_CEVAPLARI_EXCEL_FIXED_TITLE_COUNT ? ANKET_CEVAPLARI_EXCEL_TEXT_NUMFMT : undefined
     setCell(worksheet, 1, col, column.title, titleStyle(col), titleFmt)
   })
 }
@@ -117,7 +120,7 @@ function writeDataRow(
     const numFmt =
       column.valueKind === 'dateExcel'
         ? ANKET_CEVAPLARI_EXCEL_DATE_NUMFMT
-        : column.dataStyle === 'white' || column.letter === 'F' || (col < 12 && column.valueKind !== 'number')
+        : column.dataStyle === 'white' || column.letter === 'F' || (col < ANKET_CEVAPLARI_EXCEL_FIXED_TITLE_COUNT && column.valueKind !== 'number')
           ? ANKET_CEVAPLARI_EXCEL_TEXT_NUMFMT
           : undefined
     const type = column.valueKind === 'number' || column.valueKind === 'dateExcel' ? 'n' : 's'
@@ -136,6 +139,8 @@ export function exportAnketCevaplariToExcel(
 ): void {
   const sources = buildAnketCevapExcelSources(soruKolonlari, questions, optionNameById)
   const optionOrder = buildOptionOrder(optionGroups)
+  const colCount = ANKET_CEVAPLARI_EXCEL_COLUMNS.length
+  const lastColLetter = excelColumnLetter(colCount - 1)
   const lastRow = 1 + satirlar.length
   const worksheet: XLSX.WorkSheet = {}
 
@@ -146,7 +151,7 @@ export function exportAnketCevaplariToExcel(
 
   worksheet['!ref'] = XLSX.utils.encode_range({
     s: { r: 0, c: 0 },
-    e: { r: lastRow, c: ANKET_CEVAPLARI_EXCEL_COL_COUNT - 1 },
+    e: { r: lastRow, c: colCount - 1 },
   })
   worksheet['!merges'] = ANKET_CEVAPLARI_EXCEL_MERGES
   worksheet['!cols'] = ANKET_CEVAPLARI_EXCEL_COL_WIDTHS.map((wch) => ({ wch }))
@@ -154,7 +159,7 @@ export function exportAnketCevaplariToExcel(
     hpt: ANKET_CEVAPLARI_EXCEL_ROW_HEIGHT,
   }))
   worksheet['!autofilter'] = {
-    ref: `A2:CW${Math.max(2, lastRow + 1)}`,
+    ref: `A2:${lastColLetter}${Math.max(2, lastRow + 1)}`,
   }
   worksheet['!views'] = [{ showGridLines: false }]
   worksheet['!margins'] = { left: 1, right: 1, top: 1, bottom: 1, header: 0.3, footer: 0.3 }

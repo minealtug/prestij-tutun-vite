@@ -220,11 +220,12 @@ export function resolveAnketCevapExcelCell(
   sources: AnketCevapExcelSourceColumn[],
   optionOrder: ReadonlyMap<string, number> = new Map(),
 ): ExcelCellValue {
+  if (column.blank) return null
   let text = resolveTextValue(column, row, sources, optionOrder)
   if (column.source.type === 'fixed' && column.source.key === 'anketAdi' && !text) {
     text = row.anketAdi
   }
-  if (column.letter === 'N' && !text) text = row.uretimiYapan.trim()
+  if (column.title.startsWith('Üretimi yapan') && !text) text = row.uretimiYapan.trim()
   return toTypedValue(column.valueKind, text)
 }
 

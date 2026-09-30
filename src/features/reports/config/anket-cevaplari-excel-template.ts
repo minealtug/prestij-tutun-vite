@@ -8,10 +8,22 @@ const BORDER_SIDE = { style: 'thin' as const, color: { rgb: '808080' } }
 const BORDER = { top: BORDER_SIDE, bottom: BORDER_SIDE, left: BORDER_SIDE, right: BORDER_SIDE }
 
 export const ANKET_CEVAPLARI_EXCEL_SHEET_NAME = 'Sheet'
-export const ANKET_CEVAPLARI_EXCEL_COL_COUNT = 101
 export const ANKET_CEVAPLARI_EXCEL_DATE_NUMFMT = 'm/d/yy h:mm'
 export const ANKET_CEVAPLARI_EXCEL_TEXT_NUMFMT = '@'
 export const ANKET_CEVAPLARI_EXCEL_ROW_HEIGHT = 15
+/** A–J: Anket Adı … Cinsiyet (Sözleşme Kg / Dönüm yok) */
+export const ANKET_CEVAPLARI_EXCEL_FIXED_TITLE_COUNT = 10
+
+export function excelColumnLetter(index: number): string {
+  let n = index + 1
+  let s = ''
+  while (n > 0) {
+    const rem = (n - 1) % 26
+    s = String.fromCharCode(65 + rem) + s
+    n = Math.floor((n - 1) / 26)
+  }
+  return s
+}
 
 function style(fill: typeof GRAY_FILL, horizontal: 'left' | 'right') {
   return {
@@ -31,7 +43,7 @@ export const EXCEL_STYLE_DATA_WHITE = style(WHITE_FILL, 'right')
 
 /** bu.xlsx col/@width converted to character widths */
 export const ANKET_CEVAPLARI_EXCEL_COL_WIDTHS: number[] = [
-  8.43, 6.86, 8.43, 8.43, 2.86, 2.14, 2.43, 4.86, 12.86, 8.71, 5, 5.71, 10.57, 29.29, 6.43, 9.86,
+  8.43, 6.86, 8.43, 8.43, 2.86, 2.14, 2.43, 4.86, 12.86, 5.71, 10.57, 29.29, 6.43, 9.86,
   19.29, 31.57, 13, 16, 13, 16, 13, 16, 13, 16, 13, 16, 13, 16, 13, 16, 13, 16, 12.14, 16, 31.29, 20,
   24.86, 19.29, 32.71, 25.14, 13.57, 30.86, 16.14, 50.14, 46, 28.14, 31.71, 14, 15.86, 15.57, 15.71,
   16.71, 49.86, 23.43, 32.43, 25.14, 37, 14.57, 27, 59.57, 27, 23.71, 23.71, 23.71, 21.43, 33.57,
@@ -42,15 +54,15 @@ export const ANKET_CEVAPLARI_EXCEL_COL_WIDTHS: number[] = [
 
 /** bu.xlsx mergeCells — row 1 question-number groups */
 export const ANKET_CEVAPLARI_EXCEL_MERGES: XLSX.Range[] = [
-  { s: { r: 0, c: 14 }, e: { r: 0, c: 16 } },
-  { s: { r: 0, c: 37 }, e: { r: 0, c: 43 } },
-  { s: { r: 0, c: 44 }, e: { r: 0, c: 47 } },
-  { s: { r: 0, c: 51 }, e: { r: 0, c: 53 } },
-  { s: { r: 0, c: 55 }, e: { r: 0, c: 56 } },
-  { s: { r: 0, c: 60 }, e: { r: 0, c: 61 } },
-  { s: { r: 0, c: 62 }, e: { r: 0, c: 75 } },
-  { s: { r: 0, c: 88 }, e: { r: 0, c: 89 } },
-  { s: { r: 0, c: 99 }, e: { r: 0, c: 100 } },
+  { s: { r: 0, c: 12 }, e: { r: 0, c: 14 } },
+  { s: { r: 0, c: 35 }, e: { r: 0, c: 41 } },
+  { s: { r: 0, c: 42 }, e: { r: 0, c: 45 } },
+  { s: { r: 0, c: 49 }, e: { r: 0, c: 51 } },
+  { s: { r: 0, c: 53 }, e: { r: 0, c: 54 } },
+  { s: { r: 0, c: 58 }, e: { r: 0, c: 59 } },
+  { s: { r: 0, c: 60 }, e: { r: 0, c: 73 } },
+  { s: { r: 0, c: 86 }, e: { r: 0, c: 87 } },
+  { s: { r: 0, c: 97 }, e: { r: 0, c: 98 } },
 ]
 
 export const LIVING_CONDITION_OPTION_ORDER = [

@@ -59,9 +59,9 @@ function col(letter: string) {
 }
 
 describe('ANKET_CEVAPLARI_EXCEL_COLUMNS', () => {
-  it('has A–CW in the target order with exact A–M titles', () => {
-    expect(ANKET_CEVAPLARI_EXCEL_COLUMNS).toHaveLength(101)
-    expect(ANKET_CEVAPLARI_EXCEL_COLUMNS.slice(0, 13).map((item) => item.title)).toEqual([
+  it('omits Sözleşme Kg / Dönüm and keeps A–K producer headers', () => {
+    expect(ANKET_CEVAPLARI_EXCEL_COLUMNS).toHaveLength(99)
+    expect(ANKET_CEVAPLARI_EXCEL_COLUMNS.slice(0, 11).map((item) => item.title)).toEqual([
       'Anket Adı',
       'Menşei',
       'Mıntıka',
@@ -71,15 +71,14 @@ describe('ANKET_CEVAPLARI_EXCEL_COLUMNS', () => {
       'Adı',
       'Soyadı',
       'Doğum Tarihi',
-      'Sözleşme Kg',
-      'Dönüm',
       'Cinsiyet',
       'Ekici Yaş Aralığı',
     ])
-    expect(col('J').source).toMatchObject({ type: 'fixed', key: 'sozlesmeKg' })
-    expect(col('L').source).toMatchObject({ type: 'fixed', key: 'cinsiyet' })
-    expect(col('AL').title).toBe('Anlaşma Şekli (Genel Durum)')
-    expect(col('BI').title).toBe('Gübreyi belirleme şekli?')
+    expect(ANKET_CEVAPLARI_EXCEL_COLUMNS.some((item) => item.title === 'Sözleşme Kg')).toBe(false)
+    expect(ANKET_CEVAPLARI_EXCEL_COLUMNS.some((item) => item.title === 'Dönüm')).toBe(false)
+    expect(col('J').source).toMatchObject({ type: 'fixed', key: 'cinsiyet' })
+    expect(colByTitle('Anlaşma Şekli (Genel Durum)').letter).toBe('AJ')
+    expect(colByTitle('Gübreyi belirleme şekli?').letter).toBe('BG')
   })
 })
 
@@ -91,14 +90,22 @@ describe('joinUniqueComma', () => {
   })
 })
 
+function colByTitle(title: string) {
+  const column = ANKET_CEVAPLARI_EXCEL_COLUMNS.find((item) => item.title === title)
+  if (!column) throw new Error(title)
+  return column
+}
+
 describe('resolveAnketCevapExcelCell', () => {
-  it('writes TC as text and reorders fixed producer fields', () => {
+  it('leaves alım noktası, köy, TC, ad and soyad empty and drops kg/dönüm columns', () => {
     const record = row([])
-    expect(resolveAnketCevapExcelCell(col('F'), record, [])).toBe('23924336642')
-    expect(resolveAnketCevapExcelCell(col('J'), record, [])).toBe(500)
-    expect(resolveAnketCevapExcelCell(col('K'), record, [])).toBe(6)
-    expect(resolveAnketCevapExcelCell(col('L'), record, [])).toBe('Erkek')
-    expect(resolveAnketCevapExcelCell(col('M'), record, [])).toBe('18-30 Yaş Ekici')
+    expect(resolveAnketCevapExcelCell(col('D'), record, [])).toBe(null)
+    expect(resolveAnketCevapExcelCell(col('E'), record, [])).toBe(null)
+    expect(resolveAnketCevapExcelCell(col('F'), record, [])).toBe(null)
+    expect(resolveAnketCevapExcelCell(col('G'), record, [])).toBe(null)
+    expect(resolveAnketCevapExcelCell(col('H'), record, [])).toBe(null)
+    expect(resolveAnketCevapExcelCell(col('J'), record, [])).toBe('Erkek')
+    expect(resolveAnketCevapExcelCell(col('K'), record, [])).toBe('18-30 Yaş Ekici')
   })
 
   it('uses the active tarla-ownership branch and leaves the other empty', () => {
@@ -128,8 +135,8 @@ describe('resolveAnketCevapExcelCell', () => {
     )
     const icar = row(['İcar', '17000', '27000'])
     const both = row(['Kendi+İcar', '17000', '27000'])
-    expect(resolveAnketCevapExcelCell(col('AZ'), icar, sources)).toBe('17000')
-    expect(resolveAnketCevapExcelCell(col('AZ'), both, sources)).toBe('27000')
+    expect(resolveAnketCevapExcelCell(colByTitle('İcarlanan tarla bedeli?'), icar, sources)).toBe('17000')
+    expect(resolveAnketCevapExcelCell(colByTitle('İcarlanan tarla bedeli?'), both, sources)).toBe('27000')
   })
 
   it('joins living-condition options that were answered Evet', () => {
@@ -171,7 +178,7 @@ describe('resolveAnketCevapExcelCell', () => {
       ]),
     )
     const record = row(['Tuvalet, İçme Suyu', 'Evet', 'Evet', 'Hayır'])
-    expect(resolveAnketCevapExcelCell(col('AU'), record, sources)).toBe('İçme Suyu,Tuvalet')
+    expect(resolveAnketCevapExcelCell(colByTitle('İşçi tarla koşulları?  ( Bireylerin bu koşullara erişme imkanı var mı?)'), record, sources)).toBe('İçme Suyu,Tuvalet')
   })
 
   it('does not treat the 18-age child-labour question as the target CT column', () => {
@@ -180,7 +187,7 @@ describe('resolveAnketCevapExcelCell', () => {
       [question({ id: 40, soruMetni: 'Yevmiyeli işçi, 18 yaşından küçük kendi çocuğunu tarlaya getiriyor mu?' })],
     )
     const record = row(['Hayır'])
-    expect(resolveAnketCevapExcelCell(col('CT'), record, sources)).toBe(null)
+    expect(resolveAnketCevapExcelCell(colByTitle('Yevmiyeli işçi, kendi çocuğunu tarlaya getiriyor mu? '), record, sources)).toBe(null)
   })
 
   it('leaves unanswered dependents count blank instead of 0', () => {
@@ -188,8 +195,8 @@ describe('resolveAnketCevapExcelCell', () => {
       ['Ailede bakmakla yükümlü olunan birey sayısı?'],
       [question({ id: 2, soruMetni: 'Ailede bakmakla yükümlü olunan birey sayısı?' })],
     )
-    expect(resolveAnketCevapExcelCell(col('R'), row(['0']), sources)).toBe(null)
-    expect(resolveAnketCevapExcelCell(col('R'), row(['3']), sources)).toBe('3')
+    expect(resolveAnketCevapExcelCell(colByTitle('Ailede bakmakla yükümlü olunan birey sayısı?'), row(['0']), sources)).toBe(null)
+    expect(resolveAnketCevapExcelCell(colByTitle('Ailede bakmakla yükümlü olunan birey sayısı?'), row(['3']), sources)).toBe('3')
   })
 
   it('formats family dates as dd.MM.yyyy', () => {
@@ -198,6 +205,6 @@ describe('resolveAnketCevapExcelCell', () => {
       ['1.Bireyin doğum tarihi?'],
       [question({ id: 4, soruMetni: '1.Bireyin doğum tarihi?' })],
     )
-    expect(resolveAnketCevapExcelCell(col('T'), row(['1971-01-01']), sources)).toBe('01.01.1971')
+    expect(resolveAnketCevapExcelCell(colByTitle('1.Bireyin doğum tarihi?'), row(['1971-01-01']), sources)).toBe('01.01.1971')
   })
 })

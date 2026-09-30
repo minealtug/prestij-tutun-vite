@@ -1,4 +1,5 @@
 import type { AnketCevapRow } from '../types/anket-cevaplari.types'
+import { excelColumnLetter } from './anket-cevaplari-excel-template'
 
 export type ExcelRow1Kind = 'none' | 'int' | 'decimal' | 'decimalEmpty'
 export type ExcelValueKind = 'text' | 'number' | 'dateExcel' | 'dateText'
@@ -31,6 +32,8 @@ export interface AnketCevapExcelColumn {
   title: string
   valueKind: ExcelValueKind
   dataStyle: ExcelDataStyle
+  /** Excel’de başlık durur, hücre boş yazılır (rapor tablosunu etkilemez). */
+  blank?: boolean
   source: ExcelValueSource
 }
 
@@ -39,7 +42,7 @@ function col(
   row1Kind: ExcelRow1Kind,
   title: string,
   source: ExcelValueSource,
-  options?: { row1Value?: number; valueKind?: ExcelValueKind; dataStyle?: ExcelDataStyle },
+  options?: { row1Value?: number; valueKind?: ExcelValueKind; dataStyle?: ExcelDataStyle; blank?: boolean },
 ): AnketCevapExcelColumn {
   const isFixed = source.type === 'fixed'
   return {
@@ -49,6 +52,7 @@ function col(
     title,
     valueKind: options?.valueKind ?? 'text',
     dataStyle: options?.dataStyle ?? (isFixed ? 'gray' : 'white'),
+    blank: options?.blank,
     source,
   }
 }
@@ -57,7 +61,13 @@ function fixed(
   letter: string,
   title: string,
   key: keyof AnketCevapRow,
-  extra?: { row1Kind?: ExcelRow1Kind; row1Value?: number; valueKind?: ExcelValueKind; dataStyle?: ExcelDataStyle },
+  extra?: {
+    row1Kind?: ExcelRow1Kind
+    row1Value?: number
+    valueKind?: ExcelValueKind
+    dataStyle?: ExcelDataStyle
+    blank?: boolean
+  },
 ): AnketCevapExcelColumn {
   return col(letter, extra?.row1Kind ?? 'none', title, { type: 'fixed', key }, extra)
 }
@@ -113,23 +123,21 @@ function bireyPair(
 }
 
 /**
- * Hedef şablon (bu.xlsx) A–CW sütunları.
+ * Hedef şablon sütunları (Sözleşme Kg / Dönüm Excel’de yok).
  * Kaynak eşleştirme soru metni / bağlı üst soru / seçenek adı ile yapılır; sütun indeksine göre kopyalanmaz.
  */
-export const ANKET_CEVAPLARI_EXCEL_COLUMNS: AnketCevapExcelColumn[] = [
+const EXCEL_COLUMN_DEFS: AnketCevapExcelColumn[] = [
   fixed('A', 'Anket Adı', 'anketAdi'),
   fixed('B', 'Menşei', 'mensei'),
   fixed('C', 'Mıntıka', 'mintika'),
-  fixed('D', 'Alım Noktası', 'alimNoktasi'),
-  fixed('E', 'Köy', 'koy'),
-  fixed('F', 'TC', 'tc'),
-  fixed('G', 'Adı', 'adi'),
-  fixed('H', 'Soyadı', 'soyadi'),
+  fixed('D', 'Alım Noktası', 'alimNoktasi', { blank: true }),
+  fixed('E', 'Köy', 'koy', { blank: true }),
+  fixed('F', 'TC', 'tc', { blank: true }),
+  fixed('G', 'Adı', 'adi', { blank: true }),
+  fixed('H', 'Soyadı', 'soyadi', { blank: true }),
   fixed('I', 'Doğum Tarihi', 'dogumTarihi', { valueKind: 'dateExcel', dataStyle: 'date' }),
-  fixed('J', 'Sözleşme Kg', 'sozlesmeKg', { valueKind: 'number' }),
-  fixed('K', 'Dönüm', 'donum', { valueKind: 'number' }),
-  fixed('L', 'Cinsiyet', 'cinsiyet'),
-  fixed('M', 'Ekici Yaş Aralığı', 'ekiciYasAraligi', {
+  fixed('J', 'Cinsiyet', 'cinsiyet'),
+  fixed('K', 'Ekici Yaş Aralığı', 'ekiciYasAraligi', {
     row1Kind: 'int',
     row1Value: 0,
     dataStyle: 'white',
@@ -430,6 +438,10 @@ export const ANKET_CEVAPLARI_EXCEL_COLUMNS: AnketCevapExcelColumn[] = [
     match: { question: 'Motorin miktarı' },
   }),
 ]
+
+export const ANKET_CEVAPLARI_EXCEL_COLUMNS: AnketCevapExcelColumn[] = EXCEL_COLUMN_DEFS.map(
+  (column, index) => ({ ...column, letter: excelColumnLetter(index) }),
+)
 
 export const EXCEL_SOURCE_FIELDS_WITHOUT_TARGET = [
   '10.Bireyin cinsiyeti?',
