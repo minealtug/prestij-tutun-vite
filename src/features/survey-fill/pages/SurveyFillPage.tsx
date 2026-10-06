@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { usePermissions } from '@/features/permissions/hooks/use-permissions'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { useSurveys } from '@/features/surveys/hooks/use-surveys'
 import { SurveyFillForm } from '../components/SurveyFillForm'
@@ -20,6 +21,8 @@ function parsePositiveInt(value: string | null): number {
 
 export function SurveyFillPage() {
   const { canRead, canEdit, loading: permissionLoading } = useRequirePagePermission()
+  const { hasAssignedWrite } = usePermissions()
+  const canEditAnsweredSurveys = hasAssignedWrite('/anket-cevaplari')
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedBaslikId, setSelectedBaslikId] = useState(() => {
     const fromUrl = parsePositiveInt(searchParams.get('baslikId'))
@@ -40,13 +43,17 @@ export function SurveyFillPage() {
       setSelectedSablonId(parsed.sablonId)
     }
     setDeepLink(parsed)
-    setSearchParams({ baslikId: String(parsed.baslikId) }, { replace: true })
+    const nextParams: Record<string, string> = { baslikId: String(parsed.baslikId) }
+    if (parsed.duzenle) nextParams.duzenle = '1'
+    setSearchParams(nextParams, { replace: true })
   }, [searchParams, setSearchParams])
 
   useEffect(() => {
     if (parsePositiveInt(searchParams.get('baslikId')) > 0) return
     if (selectedBaslikId <= 0) return
-    setSearchParams({ baslikId: String(selectedBaslikId) }, { replace: true })
+    const nextParams: Record<string, string> = { baslikId: String(selectedBaslikId) }
+    if (searchParams.get('duzenle') === '1') nextParams.duzenle = '1'
+    setSearchParams(nextParams, { replace: true })
   }, [searchParams, selectedBaslikId, setSearchParams])
 
   useEffect(() => {
@@ -117,6 +124,7 @@ export function SurveyFillPage() {
 
   const activeDeepLink =
     deepLink && deepLink.baslikId === selectedBaslikId ? deepLink : null
+  const editingAnsweredSurvey = activeDeepLink?.duzenle === true && canEditAnsweredSurveys
 
   if (permissionLoading) {
     return (
@@ -160,7 +168,8 @@ export function SurveyFillPage() {
             sablonAdi={selectedSablon?.adi}
             initialEkiciId={activeDeepLink?.ekiciId ?? null}
             initialGeoFilters={activeDeepLink}
-            canSubmit={canEdit && selectedSablonId > 0}
+            allowCompletedEdit={editingAnsweredSurvey}
+            canSubmit={(editingAnsweredSurvey || canEdit) && selectedSablonId > 0}
             onRefreshSablonlar={() => void sablonlarQuery.refetch()}
           />
         ) : (

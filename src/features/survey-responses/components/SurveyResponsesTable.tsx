@@ -1,5 +1,8 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { buildSurveyFillDeepLink } from '@/features/survey-fill/utils/survey-fill-navigation'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { Skeleton } from '@/components/feedback/Skeleton'
@@ -25,6 +28,7 @@ interface SurveyResponsesTableProps {
   selectedIds?: ReadonlySet<string>
   onToggleRow?: (id: string, checked: boolean) => void
   onToggleAll?: (ids: string[], checked: boolean) => void
+  canEditRow?: boolean
 }
 
 function formatAnswerCount(value: number) {
@@ -54,7 +58,9 @@ export function SurveyResponsesTable({
   selectedIds,
   onToggleRow,
   onToggleAll,
+  canEditRow = false,
 }: SurveyResponsesTableProps) {
+  const navigate = useNavigate()
   const columnCount = (showAnswerCounts ? 7 : 5) + (selectable ? 1 : 0)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -202,7 +208,37 @@ export function SurveyResponsesTable({
                       <td className="whitespace-nowrap">{formatSonIslemTarihi(row.sonIslemTarihi)}</td>
                       <td>{getOzetKullaniciAdi(row)}</td>
                       <td>{getOzetFullName(row)}</td>
-                      <td>{getOzetSurveyName(row)}</td>
+                      <td>
+                        <div className="flex items-center gap-1">
+                          <span className="min-w-0">{getOzetSurveyName(row)}</span>
+                          {canEditRow && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="!h-6 !w-6 shrink-0 !p-0 text-muted hover:text-primary-600"
+                              title="Düzenle"
+                              aria-label={`${getOzetSurveyName(row)} anketini düzenle`}
+                              disabled={!row.baslikId || row.baslikId <= 0}
+                              onKeyDown={(event) => event.stopPropagation()}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                if (!row.baslikId || row.baslikId <= 0) return
+                                navigate(
+                                  buildSurveyFillDeepLink({
+                                    baslikId: row.baslikId,
+                                    sablonId: row.sablonId,
+                                    ekiciId: row.ekiciId,
+                                    mintikaId: row.mintikaId,
+                                    duzenle: true,
+                                  }),
+                                )
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" aria-hidden />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
                       {showAnswerCounts && (
                         <>
                           <td className="text-center font-medium text-primary-600">

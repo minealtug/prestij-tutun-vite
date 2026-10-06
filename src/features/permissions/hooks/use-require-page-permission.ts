@@ -9,11 +9,18 @@ export const PERMISSION_DENIED_KEY = 'prestij-permission-denied'
 export function useRequirePagePermission() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { hasReadPermission, hasWritePermission, loading, isAdmin } = usePermissions()
+  const { hasReadPermission, hasWritePermission, hasAssignedWrite, loading, isAdmin } =
+    usePermissions()
 
   const path = normalizeUrl(location.pathname)
-  const canRead = isAdminOnlyPath(path) ? isAdmin : hasReadPermission(path)
-  const canEdit = hasWritePermission(path)
+  const canEditAnsweredSurveys = hasAssignedWrite('/anket-cevaplari')
+  const editingAnsweredSurvey =
+    path === '/anket-doldurma' &&
+    new URLSearchParams(location.search).get('duzenle') === '1' &&
+    canEditAnsweredSurveys
+  const canRead =
+    (isAdminOnlyPath(path) ? isAdmin : hasReadPermission(path)) || editingAnsweredSurvey
+  const canEdit = hasWritePermission(path) || editingAnsweredSurvey
 
   useEffect(() => {
     if (loading) return

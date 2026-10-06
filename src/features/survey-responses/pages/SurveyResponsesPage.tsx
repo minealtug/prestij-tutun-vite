@@ -35,7 +35,8 @@ import {
 
 export function SurveyResponsesPage() {
   const { canRead, loading: pagePermissionLoading } = useRequirePagePermission()
-  const { isAdmin, loading: permissionLoading } = usePermissions()
+  const { isAdmin, loading: permissionLoading, hasAssignedWrite } = usePermissions()
+  const canEditAnsweredSurveys = hasAssignedWrite('/anket-cevaplari')
   const authUser = useAuthStore((s) => s.user)
   const hasMintikaAssignment = userHasMintikaAssignment(authUser ?? {})
   const permissionsReady = !permissionLoading && !pagePermissionLoading
@@ -284,6 +285,7 @@ export function SurveyResponsesPage() {
               selectedIds={isAdmin ? selectedIds : undefined}
               onToggleRow={isAdmin ? handleToggleRow : undefined}
               onToggleAll={isAdmin ? handleToggleAll : undefined}
+              canEditRow={canEditAnsweredSurveys}
             />
           </>
         )}

@@ -8,7 +8,7 @@ const BORDER_SIDE = { style: 'thin' as const, color: { rgb: '808080' } }
 const BORDER = { top: BORDER_SIDE, bottom: BORDER_SIDE, left: BORDER_SIDE, right: BORDER_SIDE }
 
 export const ANKET_CEVAPLARI_EXCEL_SHEET_NAME = 'Sheet'
-export const ANKET_CEVAPLARI_EXCEL_DATE_NUMFMT = 'm/d/yy h:mm'
+export const ANKET_CEVAPLARI_EXCEL_DATE_NUMFMT = 'dd.mm.yyyy'
 export const ANKET_CEVAPLARI_EXCEL_TEXT_NUMFMT = '@'
 export const ANKET_CEVAPLARI_EXCEL_ROW_HEIGHT = 15
 /** A–J: Anket Adı … Cinsiyet (Sözleşme Kg / Dönüm yok) */
@@ -41,9 +41,9 @@ export const EXCEL_STYLE_HEADER_TITLE_QUESTION = style(GRAY_FILL, 'left')
 export const EXCEL_STYLE_DATA_GRAY = style(GRAY_FILL, 'left')
 export const EXCEL_STYLE_DATA_WHITE = style(WHITE_FILL, 'right')
 
-/** bu.xlsx col/@width converted to character widths */
+/** Karakter genişliği. D–H (alım noktası, köy, TC, ad, soyad) başlık ve içerik sığacak kadar geniş. */
 export const ANKET_CEVAPLARI_EXCEL_COL_WIDTHS: number[] = [
-  8.43, 6.86, 8.43, 8.43, 2.86, 2.14, 2.43, 4.86, 12.86, 5.71, 10.57, 29.29, 6.43, 9.86,
+  8.43, 6.86, 8.43, 18, 18, 14, 16, 16, 12.86, 5.71, 10.57, 29.29, 6.43, 9.86,
   19.29, 31.57, 13, 16, 13, 16, 13, 16, 13, 16, 13, 16, 13, 16, 13, 16, 13, 16, 12.14, 16, 31.29, 20,
   24.86, 19.29, 32.71, 25.14, 13.57, 30.86, 16.14, 50.14, 46, 28.14, 31.71, 14, 15.86, 15.57, 15.71,
   16.71, 49.86, 23.43, 32.43, 25.14, 37, 14.57, 27, 59.57, 27, 23.71, 23.71, 23.71, 21.43, 33.57,

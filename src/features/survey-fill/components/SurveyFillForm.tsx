@@ -77,6 +77,7 @@ interface SurveyFillFormProps {
     'menseiId' | 'bolgeId' | 'mintikaId' | 'alimNoktasiId' | 'koyId'
   > | null
   canSubmit?: boolean
+  allowCompletedEdit?: boolean
   onRefreshSablonlar?: () => void
 }
 
@@ -88,6 +89,7 @@ export function SurveyFillForm({
   initialEkiciId = null,
   initialGeoFilters = null,
   canSubmit = true,
+  allowCompletedEdit = false,
   onRefreshSablonlar,
 }: SurveyFillFormProps) {
   const [sessionEkiciId, setSessionEkiciId] = useState<string | null>(null)
@@ -318,6 +320,7 @@ export function SurveyFillForm({
       isAnketTamamlandiForEkici(oturumQuery.data),
     [sessionEkiciId, oturumQuery.data, oturumQuery.isLoading],
   )
+  const surveyEditLocked = isSelectedEkiciSurveyCompleted && !allowCompletedEdit
 
   const mintikaId = useMemo(
     () =>
@@ -336,7 +339,7 @@ export function SurveyFillForm({
 
   const questionsReady = Boolean(sessionEkiciId && oturumQuery.data && !oturumQuery.isLoading)
   const questionsDisabled =
-    !questionsReady || isSelectedEkiciPassive || isSelectedEkiciSurveyCompleted
+    !questionsReady || isSelectedEkiciPassive || surveyEditLocked
   const showQuestionsLoading =
     questionDefinitionsQuery.isLoading ||
     Boolean(sessionEkiciId && oturumQuery.isLoading)
@@ -511,6 +514,11 @@ export function SurveyFillForm({
   ])
 
   useEffect(() => {
+    if (allowCompletedEdit) {
+      setLockedAnswerKeys((prev) => (Object.keys(prev).length === 0 ? prev : {}))
+      return
+    }
+
     if (kontratSahibiAutofillSignatureRef.current === kontratSahibiAutofillSignature) return
     kontratSahibiAutofillSignatureRef.current = kontratSahibiAutofillSignature
 
@@ -574,6 +582,7 @@ export function SurveyFillForm({
       return changed ? next : prev
     })
   }, [
+    allowCompletedEdit,
     kontratSahibiActive,
     kontratSahibiAutofillSignature,
     questionsWithOptions,
@@ -669,7 +678,7 @@ export function SurveyFillForm({
       return
     }
 
-    if (isSelectedEkiciSurveyCompleted) {
+    if (surveyEditLocked) {
       setSubmitError(
         'Bu ekici için anket tamamlandı. Lütfen başka bir ekici seçin.',
       )
@@ -812,7 +821,7 @@ export function SurveyFillForm({
       )
     }
 
-    if (sessionEkiciId && isSelectedEkiciSurveyCompleted) {
+    if (sessionEkiciId && surveyEditLocked) {
       return (
         <EmptyState
           compact
@@ -962,7 +971,7 @@ export function SurveyFillForm({
             </div>
           )}
 
-          {isSelectedEkiciSurveyCompleted && selectedEkici && !isSelectedEkiciPassive && (
+          {surveyEditLocked && selectedEkici && !isSelectedEkiciPassive && (
             <div
               className="flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
               role="alert"
@@ -976,7 +985,7 @@ export function SurveyFillForm({
           )}
         </div>
 
-        {questionsWithOptions.length > 0 && !isSelectedEkiciSurveyCompleted && (
+        {questionsWithOptions.length > 0 && !surveyEditLocked && (
           <div className="flex flex-col gap-3 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             {sessionEkiciId && !oturumQuery.isError && (
               <p className="text-sm text-muted">
@@ -1026,7 +1035,7 @@ export function SurveyFillForm({
                 !canSubmit ||
                 !sessionEkiciId ||
                 isSelectedEkiciPassive ||
-                isSelectedEkiciSurveyCompleted ||
+                surveyEditLocked ||
                 draftQuestionsToSubmit.length === 0
               }
               loading={submitCevapBatch.isPending || oturumQuery.isFetching}
@@ -1040,7 +1049,7 @@ export function SurveyFillForm({
                 !canSubmit ||
                 !sessionEkiciId ||
                 isSelectedEkiciPassive ||
-                isSelectedEkiciSurveyCompleted
+                surveyEditLocked
               }
               loading={submitCevapBatch.isPending || oturumQuery.isFetching}
             >

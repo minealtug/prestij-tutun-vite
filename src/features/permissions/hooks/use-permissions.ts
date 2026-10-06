@@ -8,6 +8,7 @@ import { isAdminOnlyPath } from '@/config/navigation'
 import {
   checkReadPermission,
   checkWritePermission,
+  hasAssignedWritePermission,
   normalizeUrl,
 } from '../utils/permission-logic'
 
@@ -48,6 +49,12 @@ export function usePermissions() {
     [hasReadPermission, isAdmin, menuPermissions, userPermissions],
   )
 
+  const hasAssignedWrite = useCallback(
+    (url: string) =>
+      hasAssignedWritePermission(url, menuPermissions, userPermissions, isAdmin),
+    [isAdmin, menuPermissions, userPermissions],
+  )
+
   const canAccessYetkilendirme = isAdmin
 
   return {
@@ -60,6 +67,7 @@ export function usePermissions() {
     hasPermission,
     hasReadPermission,
     hasWritePermission,
+    hasAssignedWrite,
     canAccessYetkilendirme,
     refreshPermissions: refreshPermissionsCache,
   }

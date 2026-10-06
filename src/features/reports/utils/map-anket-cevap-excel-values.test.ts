@@ -97,13 +97,13 @@ function colByTitle(title: string) {
 }
 
 describe('resolveAnketCevapExcelCell', () => {
-  it('leaves alım noktası, köy, TC, ad and soyad empty and drops kg/dönüm columns', () => {
+  it('writes alım noktası, köy, TC, ad and soyad and drops kg/dönüm columns', () => {
     const record = row([])
-    expect(resolveAnketCevapExcelCell(col('D'), record, [])).toBe(null)
-    expect(resolveAnketCevapExcelCell(col('E'), record, [])).toBe(null)
-    expect(resolveAnketCevapExcelCell(col('F'), record, [])).toBe(null)
-    expect(resolveAnketCevapExcelCell(col('G'), record, [])).toBe(null)
-    expect(resolveAnketCevapExcelCell(col('H'), record, [])).toBe(null)
+    expect(resolveAnketCevapExcelCell(col('D'), record, [])).toBe('AKHİSAR')
+    expect(resolveAnketCevapExcelCell(col('E'), record, [])).toBe('HAMİTKÖY')
+    expect(resolveAnketCevapExcelCell(col('F'), record, [])).toBe('23924336642')
+    expect(resolveAnketCevapExcelCell(col('G'), record, [])).toBe('MEHMET ALİ')
+    expect(resolveAnketCevapExcelCell(col('H'), record, [])).toBe('TURAN')
     expect(resolveAnketCevapExcelCell(col('J'), record, [])).toBe('Erkek')
     expect(resolveAnketCevapExcelCell(col('K'), record, [])).toBe('18-30 Yaş Ekici')
   })

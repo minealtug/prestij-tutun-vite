@@ -108,6 +108,24 @@ export function checkReadPermission(
  * - Sadece düzenleme → yetkili kullanıcılar + admin
  * - Görüntüleme + düzenleme → düzenleme yetkisi gerekli
  */
+/** Admin, ya da bu sayfa için atanmış Yazma yetkisi. Salt okuma düzenleme sayılmaz. */
+export function hasAssignedWritePermission(
+  url: string,
+  menuPermissions: MenuPermissionMap,
+  userPermissions: number[],
+  isAdmin: boolean,
+): boolean {
+  if (isAdmin) return true
+
+  const entries = menuPermissions[normalizeUrl(url)]
+  if (!entries?.length) return false
+
+  const yazma = filterByTuru(entries, YETKI_YAZMA)
+  if (yazma.length === 0) return false
+
+  return hasAnyYetki(yazma, userPermissions)
+}
+
 export function checkWritePermission(
   url: string,
   menuPermissions: MenuPermissionMap,
