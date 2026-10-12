@@ -76,6 +76,10 @@ export function SurveyResponsesTable({
   }
 
   useEffect(() => {
+    setCurrentPage(1)
+  }, [data])
+
+  useEffect(() => {
     setCurrentPage((prev) => Math.min(prev, totalPages))
   }, [totalPages])
 

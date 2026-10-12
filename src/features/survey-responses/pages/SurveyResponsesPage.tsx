@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Filter, Trash2 } from 'lucide-react'
+import { Filter, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
 import { Snackbar } from '@/components/feedback/Snackbar'
 import { CografiFiltreFields } from '@/features/cografi-filtre/components/CografiFiltreFields'
 import { useCografiFiltreCascade } from '@/features/cografi-filtre/hooks/use-cografi-filtre-cascade'
@@ -18,20 +19,27 @@ import {
 import { SurveyResponseStatsCards } from '../components/SurveyResponseStatsCards'
 import { SurveyResponsesTable } from '../components/SurveyResponsesTable'
 import { DeleteSurveyResponsesConfirmModal } from '../components/DeleteSurveyResponsesConfirmModal'
-import { useDeleteSurveyResponses, useSurveyResponses } from '../hooks/use-survey-responses'
+import {
+  useAllSurveyResponses,
+  useDeleteSurveyResponses,
+  useSurveyResponses,
+} from '../hooks/use-survey-responses'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { usePermissions } from '@/features/permissions/hooks/use-permissions'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { userHasMintikaAssignment } from '@/features/users/utils/resolve-mintika-ids'
 import { getErrorMessage } from '@/lib/api/api-error'
 import { useAuthStore } from '@/stores/auth-store'
-import type { SurveyResponsesQueryParams } from '../types/survey-response.types'
+import type { AnketCevapOzetItem, SurveyResponsesQueryParams } from '../types/survey-response.types'
 import { hasGeoSurveyFilter } from '../types/survey-response.types'
+import { matchesEkiciAdSoyadSearch } from '../utils/filter-anket-cevap-list'
 import { formatAppliedFilterSummary } from '../utils/format-applied-filter-summary'
 import {
   formatDeleteAnketCevapSuccessText,
   toDeleteAnketCevapRequests,
 } from '../utils/delete-survey-responses'
+
+const EMPTY_ROWS: AnketCevapOzetItem[] = []
 
 export function SurveyResponsesPage() {
   const { canRead, loading: pagePermissionLoading } = useRequirePagePermission()
@@ -51,6 +59,7 @@ export function SurveyResponsesPage() {
 
   const [appliedFilters, setAppliedFilters] = useState<SurveyResponsesQueryParams | null>(null)
   const [appliedFilterSummary, setAppliedFilterSummary] = useState('')
+  const [ekiciSearch, setEkiciSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const [confirmStep, setConfirmStep] = useState<1 | 2 | null>(null)
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; variant: 'success' | 'error' }>({
@@ -89,7 +98,20 @@ export function SurveyResponsesPage() {
   const filtersReady = isAdmin
     ? hasGeoSurveyFilter(appliedFilters ?? undefined)
     : appliedFilters != null && hasMintikaAssignment
-  const listData = responsesQuery.data
+  const ekiciSearchQuery = ekiciSearch.trim()
+  const unfilteredSearch = isAdmin && ekiciSearchQuery.length > 0 && !filtersReady
+  const allResponsesQuery = useAllSurveyResponses(unfilteredSearch)
+  const showList = filtersReady || unfilteredSearch
+  const activeQuery = filtersReady ? responsesQuery : allResponsesQuery
+  const sourceData = showList ? (activeQuery.data ?? EMPTY_ROWS) : EMPTY_ROWS
+  const listData = useMemo(() => {
+    if (!ekiciSearchQuery) return sourceData
+    return sourceData.filter((item) => matchesEkiciAdSoyadSearch(item, ekiciSearchQuery))
+  }, [ekiciSearchQuery, sourceData])
+  const statsFilterSummary = useMemo(() => {
+    const searchSummary = ekiciSearchQuery ? `Ekici: ${ekiciSearchQuery}` : ''
+    return [appliedFilterSummary, searchSummary].filter(Boolean).join(' · ')
+  }, [appliedFilterSummary, ekiciSearchQuery])
 
   const selectedRows = useMemo(
     () => (listData ?? []).filter((row) => selectedIds.has(row.id)),
@@ -210,11 +232,11 @@ export function SurveyResponsesPage() {
 
   return (
     <PageContainer>
-      {filtersReady && (
+      {showList && (
         <SurveyResponseStatsCards
-          data={responsesQuery.data ?? []}
-          filterSummary={appliedFilterSummary}
-          isLoading={responsesQuery.isLoading}
+          data={listData}
+          filterSummary={statsFilterSummary}
+          isLoading={activeQuery.isLoading}
         />
       )}
 
@@ -233,8 +255,19 @@ export function SurveyResponsesPage() {
           />
         </div>
 
-        {isAdmin && (
-          <div className="flex justify-end border-t border-[#ececec] px-4 py-3">
+        <div className="flex flex-col gap-3 border-t border-[#ececec] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative min-w-0 w-full sm:max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <Input
+              type="search"
+              className="!h-9 pl-9"
+              placeholder="Ekici ara"
+              value={ekiciSearch}
+              onChange={(event) => setEkiciSearch(event.target.value)}
+              aria-label="Ekici ara"
+            />
+          </div>
+          {isAdmin && (
             <Button
               onClick={handleApplyFilters}
               disabled={!draftFiltersReady}
@@ -243,15 +276,15 @@ export function SurveyResponsesPage() {
               <Filter className="h-4 w-4" />
               Filtrele
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </Card>
 
       <Card className="overflow-hidden !rounded-md !p-0" interactive={false}>
-        {!filtersReady ? (
+        {!showList ? (
           <p className="px-5 py-5 text-sm text-muted">
             {isAdmin
-              ? "Listelemek için en az bir coğrafi filtre (menşei, bölge, mıntıka vb.) seçin ve Filtrele'ye tıklayın."
+              ? "Listelemek için ekici adı soyadı yazın ya da en az bir coğrafi filtre seçip Filtrele'ye tıklayın."
               : !hasMintikaAssignment
                 ? 'Atanmış mıntıka bulunamadı. Anket listesi için kullanıcıya mıntıka yetkisi verilmelidir.'
                 : cografiFiltreQuery.isLoading
@@ -276,11 +309,11 @@ export function SurveyResponsesPage() {
               </div>
             )}
             <SurveyResponsesTable
-              data={listData ?? []}
-              isLoading={responsesQuery.isLoading}
-              isError={responsesQuery.isError}
-              error={responsesQuery.error}
-              onRefresh={() => void responsesQuery.refetch()}
+              data={listData}
+              isLoading={activeQuery.isLoading}
+              isError={activeQuery.isError}
+              error={activeQuery.error}
+              onRefresh={() => void activeQuery.refetch()}
               selectable={isAdmin}
               selectedIds={isAdmin ? selectedIds : undefined}
               onToggleRow={isAdmin ? handleToggleRow : undefined}

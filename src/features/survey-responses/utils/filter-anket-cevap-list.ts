@@ -23,6 +23,24 @@ function rowMatchesAnketAdi(item: AnketCevapOzetItem, anketAdi: string): boolean
   return false
 }
 
+function normalizeSearchText(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('tr-TR')
+}
+
+/** API'den gelen ekiciAd + ekiciSoyad birleşiminde parça eşleşmesi. */
+export function matchesEkiciAdSoyadSearch(
+  item: Pick<AnketCevapOzetItem, 'ekiciAd' | 'ekiciSoyad'>,
+  query: string,
+): boolean {
+  const normalizedQuery = normalizeSearchText(query)
+  if (!normalizedQuery) return true
+
+  const fullName = normalizeSearchText(
+    [item.ekiciAd, item.ekiciSoyad].filter((part) => part.trim()).join(' '),
+  )
+  return fullName.includes(normalizedQuery)
+}
+
 export function filterAnketCevapList(
   items: AnketCevapOzetItem[],
   params: SurveyResponsesQueryParams,
