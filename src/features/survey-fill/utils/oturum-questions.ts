@@ -9,6 +9,7 @@ import {
   isMultiSelectValueAnswered,
 } from './multi-select-value'
 import { formatDisplayDate } from './date-input-value'
+import { parseBagliKosullar } from './bagli-kosullar'
 import { getQuestionKey } from './question-key'
 import { resolveEffectiveQuestionInputKind } from './resolve-question-input-kind'
 import { sortQuestionsUnderParents } from './sort-survey-fill-questions'
@@ -43,6 +44,7 @@ export function mapQuestionDefinitionToOturumPreview(
     bagliOlduguSoruId: readPositiveId(question.bagliOlduguSoruId) ?? null,
     bagliAltSecenekId: readPositiveId(question.bagliAltSecenekId) ?? null,
     bagliKosulTipi: normalizeBagliKosulTipi(question.bagliKosulTipi),
+    bagliKosullar: parseBagliKosullar(question.bagliKosullar),
     cevapGirdiTipAdi: question.cevapGirdiTipAdi ?? null,
     cevapGirdiTipId: question.cevapGirdiTipId ?? null,
     secenekGrupId: readQuestionSecenekGrupId(question),

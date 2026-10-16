@@ -59,6 +59,7 @@ import {
   applyManualEntryInitialAnswers,
   detectInitialManualEntryKeys,
 } from '../utils/manual-entry'
+import { getDeclaredBagliParentSoruIds } from '../utils/bagli-kosullar'
 import { filterVisibleQuestionsForFill } from '../utils/resolve-linked-question-visibility'
 import {
   buildKontratSahibiAutofill,
@@ -225,10 +226,11 @@ export function SurveyFillForm({
       }
     }
     for (const question of enrichedQuestions) {
-      if (question.bagliOlduguSoruId == null) continue
-      const parent = enrichedQuestions.find((item) => item.soruId === question.bagliOlduguSoruId)
-      if (parent?.secenekGrupId != null && parent.secenekGrupId > 0) {
-        ids.add(parent.secenekGrupId)
+      for (const parentId of getDeclaredBagliParentSoruIds(question)) {
+        const parent = enrichedQuestions.find((item) => item.soruId === parentId)
+        if (parent?.secenekGrupId != null && parent.secenekGrupId > 0) {
+          ids.add(parent.secenekGrupId)
+        }
       }
     }
     return [...ids]

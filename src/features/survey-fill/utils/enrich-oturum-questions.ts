@@ -2,6 +2,7 @@ import { resolveQuestionBirimAdi } from '@/features/questions/utils/resolve-ques
 import type { CevapGirdiTipDto, QuestionDto } from '@/features/questions/types/question.types'
 import { normalizeBagliKosulTipi } from '@/features/questions/utils/bagli-kosul-tipi'
 import type { AltSecenekOptionDto, AnketYanitSoruDto } from '../types/anket-yanit.types'
+import { parseBagliKosullar } from './bagli-kosullar'
 import { getAnswerTypeAdiById } from './build-answer-type-kind-lookup'
 
 function readPositiveId(value: unknown): number | null {
@@ -60,6 +61,15 @@ export function enrichOturumQuestionsWithDefinitions(
           definition?.bagliKosulTipi ??
           (definition as QuestionDto & { BagliKosulTipi?: string | null })?.BagliKosulTipi,
       ),
+      bagliKosullar: (() => {
+        const fromOturum = parseBagliKosullar(soru.bagliKosullar)
+        if (fromOturum.length > 0) return fromOturum
+        const definitionRaw = definition as QuestionDto & { BagliKosullar?: unknown }
+        const fromDefinition = parseBagliKosullar(
+          definition?.bagliKosullar ?? definitionRaw?.BagliKosullar,
+        )
+        return fromDefinition.length > 0 ? fromDefinition : soru.bagliKosullar
+      })(),
       anketCevapBirimId:
         soru.anketCevapBirimId ??
         readPositiveId(definition?.anketCevapBirimId) ??

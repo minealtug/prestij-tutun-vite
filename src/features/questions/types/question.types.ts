@@ -23,6 +23,11 @@ export interface QuestionDto {
   bagliOlduguSoruId?: number | null
   bagliAltSecenekId?: number | null
   bagliKosulTipi?: string | null
+  bagliKosullar?: {
+    parentSoruId: number
+    bagliAltSecenekId?: number | null
+    bagliKosulTipi?: string | null
+  }[]
   bagliOlduguSoru?: string | { soruMetni?: string | null; [key: string]: unknown } | null
   anketCevapBirimId?: number | null
   anketCevapBirimAdi?: string | null

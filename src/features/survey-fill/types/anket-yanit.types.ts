@@ -10,6 +10,12 @@ export interface AltSecenekOptionDto {
   siraNo?: number | null
 }
 
+export interface BagliKosul {
+  parentSoruId: number
+  bagliAltSecenekId: number | null
+  bagliKosulTipi: string | null
+}
+
 export interface AnketYanitSoruDto {
   soruId: number
   sira: number
@@ -22,6 +28,7 @@ export interface AnketYanitSoruDto {
   bagliOlduguSoruId?: number | null
   bagliAltSecenekId?: number | null
   bagliKosulTipi?: string | null
+  bagliKosullar?: BagliKosul[]
   cevapGirdiTipAdi: string | null
   cevapGirdiTipId: number | null
   secenekGrupId: number | null
@@ -101,6 +108,7 @@ export interface SurveyFillSoruView {
   bagliOlduguSoruId?: number | null
   bagliAltSecenekId?: number | null
   bagliKosulTipi?: string | null
+  bagliKosullar?: BagliKosul[]
   cevapGirdiTipAdi?: string | null
   cevapGirdiTipId?: number | null
   secenekGrupId?: number | null

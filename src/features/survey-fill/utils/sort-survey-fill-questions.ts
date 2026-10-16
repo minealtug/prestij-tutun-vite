@@ -10,19 +10,25 @@ function compareFillQuestions<T extends SurveyFillSoruView>(left: T, right: T): 
 }
 
 /** Bağlı soruları doğrudan parent'larının altında gösterir. */
-export function sortQuestionsUnderParents<T extends SurveyFillSoruView>(questions: T[]): T[] {
+export function sortQuestionsUnderParents<T extends SurveyFillSoruView>(
+  questions: T[],
+  resolveParentId?: (question: T) => number | null | undefined,
+): T[] {
   if (questions.length <= 1) return questions
 
   const visibleIds = new Set(questions.map((question) => question.soruId))
   const childrenByParent = new Map<number, T[]>()
 
   for (const question of questions) {
-    const parentId = question.bagliOlduguSoruId
+    const parentId = resolveParentId
+      ? resolveParentId(question)
+      : question.bagliOlduguSoruId
     if (!question.bagliSoru || parentId == null || parentId <= 0 || !visibleIds.has(parentId)) {
       continue
     }
 
     const siblings = childrenByParent.get(parentId) ?? []
+    if (siblings.some((item) => item.soruId === question.soruId)) continue
     siblings.push(question)
     childrenByParent.set(parentId, siblings)
   }

@@ -1,4 +1,5 @@
 import type { AnketYanitSoruDto } from '../types/anket-yanit.types'
+import { getEffectiveBagliKosullar } from './bagli-kosullar'
 import type { AnswerTypeKindLookup } from './build-answer-type-kind-lookup'
 import { isBagliKosulMatchedForAny } from './evaluate-bagli-kosul'
 import { getQuestionKey } from './question-key'
@@ -94,30 +95,28 @@ function isParentAnswered(
   )
 }
 
-export function isLinkedQuestionVisible(
-  question: AnketYanitSoruDto,
+function isBagliKosulSatisfied(
+  kosul: { parentSoruId: number; bagliAltSecenekId: number | null; bagliKosulTipi: string | null },
+  parent: AnketYanitSoruDto,
   allQuestions: AnketYanitSoruDto[],
   answers: Record<string, string>,
-  answerTypeLookup?: AnswerTypeKindLookup,
-  manualEntryByKey: Record<string, boolean> = {},
-  questionsById = new Map(allQuestions.map((item) => [item.soruId, item])),
+  answerTypeLookup: AnswerTypeKindLookup | undefined,
+  manualEntryByKey: Record<string, boolean>,
+  questionsById: Map<number, AnketYanitSoruDto>,
+  visiting: Set<number>,
 ): boolean {
-  if (!question.bagliSoru) return true
-
-  const parentId = question.bagliOlduguSoruId
-  if (parentId == null || parentId <= 0) return false
-
-  const parent = questionsById.get(parentId)
-  if (!parent) return false
-
-  if (parent.bagliSoru && !isLinkedQuestionVisible(
-    parent,
-    allQuestions,
-    answers,
-    answerTypeLookup,
-    manualEntryByKey,
-    questionsById,
-  )) {
+  if (
+    parent.bagliSoru &&
+    !isLinkedQuestionVisible(
+      parent,
+      allQuestions,
+      answers,
+      answerTypeLookup,
+      manualEntryByKey,
+      questionsById,
+      visiting,
+    )
+  ) {
     return false
   }
 
@@ -125,7 +124,7 @@ export function isLinkedQuestionVisible(
     return false
   }
 
-  if (question.bagliAltSecenekId == null || question.bagliAltSecenekId <= 0) {
+  if (kosul.bagliAltSecenekId == null || kosul.bagliAltSecenekId <= 0) {
     return true
   }
 
@@ -140,10 +139,81 @@ export function isLinkedQuestionVisible(
 
   return isBagliKosulMatchedForAny(
     parentAltSecenekIds,
-    question.bagliAltSecenekId,
-    question.bagliKosulTipi,
+    kosul.bagliAltSecenekId,
+    kosul.bagliKosulTipi,
     parent.altSecenekler ?? [],
   )
+}
+
+export function isLinkedQuestionVisible(
+  question: AnketYanitSoruDto,
+  allQuestions: AnketYanitSoruDto[],
+  answers: Record<string, string>,
+  answerTypeLookup?: AnswerTypeKindLookup,
+  manualEntryByKey: Record<string, boolean> = {},
+  questionsById = new Map(allQuestions.map((item) => [item.soruId, item])),
+  visiting = new Set<number>(),
+): boolean {
+  if (!question.bagliSoru) return true
+  if (visiting.has(question.soruId)) return false
+
+  const kosullar = getEffectiveBagliKosullar(question)
+  if (kosullar.length === 0) return false
+
+  visiting.add(question.soruId)
+
+  const matched = kosullar.some((kosul) => {
+    const parent = questionsById.get(kosul.parentSoruId)
+    if (!parent) return false
+    return isBagliKosulSatisfied(
+      kosul,
+      parent,
+      allQuestions,
+      answers,
+      answerTypeLookup,
+      manualEntryByKey,
+      questionsById,
+      visiting,
+    )
+  })
+
+  visiting.delete(question.soruId)
+  return matched
+}
+
+export function resolveLinkedPlacementParentId(
+  question: AnketYanitSoruDto,
+  allQuestions: AnketYanitSoruDto[],
+  answers: Record<string, string>,
+  answerTypeLookup?: AnswerTypeKindLookup,
+  manualEntryByKey: Record<string, boolean> = {},
+  questionsById = new Map(allQuestions.map((item) => [item.soruId, item])),
+): number | null {
+  if (!question.bagliSoru) return null
+
+  const kosullar = getEffectiveBagliKosullar(question)
+  const visiting = new Set<number>([question.soruId])
+
+  for (const kosul of kosullar) {
+    const parent = questionsById.get(kosul.parentSoruId)
+    if (!parent) continue
+    if (
+      isBagliKosulSatisfied(
+        kosul,
+        parent,
+        allQuestions,
+        answers,
+        answerTypeLookup,
+        manualEntryByKey,
+        questionsById,
+        visiting,
+      )
+    ) {
+      return kosul.parentSoruId
+    }
+  }
+
+  return null
 }
 
 export function filterVisibleQuestionsForFill(
@@ -165,5 +235,14 @@ export function filterVisibleQuestionsForFill(
     ),
   )
 
-  return sortQuestionsUnderParents(visible)
+  return sortQuestionsUnderParents(visible, (question) =>
+    resolveLinkedPlacementParentId(
+      question,
+      questions,
+      answers,
+      answerTypeLookup,
+      manualEntryByKey,
+      questionsById,
+    ),
+  )
 }

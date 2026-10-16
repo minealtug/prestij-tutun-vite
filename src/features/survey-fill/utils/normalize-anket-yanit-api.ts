@@ -4,6 +4,7 @@ import type {
   AnketYanitOturumDto,
   AnketYanitSoruDto,
 } from '../types/anket-yanit.types'
+import { parseBagliKosullar } from './bagli-kosullar'
 import { mapAltSeceneklerFromApi } from './normalize-alt-secenek-api'
 
 function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
@@ -141,6 +142,11 @@ function mergeSoruMetadata(
       normalizeBagliKosulTipi(
         pick(metadata, 'bagliKosulTipi', 'BagliKosulTipi') ?? soru.bagliKosulTipi,
       ),
+    bagliKosullar: (() => {
+      if (soru.bagliKosullar && soru.bagliKosullar.length > 0) return soru.bagliKosullar
+      const fromMetadata = parseBagliKosullar(pick(metadata, 'bagliKosullar', 'BagliKosullar'))
+      return fromMetadata.length > 0 ? fromMetadata : soru.bagliKosullar
+    })(),
     cevapGirdiTipAdi: pick(metadata, 'cevapGirdiTipAdi', 'CevapGirdiTipAdi') ?? soru.cevapGirdiTipAdi,
     cevapGirdiTipId:
       readNumber(pick(metadata, 'cevapGirdiTipId', 'CevapGirdiTipId')) ?? soru.cevapGirdiTipId,
@@ -252,6 +258,7 @@ export function mapAnketYanitSoruFromApi(
     bagliKosulTipi: normalizeBagliKosulTipi(
       pick(row, 'bagliKosulTipi', 'BagliKosulTipi'),
     ),
+    bagliKosullar: parseBagliKosullar(pick(row, 'bagliKosullar', 'BagliKosullar')),
     cevapGirdiTipAdi: pick(row, 'cevapGirdiTipAdi', 'CevapGirdiTipAdi') ?? null,
     cevapGirdiTipId: readNumber(pick(row, 'cevapGirdiTipId', 'CevapGirdiTipId')),
     secenekGrupId: readOptionalPositiveId(pick(row, 'secenekGrupId', 'SecenekGrupId')),
@@ -306,6 +313,7 @@ function mapYanitlanmayanSoruFromApi(raw: unknown): AnketYanitSoruDto | null {
     bagliKosulTipi: normalizeBagliKosulTipi(
       pick(row, 'bagliKosulTipi', 'BagliKosulTipi'),
     ),
+    bagliKosullar: parseBagliKosullar(pick(row, 'bagliKosullar', 'BagliKosullar')),
     cevapGirdiTipAdi: pick(row, 'cevapGirdiTipAdi', 'CevapGirdiTipAdi') ?? null,
     cevapGirdiTipId: readNumber(pick(row, 'cevapGirdiTipId', 'CevapGirdiTipId')),
     secenekGrupId: readOptionalPositiveId(pick(row, 'secenekGrupId', 'SecenekGrupId')),

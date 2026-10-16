@@ -1,3 +1,4 @@
+import { parseBagliKosullar } from '@/features/survey-fill/utils/bagli-kosullar'
 import type { QuestionDto } from '../types/question.types'
 
 function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
@@ -60,6 +61,7 @@ export function mapQuestionFromApi(raw: unknown): QuestionDto {
     bagliAltSecenekId:
       Number(pick(row, 'bagliAltSecenekId', 'BagliAltSecenekId')) || undefined,
     bagliKosulTipi: (pick(row, 'bagliKosulTipi', 'BagliKosulTipi') as string | null) ?? null,
+    bagliKosullar: parseBagliKosullar(pick(row, 'bagliKosullar', 'BagliKosullar')),
     bagliOlduguSoru: pick(row, 'bagliOlduguSoru', 'BagliOlduguSoru'),
     anketCevapBirimId:
       Number(pick(row, 'anketCevapBirimId', 'AnketCevapBirimId') ?? anketCevapBirim?.id) ||
