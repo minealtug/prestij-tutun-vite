@@ -2,6 +2,8 @@ import { CheckCircle2, CircleAlert } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { getOzetFullName } from '@/features/survey-responses/types/survey-response.types'
+import { useStalePartialUnanswered } from '../hooks/use-stale-partial-unanswered'
+import { UnansweredQuestionsWarning } from './UnansweredQuestionsWarning'
 import { formatRelativeSonIslem } from '../utils/user-dashboard-survey-groups'
 import type { AdminStalePartialRow } from '../utils/admin-dashboard-stats'
 
@@ -16,6 +18,11 @@ export function AdminStalePartialsCard({
   staleCount,
   isLoading = false,
 }: AdminStalePartialsCardProps) {
+  const unansweredByRow = useStalePartialUnanswered(
+    rows.map((row) => row.item),
+    !isLoading && rows.length > 0,
+  )
+
   return (
     <Card
       className="border-orange-200/80 bg-orange-50/15"
@@ -34,18 +41,19 @@ export function AdminStalePartialsCard({
             <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <p>
               <span className="font-semibold">{staleCount.toLocaleString('tr-TR')} form</span> bir
-              haftadan uzun süredir yarım — öncelikli kayıtlar aşağıda.
+              haftadan uzun süredir yarım — hangi soruların boş kaldığı aşağıda.
             </p>
           </div>
 
           <div className="-mx-5 overflow-x-auto border-t border-orange-100">
-            <table className="app-table app-table-compact min-w-[720px]">
+            <table className="app-table app-table-compact min-w-[56rem]">
               <thead>
                 <tr>
                   <th>Kullanıcı</th>
                   <th>Ekici</th>
                   <th>Anket</th>
                   <th>Mıntıka</th>
+                  <th className="min-w-[16rem]">Eksik sorular</th>
                   <th className="w-36">Son işlem</th>
                   <th className="w-28 text-center">Bekleme</th>
                 </tr>
@@ -57,6 +65,12 @@ export function AdminStalePartialsCard({
                     <td>{getOzetFullName(row.item)}</td>
                     <td>{row.anketAdi}</td>
                     <td>{row.item.mintikaAdi?.trim() || '—'}</td>
+                    <td>
+                      <UnansweredQuestionsWarning
+                        info={unansweredByRow.get(row.item.id)}
+                        unansweredCount={row.item.yanitlanmayanSoruSayisi}
+                      />
+                    </td>
                     <td>{formatRelativeSonIslem(row.item.sonIslemTarihi)}</td>
                     <td className="text-center">
                       <span className="inline-flex rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-800">

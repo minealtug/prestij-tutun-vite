@@ -4,6 +4,8 @@ import { ChevronRight } from 'lucide-react'
 import type { AnketCevapOzetItem } from '@/features/survey-responses/types/survey-response.types'
 import { Button } from '@/components/ui/Button'
 import { UserSurveyProgressBar } from './UserSurveyProgressBar'
+import { UnansweredQuestionsWarning } from './UnansweredQuestionsWarning'
+import type { StalePartialUnansweredInfo } from '../hooks/use-stale-partial-unanswered'
 import {
   buildSurveyFillLinkFromOzet,
   formatRelativeSonIslem,
@@ -17,6 +19,7 @@ import {
 interface UserContinueSurveyRowProps {
   item: AnketCevapOzetItem
   rank?: number
+  unansweredInfo?: StalePartialUnansweredInfo
 }
 
 function MiniProgressRing({ percent, stale }: { percent: number; stale: boolean }) {
@@ -53,7 +56,7 @@ function MiniProgressRing({ percent, stale }: { percent: number; stale: boolean 
   )
 }
 
-export function UserContinueSurveyRow({ item, rank }: UserContinueSurveyRowProps) {
+export function UserContinueSurveyRow({ item, rank, unansweredInfo }: UserContinueSurveyRowProps) {
   const navigate = useNavigate()
   const title = getSurveyListTitle(item)
   const subtitle = getSurveyListSubtitle(item)
@@ -105,6 +108,12 @@ export function UserContinueSurveyRow({ item, rank }: UserContinueSurveyRowProps
                   {daysSince}+ gündür bekliyor
                 </span>
               ) : null}
+            </div>
+            <div className="rounded-md border border-orange-200/80 bg-orange-50/70 px-2.5 py-2">
+              <UnansweredQuestionsWarning
+                info={unansweredInfo}
+                unansweredCount={unanswered}
+              />
             </div>
           </div>
         </div>

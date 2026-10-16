@@ -4,6 +4,7 @@ import type { AnketCevapOzetItem } from '@/features/survey-responses/types/surve
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { UserContinueSurveyRow } from './UserContinueSurveyRow'
+import { useStalePartialUnanswered } from '../hooks/use-stale-partial-unanswered'
 import { CONTINUE_SURVEY_LIST_LIMIT } from '../utils/user-dashboard-survey-groups'
 
 interface UserContinueSurveysCardProps {
@@ -19,6 +20,10 @@ export function UserContinueSurveysCard({
 }: UserContinueSurveysCardProps) {
   const visibleSurveys = partialSurveys.slice(0, CONTINUE_SURVEY_LIST_LIMIT)
   const hasMore = partialSurveys.length > CONTINUE_SURVEY_LIST_LIMIT
+  const unansweredByRow = useStalePartialUnanswered(
+    visibleSurveys,
+    !isLoading && visibleSurveys.length > 0,
+  )
 
   return (
     <Card
@@ -50,7 +55,7 @@ export function UserContinueSurveysCard({
               <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <p>
                 <span className="font-semibold">{stalePartialCount} ekici formu</span> bir haftadan uzun
-                süredir yarım — listenin üstündekiler en acil olanlar.
+                süredir yarım — hangi soruların boş kaldığı aşağıda.
               </p>
             </div>
           ) : null}
@@ -64,7 +69,12 @@ export function UserContinueSurveysCard({
 
           <ul className="space-y-3">
             {visibleSurveys.map((item, index) => (
-              <UserContinueSurveyRow key={item.id} item={item} rank={index + 1} />
+              <UserContinueSurveyRow
+                key={item.id}
+                item={item}
+                rank={index + 1}
+                unansweredInfo={unansweredByRow.get(item.id)}
+              />
             ))}
           </ul>
         </div>

@@ -13,6 +13,8 @@ import {
   getSurveyListSubtitle,
   getSurveyListTitle,
 } from '../utils/user-dashboard-survey-groups'
+import { useStalePartialUnanswered } from '../hooks/use-stale-partial-unanswered'
+import { UnansweredQuestionsWarning } from './UnansweredQuestionsWarning'
 
 type FormStatusTab = 'completed' | 'partial'
 
@@ -42,6 +44,10 @@ export function UserFormStatusTableCard({
   const visibleForms = useMemo(
     () => (activeTab === 'completed' ? completedForms : partialForms),
     [activeTab, completedForms, partialForms],
+  )
+  const unansweredByRow = useStalePartialUnanswered(
+    activeTab === 'partial' ? visibleForms : [],
+    !isLoading && activeTab === 'partial' && visibleForms.length > 0,
   )
 
   return (
@@ -85,12 +91,13 @@ export function UserFormStatusTableCard({
         </p>
       ) : (
         <div className="-mx-5 -mb-5 mt-4 overflow-x-auto border-t border-border/80">
-          <table className="app-table app-table-compact min-w-[720px]">
+          <table className="app-table app-table-compact min-w-[56rem]">
             <thead>
               <tr>
                 <th>EKİCİ</th>
                 <th>ANKET</th>
                 <th className="w-28 text-center">İLERLEME</th>
+                {activeTab === 'partial' ? <th className="min-w-[16rem]">EKSİK SORULAR</th> : null}
                 <th className="w-36">SON İŞLEM</th>
                 {activeTab === 'partial' ? <th className="w-28 text-center">İŞLEM</th> : null}
               </tr>
@@ -107,6 +114,14 @@ export function UserFormStatusTableCard({
                     <td className="text-center font-medium">
                       {activeTab === 'completed' ? '%100' : `%${progress}`}
                     </td>
+                    {activeTab === 'partial' ? (
+                      <td>
+                        <UnansweredQuestionsWarning
+                          info={unansweredByRow.get(item.id)}
+                          unansweredCount={item.yanitlanmayanSoruSayisi}
+                        />
+                      </td>
+                    ) : null}
                     <td className="whitespace-nowrap text-muted">
                       {formatRelativeSonIslem(item.sonIslemTarihi)}
                       <span className="mt-0.5 block text-[11px]">
