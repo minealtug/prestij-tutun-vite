@@ -1,11 +1,13 @@
 import { CheckCircle2, CircleAlert } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { UserSurveyMetricChartCard } from './UserSurveyMetricChartCard'
-import { UserSurveyStatusPieChart } from './UserSurveyStatusPieChart'
+import { AdminMintikaFillBarChart } from './AdminMintikaFillBarChart'
 import type { AdminFieldFillSummary } from '../utils/admin-dashboard-stats'
+import type { MintikaEkiciFillRow } from '../utils/compute-ekici-survey-coverage'
 
 interface AdminFieldFillSummarySectionProps {
   summary: AdminFieldFillSummary
+  mintikaRows: MintikaEkiciFillRow[]
   isLoading?: boolean
 }
 
@@ -16,12 +18,13 @@ function getStatusPercent(count: number, total: number): number | null {
 
 export function AdminFieldFillSummarySection({
   summary,
+  mintikaRows,
   isLoading = false,
 }: AdminFieldFillSummarySectionProps) {
   const total = summary.completed + summary.partial
   const tamamlanmaTrend =
-    total > 0
-      ? `Sistem geneli form tamamlama oranı %${getStatusPercent(summary.completed, total)}`
+    mintikaRows.length > 0
+      ? 'Mıntıka bazında ekici ve anket doluluk sayıları'
       : 'Henüz form kaydı yok'
 
   return (
@@ -33,11 +36,7 @@ export function AdminFieldFillSummarySection({
           <PeriodStat label="Bu hafta tamamlanan" value={summary.week.completed} tone="emerald" isLoading={isLoading} />
           <PeriodStat label="Bu hafta yarım" value={summary.week.partial} tone="amber" isLoading={isLoading} />
         </div>
-        <UserSurveyStatusPieChart
-          completed={summary.completed}
-          partial={summary.partial}
-          isLoading={isLoading}
-        />
+        <AdminMintikaFillBarChart rows={mintikaRows} isLoading={isLoading} />
       </Card>
 
       <div className="flex flex-col gap-4">

@@ -97,6 +97,21 @@ export function matchesEkiciCografiFiltre(
   return true
 }
 
+export function filterEkicilerByCografi(
+  ekiciler: EkiciDefinitionDto[],
+  params: CografiFiltreQueryParams,
+): EkiciDefinitionDto[] {
+  const hasParams = Boolean(
+    params.menseiId ||
+      params.bolgeId ||
+      params.mintikaId ||
+      params.alimNoktasiId ||
+      params.koyId,
+  )
+  if (!hasParams) return ekiciler
+  return ekiciler.filter((ekici) => matchesEkiciCografiFiltre(ekici, params))
+}
+
 export function filterSurveysByCografi(
   items: AnketCevapOzetItem[],
   ekiciById: Map<string, EkiciDefinitionDto>,

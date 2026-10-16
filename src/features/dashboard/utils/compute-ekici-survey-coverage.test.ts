@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { computeEkiciSurveyCoverage } from './compute-ekici-survey-coverage'
+import {
+  computeEkiciSurveyCoverage,
+  computeMintikaEkiciFillRows,
+} from './compute-ekici-survey-coverage'
+import type { EkiciDefinitionDto } from '@/features/ekici-definitions/types/ekici-definition.types'
 import type { AnketCevapOzetItem } from '@/features/survey-responses/types/survey-response.types'
 
 function makeSurvey(
@@ -59,5 +63,78 @@ describe('computeEkiciSurveyCoverage', () => {
       partialPercent: 100,
       untouchedPercent: 0,
     })
+  })
+})
+
+function makeEkici(
+  overrides: Partial<EkiciDefinitionDto> & Pick<EkiciDefinitionDto, 'id' | 'mintikaAdi'>,
+): EkiciDefinitionDto {
+  return {
+    yil: 2026,
+    tcKimlikNo: '',
+    menseiId: 1,
+    bolgeId: 1,
+    mintikaId: 1,
+    alimNoktasiId: 1,
+    koyId: 1,
+    menseiAdi: null,
+    bolgeAdi: null,
+    alimNoktasiAdi: null,
+    koyAdi: null,
+    ozKontNo: 0,
+    ad: 'Ali',
+    soyad: 'Yılmaz',
+    babaAdi: '',
+    anaAdi: null,
+    dogumYeri: null,
+    dogumTarihi: '',
+    cinsiyet: null,
+    icralik: false,
+    ekiciDurumId: 1,
+    ekiciDurumAdi: null,
+    aktif: 1,
+    makineKodu: '',
+    uretimMerkeziId: 0,
+    temlik: null,
+    sozlesmeIptal: null,
+    kaynak: 'AppDb',
+    ...overrides,
+  }
+}
+
+describe('computeMintikaEkiciFillRows', () => {
+  it('groups ekici and survey counts by mintika', () => {
+    const rows = computeMintikaEkiciFillRows(
+      [
+        makeEkici({ id: 'e1', mintikaAdi: 'TAVAS' }),
+        makeEkici({ id: 'e2', mintikaAdi: 'TAVAS' }),
+        makeEkici({ id: 'e3', mintikaAdi: 'KARACASU' }),
+        makeEkici({ id: 'e4', mintikaAdi: 'KARACASU' }),
+      ],
+      [
+        makeSurvey('e1', 10, 0, 's1'),
+        makeSurvey('e1', 2, 8, 's2'),
+        makeSurvey('e3', 5, 0, 's3'),
+      ],
+    )
+
+    expect(rows).toEqual([
+      {
+        key: 'karacasu',
+        label: 'KARACASU',
+        totalEkici: 2,
+        completedSurveys: 1,
+        partialSurveys: 0,
+        untouchedEkici: 1,
+      },
+      {
+        key: 'tavas',
+        label: 'TAVAS',
+        totalEkici: 2,
+        completedSurveys: 1,
+        partialSurveys: 1,
+        untouchedEkici: 1,
+      },
+    ])
   })
 })

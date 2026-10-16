@@ -22,9 +22,11 @@ import {
   computeBolgeComparison,
   computeMintikaComparison,
   countStalePartials,
+  filterEkicilerByCografi,
   filterSurveysByCografi,
   type AdminActivityDayWindow,
 } from '../utils/admin-dashboard-stats'
+import { computeMintikaEkiciFillRows } from '../utils/compute-ekici-survey-coverage'
 
 function getGreetingByHour(hour: number) {
   if (hour < 12) return 'Günaydın'
@@ -127,9 +129,18 @@ export function AdminDashboardPage() {
   const surveysLoading =
     responsesQuery.isLoading || ekicilerQuery.isLoading || cografiFiltreQuery.isLoading
 
+  const filteredEkiciler = useMemo(
+    () => filterEkicilerByCografi(ekicilerQuery.data ?? [], geoCascade.queryParams),
+    [ekicilerQuery.data, geoCascade.queryParams],
+  )
+
   const fieldFillSummary = useMemo(
     () => computeAdminFieldFillSummary(filteredSurveys, now),
     [filteredSurveys, now],
+  )
+  const mintikaFillRows = useMemo(
+    () => computeMintikaEkiciFillRows(filteredEkiciler, filteredSurveys),
+    [filteredEkiciler, filteredSurveys],
   )
   const mintikaRows = useMemo(
     () => computeMintikaComparison(filteredSurveys),
@@ -197,7 +208,11 @@ export function AdminDashboardPage() {
         )}
       </section>
 
-      <AdminFieldFillSummarySection summary={fieldFillSummary} isLoading={surveysLoading} />
+      <AdminFieldFillSummarySection
+        summary={fieldFillSummary}
+        mintikaRows={mintikaFillRows}
+        isLoading={surveysLoading}
+      />
 
       <AdminGeoComparisonCard
         mintikaRows={mintikaRows}

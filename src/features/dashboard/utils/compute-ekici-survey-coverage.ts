@@ -1,3 +1,4 @@
+import type { EkiciDefinitionDto } from '@/features/ekici-definitions/types/ekici-definition.types'
 import type { AnketCevapOzetItem } from '@/features/survey-responses/types/survey-response.types'
 import { getSurveyResponseStatus } from './user-dashboard-survey-groups'
 
@@ -67,4 +68,73 @@ export function computeEkiciSurveyCoverage(
     partialPercent: toPercent(partialEkiciCount, totalEkiciCount),
     untouchedPercent: toPercent(untouchedEkiciCount, totalEkiciCount),
   }
+}
+
+export interface MintikaEkiciFillRow {
+  key: string
+  label: string
+  totalEkici: number
+  completedSurveys: number
+  partialSurveys: number
+  untouchedEkici: number
+}
+
+function mintikaLabel(value: string | null | undefined): string {
+  const text = value?.trim()
+  return text && text.length > 0 ? text : 'Belirtilmemiş'
+}
+
+export function computeMintikaEkiciFillRows(
+  ekiciler: EkiciDefinitionDto[],
+  surveys: AnketCevapOzetItem[],
+): MintikaEkiciFillRow[] {
+  const buckets = new Map<string, MintikaEkiciFillRow>()
+
+  const getBucket = (label: string): MintikaEkiciFillRow => {
+    const key = label.toLocaleLowerCase('tr-TR')
+    const current = buckets.get(key)
+    if (current) return current
+    const created: MintikaEkiciFillRow = {
+      key,
+      label,
+      totalEkici: 0,
+      completedSurveys: 0,
+      partialSurveys: 0,
+      untouchedEkici: 0,
+    }
+    buckets.set(key, created)
+    return created
+  }
+
+  const ekiciById = new Map<string, EkiciDefinitionDto>()
+  for (const ekici of ekiciler) {
+    ekiciById.set(normalizeEkiciId(ekici.id), ekici)
+  }
+
+  const surveysByEkici = new Map<string, AnketCevapOzetItem[]>()
+  for (const survey of surveys) {
+    const ekiciId = survey.ekiciId?.trim()
+    if (!ekiciId) continue
+    const key = normalizeEkiciId(ekiciId)
+    const bucket = surveysByEkici.get(key) ?? []
+    bucket.push(survey)
+    surveysByEkici.set(key, bucket)
+  }
+
+  for (const ekici of ekiciler) {
+    const bucket = getBucket(mintikaLabel(ekici.mintikaAdi))
+    bucket.totalEkici += 1
+    const rows = surveysByEkici.get(normalizeEkiciId(ekici.id)) ?? []
+    if (rows.length === 0) bucket.untouchedEkici += 1
+  }
+
+  for (const survey of surveys) {
+    const ekici = ekiciById.get(normalizeEkiciId(survey.ekiciId ?? ''))
+    const bucket = getBucket(mintikaLabel(ekici?.mintikaAdi || survey.mintikaAdi))
+    const status = getSurveyResponseStatus(survey)
+    if (status === 'completed') bucket.completedSurveys += 1
+    else if (status === 'partial') bucket.partialSurveys += 1
+  }
+
+  return [...buckets.values()].sort((a, b) => a.label.localeCompare(b.label, 'tr-TR'))
 }
