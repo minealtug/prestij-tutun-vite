@@ -3,6 +3,7 @@ import type { QuestionDto } from '../types/question.types'
 import {
   getQuestionDisplayMeta,
   getQuestionMoveState,
+  listQuestionDisplayRows,
   moveQuestionInSurvey,
   sortQuestionsForSurvey,
   toSiraUpdateItems,
@@ -56,6 +57,52 @@ describe('getQuestionDisplayMeta', () => {
     expect(meta.get('4')).toEqual({ depth: 2, outline: '1.1.1' })
     expect(meta.get('3')).toEqual({ depth: 1, outline: '1.2' })
     expect(meta.get('5')).toEqual({ depth: 0, outline: '2' })
+  })
+})
+
+describe('listQuestionDisplayRows', () => {
+  it('shows a question under every parent it is linked to', () => {
+    const rows = listQuestionDisplayRows([
+      makeQuestion({ id: 1, soruMetni: 'İşçi çalıştırıyor musunuz?', siraNo: 1 }),
+      makeQuestion({
+        id: 2,
+        soruMetni: 'Yevmiyeli işçi çocuğunu getiriyor mu?',
+        bagliSoru: true,
+        bagliOlduguSoruId: 1,
+        siraNo: 2,
+      }),
+      makeQuestion({
+        id: 3,
+        soruMetni: 'Üretici çocuğunu getiriyor mu?',
+        bagliSoru: true,
+        bagliOlduguSoruId: 1,
+        siraNo: 3,
+      }),
+      makeQuestion({
+        id: 4,
+        soruMetni: 'Hangi işler ile ilgileniyor?',
+        bagliSoru: true,
+        bagliOlduguSoruId: 2,
+        bagliKosullar: [{ parentSoruId: 2 }, { parentSoruId: 3 }],
+        siraNo: 4,
+      }),
+    ])
+
+    expect(rows.map((row) => `${row.displayOutline} ${row.soruMetni}`)).toEqual([
+      '1 İşçi çalıştırıyor musunuz?',
+      '1.1 Yevmiyeli işçi çocuğunu getiriyor mu?',
+      '1.1.1 Hangi işler ile ilgileniyor?',
+      '1.2 Üretici çocuğunu getiriyor mu?',
+      '1.2.1 Hangi işler ile ilgileniyor?',
+    ])
+    expect(rows.filter((row) => row.id === 4).map((row) => row.bagliOlduguSoru)).toEqual([
+      'Yevmiyeli işçi çocuğunu getiriyor mu?',
+      'Üretici çocuğunu getiriyor mu?',
+    ])
+    expect(rows.filter((row) => row.id === 4).map((row) => row.displayKey)).toEqual([
+      '4',
+      '4-parent-3',
+    ])
   })
 })
 

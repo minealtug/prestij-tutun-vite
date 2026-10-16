@@ -15,7 +15,8 @@ import {
   resolveCevapGirdiTipId,
 } from '../utils/resolve-question-cevap-girdi-tip'
 import {
-  getQuestionDisplayMeta,
+  listQuestionDisplayRows,
+  type QuestionDisplayRow,
   type QuestionMoveDirection,
 } from '../utils/sort-questions'
 
@@ -79,18 +80,21 @@ export function QuestionsTable({
     }
     return map
   }, [answerUnitsQuery.data])
-  const displayMeta = useMemo(() => getQuestionDisplayMeta(data), [data])
+  const displayRows = useMemo(() => listQuestionDisplayRows(data), [data])
 
-  const columns: TableColumn<QuestionDto>[] = [
+  const columns: TableColumn<QuestionDisplayRow>[] = [
     ...(onMove
       ? [
           {
             key: 'sira',
             header: 'SIRA',
             className: 'w-32',
-            render: (row: QuestionDto) => {
-              const moveState = getMoveState?.(row) ?? { canMoveUp: false, canMoveDown: false }
-              const outline = displayMeta.get(String(row.id))?.outline ?? (row.siraNo != null ? String(row.siraNo) : '—')
+            render: (row: QuestionDisplayRow) => {
+              const isExtraCopy = row.displayKey !== String(row.id)
+              const moveState = isExtraCopy
+                ? { canMoveUp: false, canMoveDown: false }
+                : (getMoveState?.(row) ?? { canMoveUp: false, canMoveDown: false })
+              const outline = row.displayOutline || (row.siraNo != null ? String(row.siraNo) : '—')
 
               return (
                 <div className="flex items-center gap-1">
@@ -120,7 +124,7 @@ export function QuestionsTable({
                 </div>
               )
             },
-          } satisfies TableColumn<QuestionDto>,
+          } satisfies TableColumn<QuestionDisplayRow>,
         ]
       : []),
     {
@@ -145,7 +149,7 @@ export function QuestionsTable({
       className: 'min-w-[16rem] whitespace-normal sm:min-w-[20rem] lg:min-w-[24rem]',
       render: (row) => {
         const birimAdi = resolveQuestionBirimAdi(row, unitsById)
-        const depth = displayMeta.get(String(row.id))?.depth ?? (row.bagliSoru ? 1 : 0)
+        const depth = row.displayDepth ?? (row.bagliSoru ? 1 : 0)
         const isLinked = row.bagliSoru || depth > 0
 
         return (
@@ -240,7 +244,7 @@ export function QuestionsTable({
             key: 'actions',
             header: 'İŞLEMLER',
             className: 'w-36',
-            render: (row: QuestionDto) => (
+            render: (row: QuestionDisplayRow) => (
               <div className="flex gap-0.5">
                 {onEdit && (
                   <Button
@@ -281,7 +285,7 @@ export function QuestionsTable({
                 )}
               </div>
             ),
-          } satisfies TableColumn<QuestionDto>,
+          } satisfies TableColumn<QuestionDisplayRow>,
         ]
       : []),
   ]
@@ -300,8 +304,8 @@ export function QuestionsTable({
       ) : (
         <Table
           columns={columns}
-          data={data}
-          keyExtractor={(row) => `${row.kaynak ?? 'unknown'}-${row.id}`}
+          data={displayRows}
+          keyExtractor={(row) => `${row.kaynak ?? 'unknown'}-${row.displayKey}`}
           isLoading={isLoading}
           emptyMessage="Henüz soru yok."
           horizontalScroll
@@ -312,7 +316,7 @@ export function QuestionsTable({
           fillHeight={false}
           className="!rounded-none !border-0 !overflow-visible"
           getRowClassName={(row) =>
-            row.bagliSoru || (displayMeta.get(String(row.id))?.depth ?? 0) > 0
+            row.bagliSoru || row.displayDepth > 0
               ? 'app-table-row--linked'
               : undefined
           }

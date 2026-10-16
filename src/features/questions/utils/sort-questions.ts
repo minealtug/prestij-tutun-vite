@@ -5,6 +5,13 @@ export type QuestionMoveDirection = 'up' | 'down'
 interface QuestionNode {
   question: QuestionDto
   children: QuestionNode[]
+  key: string
+}
+
+export interface QuestionDisplayRow extends QuestionDto {
+  displayKey: string
+  displayDepth: number
+  displayOutline: string
 }
 
 function questionKey(question: Pick<QuestionDto, 'id'>): string {
@@ -33,7 +40,8 @@ function buildQuestionTree(questions: QuestionDto[]): QuestionNode[] {
   const nodes = new Map<string, QuestionNode>()
 
   for (const question of sorted) {
-    nodes.set(questionKey(question), { question, children: [] })
+    const key = questionKey(question)
+    nodes.set(key, { question, children: [], key })
   }
 
   const roots: QuestionNode[] = []
@@ -92,6 +100,140 @@ export function getQuestionDisplayMeta(questions: QuestionDto[]): Map<string, Qu
 
   walk(buildQuestionTree(sortQuestionsForSurvey(questions)), 0, '')
   return map
+}
+
+function parentIdsInList(question: QuestionDto, ids: Set<number>): number[] {
+  const fromKosullar = [
+    ...new Set(
+      (question.bagliKosullar ?? [])
+        .map((item) => item.parentSoruId)
+        .filter((id) => id > 0 && ids.has(id)),
+    ),
+  ]
+  if (fromKosullar.length > 0) return fromKosullar
+
+  const parentId = question.bagliOlduguSoruId
+  if (question.bagliSoru && parentId != null && parentId > 0 && ids.has(parentId)) {
+    return [parentId]
+  }
+  return []
+}
+
+function findCanonicalNode(nodes: QuestionNode[], id: string): QuestionNode | null {
+  for (const node of nodes) {
+    if (node.key === id) return node
+    const found = findCanonicalNode(node.children, id)
+    if (found) return found
+  }
+  return null
+}
+
+function subtreeContainsId(node: QuestionNode, id: string, seen = new Set<QuestionNode>()): boolean {
+  if (seen.has(node)) return false
+  seen.add(node)
+  if (questionKey(node.question) === id) return true
+  return node.children.some((child) => subtreeContainsId(child, id, seen))
+}
+
+function withParentContext(
+  question: QuestionDto,
+  parentId: number,
+  byId: Map<number, QuestionDto>,
+): QuestionDto {
+  const kosul = question.bagliKosullar?.find((item) => item.parentSoruId === parentId)
+  const parent = byId.get(parentId)
+  return {
+    ...question,
+    bagliOlduguSoruId: parentId,
+    bagliOlduguSoru: parent?.soruMetni?.trim() || question.bagliOlduguSoru,
+    bagliAltSecenekId: kosul?.bagliAltSecenekId ?? question.bagliAltSecenekId,
+    bagliKosulTipi: kosul?.bagliKosulTipi ?? question.bagliKosulTipi,
+  }
+}
+
+function cloneNode(node: QuestionNode, suffix: string, questionOverride?: QuestionDto): QuestionNode {
+  return {
+    question: questionOverride ?? node.question,
+    key: `${questionKey(node.question)}${suffix}`,
+    children: node.children.map((child) => cloneNode(child, suffix)),
+  }
+}
+
+function insertChildBySira(parent: QuestionNode, child: QuestionNode) {
+  const index = parent.children.findIndex(
+    (existing) => compareBySiraNoThenId(child.question, existing.question) < 0,
+  )
+  if (index < 0) parent.children.push(child)
+  else parent.children.splice(index, 0, child)
+}
+
+function attachExtraParentCopies(roots: QuestionNode[], questions: QuestionDto[]) {
+  const ids = new Set(questions.map((question) => numericId(question)))
+  const byId = new Map(questions.map((question) => [numericId(question), question]))
+
+  for (const question of questions) {
+    const parents = parentIdsInList(question, ids)
+    if (parents.length < 2) continue
+
+    const node = findCanonicalNode(roots, questionKey(question))
+    if (!node) continue
+
+    const primaryId = question.bagliOlduguSoruId
+    if (primaryId != null && primaryId > 0) {
+      node.question = withParentContext(question, primaryId, byId)
+    }
+    for (const parentId of parents) {
+      if (primaryId != null && parentId === primaryId) continue
+      const parent = findCanonicalNode(roots, String(parentId))
+      if (!parent || parent === node) continue
+      if (subtreeContainsId(node, String(parentId))) continue
+      insertChildBySira(
+        parent,
+        cloneNode(node, `-parent-${parentId}`, withParentContext(question, parentId, byId)),
+      )
+    }
+  }
+}
+
+function dedupeQuestionsById(questions: QuestionDto[]): QuestionDto[] {
+  const seen = new Set<string>()
+  const result: QuestionDto[] = []
+  for (const question of questions) {
+    const key = questionKey(question)
+    if (seen.has(key)) continue
+    seen.add(key)
+    result.push(question)
+  }
+  return result
+}
+
+function flattenDisplayRows(nodes: QuestionNode[]): QuestionDisplayRow[] {
+  const rows: QuestionDisplayRow[] = []
+
+  const walk = (list: QuestionNode[], depth: number, prefix: string) => {
+    list.forEach((node, index) => {
+      const outline = prefix ? `${prefix}.${index + 1}` : String(index + 1)
+      rows.push({
+        ...node.question,
+        displayKey: node.key,
+        displayDepth: depth,
+        displayOutline: outline,
+      })
+      walk(node.children, depth + 1, outline)
+    })
+  }
+
+  walk(nodes, 0, '')
+  return rows
+}
+
+/** Aynı soru birden fazla üst soruya bağlıysa her üst sorunun altında bir kez görünür. */
+export function listQuestionDisplayRows(questions: QuestionDto[]): QuestionDisplayRow[] {
+  if (questions.length === 0) return []
+  const ordered = sortQuestionsForSurvey(dedupeQuestionsById(questions))
+  const tree = buildQuestionTree(ordered)
+  attachExtraParentCopies(tree, ordered)
+  return flattenDisplayRows(tree)
 }
 
 export function sortQuestionsForSurvey(questions: QuestionDto[]): QuestionDto[] {
