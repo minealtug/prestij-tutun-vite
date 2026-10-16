@@ -18,9 +18,21 @@ const SERIES = [
   { key: 'untouchedEkici', name: 'Hiç giriş yok', color: '#94a3b8' },
 ] as const
 
+export type AdminMintikaFillFocus =
+  | 'totalEkici'
+  | 'completedSurveys'
+  | 'partialSurveys'
+  | 'untouchedEkici'
+
+export function getVisibleMintikaFillSeries(focus: AdminMintikaFillFocus | null) {
+  if (!focus) return [...SERIES]
+  return SERIES.filter((series) => series.key === focus)
+}
+
 interface AdminMintikaFillBarChartProps {
   rows: MintikaEkiciFillRow[]
   isLoading?: boolean
+  focus?: AdminMintikaFillFocus | null
 }
 
 interface TooltipPayloadItem {
@@ -69,7 +81,9 @@ function ChartTooltip({
 export function AdminMintikaFillBarChart({
   rows,
   isLoading = false,
+  focus = null,
 }: AdminMintikaFillBarChartProps) {
+  const visibleSeries = useMemo(() => getVisibleMintikaFillSeries(focus), [focus])
   const chartData = useMemo(
     () =>
       rows.map((row) => ({
@@ -112,7 +126,7 @@ export function AdminMintikaFillBarChart({
               iconSize={8}
               wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
             />
-            {SERIES.map((series) => (
+            {visibleSeries.map((series) => (
               <Bar
                 key={series.key}
                 dataKey={series.key}

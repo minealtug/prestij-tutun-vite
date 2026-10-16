@@ -13,6 +13,8 @@ interface UserSurveyMetricChartCardProps {
   description?: string
   isLoading?: boolean
   className?: string
+  selected?: boolean
+  onSelect?: () => void
 }
 
 export function UserSurveyMetricChartCard({
@@ -25,6 +27,8 @@ export function UserSurveyMetricChartCard({
   description,
   isLoading = false,
   className,
+  selected = false,
+  onSelect,
 }: UserSurveyMetricChartCardProps) {
   const safePercent = percent ?? 0
   const chartData = [
@@ -33,7 +37,29 @@ export function UserSurveyMetricChartCard({
   ]
 
   return (
-    <Card className={cn('!p-4', className)} interactive={false}>
+    <Card
+      className={cn('!p-4', onSelect && 'cursor-pointer transition-shadow', className)}
+      style={
+        selected
+          ? { boxShadow: `0 0 0 2px ${color}, 0 0 0 5px ${color}33` }
+          : undefined
+      }
+      interactive={Boolean(onSelect)}
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      aria-pressed={onSelect ? selected : undefined}
+      onClick={onSelect}
+      onKeyDown={
+        onSelect
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onSelect()
+              }
+            }
+          : undefined
+      }
+    >
       <div className="flex items-center gap-4">
         <div className="relative h-16 w-16 shrink-0">
           {isLoading ? (

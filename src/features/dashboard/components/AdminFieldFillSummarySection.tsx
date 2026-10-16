@@ -1,7 +1,11 @@
-import { CheckCircle2, CircleAlert } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { CheckCircle2, CircleAlert, CircleOff, Users } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { UserSurveyMetricChartCard } from './UserSurveyMetricChartCard'
-import { AdminMintikaFillBarChart } from './AdminMintikaFillBarChart'
+import {
+  AdminMintikaFillBarChart,
+  type AdminMintikaFillFocus,
+} from './AdminMintikaFillBarChart'
 import type { AdminFieldFillSummary } from '../utils/admin-dashboard-stats'
 import type { MintikaEkiciFillRow } from '../utils/compute-ekici-survey-coverage'
 
@@ -21,11 +25,28 @@ export function AdminFieldFillSummarySection({
   mintikaRows,
   isLoading = false,
 }: AdminFieldFillSummarySectionProps) {
-  const total = summary.completed + summary.partial
+  const [focus, setFocus] = useState<AdminMintikaFillFocus | null>(null)
+  const formTotal = summary.completed + summary.partial
+  const coverageTotals = useMemo(
+    () =>
+      mintikaRows.reduce(
+        (acc, row) => {
+          acc.totalEkici += row.totalEkici
+          acc.untouchedEkici += row.untouchedEkici
+          return acc
+        },
+        { totalEkici: 0, untouchedEkici: 0 },
+      ),
+    [mintikaRows],
+  )
   const tamamlanmaTrend =
     mintikaRows.length > 0
       ? 'Mıntıka bazında ekici ve anket doluluk sayıları'
       : 'Henüz form kaydı yok'
+
+  const toggleFocus = (next: AdminMintikaFillFocus) => {
+    setFocus((current) => (current === next ? null : next))
+  }
 
   return (
     <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,320px)]">
@@ -36,27 +57,53 @@ export function AdminFieldFillSummarySection({
           <PeriodStat label="Bu hafta tamamlanan" value={summary.week.completed} tone="emerald" isLoading={isLoading} />
           <PeriodStat label="Bu hafta yarım" value={summary.week.partial} tone="amber" isLoading={isLoading} />
         </div>
-        <AdminMintikaFillBarChart rows={mintikaRows} isLoading={isLoading} />
+        <AdminMintikaFillBarChart rows={mintikaRows} isLoading={isLoading} focus={focus} />
       </Card>
 
       <div className="flex flex-col gap-4">
         <UserSurveyMetricChartCard
+          label="Tüm ekiciler"
+          value={coverageTotals.totalEkici}
+          percent={getStatusPercent(coverageTotals.totalEkici, coverageTotals.totalEkici)}
+          color="#1a3d5c"
+          icon={Users}
+          description="Seçili filtredeki toplam ekici sayısı"
+          isLoading={isLoading}
+          selected={focus === 'totalEkici'}
+          onSelect={() => toggleFocus('totalEkici')}
+        />
+        <UserSurveyMetricChartCard
           label="Tamamlanan"
           value={summary.completed}
-          percent={getStatusPercent(summary.completed, total)}
+          percent={getStatusPercent(summary.completed, formTotal)}
           color="#10b981"
           icon={CheckCircle2}
           description="Sistem genelindeki tamamlanmış formlar"
           isLoading={isLoading}
+          selected={focus === 'completedSurveys'}
+          onSelect={() => toggleFocus('completedSurveys')}
         />
         <UserSurveyMetricChartCard
           label="Yarım kalan"
           value={summary.partial}
-          percent={getStatusPercent(summary.partial, total)}
+          percent={getStatusPercent(summary.partial, formTotal)}
           color="#f59e0b"
           icon={CircleAlert}
           description="Devam edilmesi gereken formlar"
           isLoading={isLoading}
+          selected={focus === 'partialSurveys'}
+          onSelect={() => toggleFocus('partialSurveys')}
+        />
+        <UserSurveyMetricChartCard
+          label="Giriş yok"
+          value={coverageTotals.untouchedEkici}
+          percent={getStatusPercent(coverageTotals.untouchedEkici, coverageTotals.totalEkici)}
+          color="#94a3b8"
+          icon={CircleOff}
+          description="Hiç anket girişi yapılmayan ekiciler"
+          isLoading={isLoading}
+          selected={focus === 'untouchedEkici'}
+          onSelect={() => toggleFocus('untouchedEkici')}
         />
       </div>
     </section>
