@@ -6,7 +6,6 @@ import {
   getOzetKullaniciAdi,
   getOzetSurveyName,
 } from '@/features/survey-responses/types/survey-response.types'
-import type { UserDto } from '@/features/users/types/user.types'
 import {
   getDaysSinceSonIslem,
   getSurveyResponseStatus,
@@ -39,13 +38,12 @@ export interface AdminGeoComparisonRow {
   children?: AdminGeoComparisonRow[]
 }
 
-export interface AdminUserActivitySummary {
-  activeUsers: number
-  passiveUsers: number
-  totalUsers: number
+export interface AdminEkiciActivitySummary {
+  activeEkiciler: number
+  passiveEkiciler: number
+  totalEkiciler: number
   filledInWindow: number
   neverFilled: number
-  neverFilledUsers: UserDto[]
 }
 
 export interface AdminStalePartialRow {
@@ -258,54 +256,47 @@ export function computeBolgeComparison(items: AnketCevapOzetItem[]): AdminGeoCom
   return buildGeoComparisonRows(items, (item) => item.bolgeAdi?.trim() || 'Belirtilmemiş')
 }
 
-function normalizeUserKey(value: string | null | undefined): string {
-  return value?.trim().toLocaleLowerCase('tr-TR') ?? ''
+function normalizeEkiciKey(value: string | null | undefined): string {
+  return value?.trim() ?? ''
 }
 
-export function computeAdminUserActivity(
-  users: UserDto[],
+export function computeAdminEkiciActivity(
+  ekiciler: EkiciDefinitionDto[],
   surveys: AnketCevapOzetItem[],
   dayWindow: AdminActivityDayWindow,
   now = new Date(),
-): AdminUserActivitySummary {
+): AdminEkiciActivitySummary {
   const windowStart = now.getTime() - dayWindow * 24 * 60 * 60 * 1000
+  const knownIds = new Set(ekiciler.map((ekici) => ekici.id).filter(Boolean))
   const filledKeys = new Set<string>()
   const filledInWindowKeys = new Set<string>()
 
   for (const item of surveys) {
-    const key = normalizeUserKey(item.kullaniciAdi)
-    if (!key || key === '—') continue
+    const key = normalizeEkiciKey(item.ekiciId)
+    if (!key || !knownIds.has(key)) continue
     filledKeys.add(key)
     if (isInPeriod(item, windowStart, now.getTime())) {
       filledInWindowKeys.add(key)
     }
   }
 
-  let activeUsers = 0
-  let passiveUsers = 0
-  const neverFilledUsers: UserDto[] = []
+  let activeEkiciler = 0
+  let passiveEkiciler = 0
+  let neverFilled = 0
 
-  for (const user of users) {
-    if (user.aktif) activeUsers += 1
-    else passiveUsers += 1
+  for (const ekici of ekiciler) {
+    if (ekici.aktif === 1) activeEkiciler += 1
+    else passiveEkiciler += 1
 
-    const key = normalizeUserKey(user.userName)
-    if (!key || !filledKeys.has(key)) {
-      neverFilledUsers.push(user)
-    }
+    if (!filledKeys.has(ekici.id)) neverFilled += 1
   }
 
-  neverFilledUsers.sort((a, b) =>
-    a.fullName.localeCompare(b.fullName, 'tr-TR') || a.userName.localeCompare(b.userName, 'tr-TR'),
-  )
-
   return {
-    activeUsers,
-    passiveUsers,
-    totalUsers: users.length,
+    activeEkiciler,
+    passiveEkiciler,
+    totalEkiciler: ekiciler.length,
     filledInWindow: filledInWindowKeys.size,
-    neverFilled: neverFilledUsers.length,
-    neverFilledUsers,
+    neverFilled,
   }
 }
 

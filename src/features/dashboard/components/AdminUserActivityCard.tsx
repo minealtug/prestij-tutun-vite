@@ -1,17 +1,14 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { UserRound, UserX, Users } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
-import type { UserDto } from '@/features/users/types/user.types'
 import {
   ADMIN_ACTIVITY_DAY_OPTIONS,
   type AdminActivityDayWindow,
-  type AdminUserActivitySummary,
+  type AdminEkiciActivitySummary,
 } from '../utils/admin-dashboard-stats'
 
 interface AdminUserActivityCardProps {
-  summary: AdminUserActivitySummary
+  summary: AdminEkiciActivitySummary
   dayWindow: AdminActivityDayWindow
   onDayWindowChange: (value: AdminActivityDayWindow) => void
   isLoading?: boolean
@@ -23,51 +20,12 @@ export function AdminUserActivityCard({
   onDayWindowChange,
   isLoading = false,
 }: AdminUserActivityCardProps) {
-  const [showNeverFilled, setShowNeverFilled] = useState(false)
-  const previewUsers = summary.neverFilledUsers.slice(0, 8)
-
   return (
-    <Card
-      title="Kullanıcı aktivitesi"
-      description="Aktiflik ve form doldurma durumu"
-      interactive={false}
-      accent
-    >
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="grid flex-1 grid-cols-2 gap-3 lg:grid-cols-4">
-          <Metric
-            icon={Users}
-            label="Aktif"
-            value={summary.activeUsers}
-            hint={`Toplam ${summary.totalUsers.toLocaleString('tr-TR')}`}
-            isLoading={isLoading}
-          />
-          <Metric
-            icon={UserX}
-            label="Pasif"
-            value={summary.passiveUsers}
-            hint="Hesabı kapalı"
-            isLoading={isLoading}
-          />
-          <Metric
-            icon={UserRound}
-            label={`Son ${dayWindow} günde dolduran`}
-            value={summary.filledInWindow}
-            hint="En az bir form işlemi"
-            isLoading={isLoading}
-          />
-          <Metric
-            icon={UserX}
-            label="Hiç doldurmayan"
-            value={summary.neverFilled}
-            hint="Form kaydı yok"
-            isLoading={isLoading}
-            tone="amber"
-          />
-        </div>
-        <div className="w-full sm:w-40">
+    <Card interactive={false} accent>
+      <div className="mb-4">
+        <h3 className="text-base font-semibold text-foreground">Ekici aktivitesi</h3>
+        <div className="mt-2 w-full sm:max-w-xs">
           <Select
-            label="Pencere"
             value={String(dayWindow)}
             onChange={(e) => onDayWindowChange(Number(e.target.value) as AdminActivityDayWindow)}
             options={ADMIN_ACTIVITY_DAY_OPTIONS.map((days) => ({
@@ -77,44 +35,37 @@ export function AdminUserActivityCard({
           />
         </div>
       </div>
-
-      {isLoading ? (
-        <p className="text-sm text-muted">Kullanıcılar yükleniyor…</p>
-      ) : summary.neverFilled === 0 ? (
-        <p className="text-sm text-muted">Tüm kullanıcıların en az bir form kaydı var.</p>
-      ) : (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">
-              Hiç form doldurmayanlar
-            </p>
-            <button
-              type="button"
-              className="text-xs font-medium text-primary-600 hover:text-primary-700"
-              onClick={() => setShowNeverFilled((open) => !open)}
-            >
-              {showNeverFilled ? 'Gizle' : 'Listele'}
-            </button>
-          </div>
-
-          {showNeverFilled ? (
-            <ul className="divide-y divide-border/80 rounded-lg border border-border/80">
-              {previewUsers.map((user) => (
-                <NeverFilledRow key={user.id} user={user} />
-              ))}
-            </ul>
-          ) : null}
-
-          {showNeverFilled && summary.neverFilled > previewUsers.length ? (
-            <Link
-              to="/users"
-              className="inline-flex text-sm font-medium text-primary-600 hover:text-primary-700"
-            >
-              Tümünü kullanıcılar sayfasında gör ({summary.neverFilled})
-            </Link>
-          ) : null}
-        </div>
-      )}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Metric
+          icon={Users}
+          label="Aktif"
+          value={summary.activeEkiciler}
+          hint={`Toplam ${summary.totalEkiciler.toLocaleString('tr-TR')}`}
+          isLoading={isLoading}
+        />
+        <Metric
+          icon={UserX}
+          label="Pasif"
+          value={summary.passiveEkiciler}
+          hint="Kayıt pasif"
+          isLoading={isLoading}
+        />
+        <Metric
+          icon={UserRound}
+          label={`Son ${dayWindow} günde dolduran`}
+          value={summary.filledInWindow}
+          hint="En az bir form işlemi"
+          isLoading={isLoading}
+        />
+        <Metric
+          icon={UserX}
+          label="Hiç doldurmayan"
+          value={summary.neverFilled}
+          hint="Form kaydı yok"
+          isLoading={isLoading}
+          tone="amber"
+        />
+      </div>
     </Card>
   )
 }
@@ -151,29 +102,5 @@ function Metric({
       </p>
       <p className="mt-0.5 text-[11px] text-muted">{hint}</p>
     </div>
-  )
-}
-
-function NeverFilledRow({ user }: { user: UserDto }) {
-  return (
-    <li className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm">
-      <div className="min-w-0">
-        <p className="truncate font-medium text-foreground">
-          {user.fullName.trim() || user.userName}
-        </p>
-        <p className="truncate text-xs text-muted">
-          {[user.userName, user.mintikaAdi, user.departmanAdi].filter(Boolean).join(' · ')}
-        </p>
-      </div>
-      <span
-        className={
-          user.aktif
-            ? 'shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-700'
-            : 'shrink-0 rounded-full bg-red-500/15 px-2 py-0.5 text-[11px] font-medium text-red-700'
-        }
-      >
-        {user.aktif ? 'Aktif' : 'Pasif'}
-      </span>
-    </li>
   )
 }

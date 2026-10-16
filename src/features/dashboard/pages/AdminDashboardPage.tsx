@@ -9,7 +9,6 @@ import { useEkiciDefinitions } from '@/features/ekici-definitions/hooks/use-ekic
 import type { EkiciDefinitionDto } from '@/features/ekici-definitions/types/ekici-definition.types'
 import { PERMISSION_DENIED_KEY } from '@/features/permissions/hooks/use-require-page-permission'
 import { useAllSurveyResponses } from '@/features/survey-responses/hooks/use-survey-responses'
-import { useUsers } from '@/features/users/hooks/use-users'
 import { useAuthStore } from '@/stores/auth-store'
 import { AdminFieldFillSummarySection } from '../components/AdminFieldFillSummarySection'
 import { AdminGeoComparisonCard } from '../components/AdminGeoComparisonCard'
@@ -19,7 +18,7 @@ import { enrichSurveysWithEkiciLocations } from '../utils/enrich-survey-location
 import {
   buildAdminStalePartialRows,
   computeAdminFieldFillSummary,
-  computeAdminUserActivity,
+  computeAdminEkiciActivity,
   computeBolgeComparison,
   computeMintikaComparison,
   countStalePartials,
@@ -40,7 +39,6 @@ export function AdminDashboardPage() {
   const user = useAuthStore((state) => state.user)
 
   const responsesQuery = useAllSurveyResponses()
-  const usersQuery = useUsers()
   const ekicilerQuery = useEkiciDefinitions()
   const cografiFiltreQuery = useCografiFiltreOptions()
   const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
@@ -138,9 +136,15 @@ export function AdminDashboardPage() {
     [filteredSurveys],
   )
   const bolgeRows = useMemo(() => computeBolgeComparison(filteredSurveys), [filteredSurveys])
-  const userActivity = useMemo(
-    () => computeAdminUserActivity(usersQuery.data ?? [], filteredSurveys, activityDays, now),
-    [activityDays, filteredSurveys, now, usersQuery.data],
+  const ekiciActivity = useMemo(
+    () =>
+      computeAdminEkiciActivity(
+        ekicilerQuery.data ?? [],
+        enrichedSurveys,
+        activityDays,
+        now,
+      ),
+    [activityDays, ekicilerQuery.data, enrichedSurveys, now],
   )
   const staleRows = useMemo(
     () => buildAdminStalePartialRows(filteredSurveys, 10),
@@ -167,10 +171,10 @@ export function AdminDashboardPage() {
       </section>
 
       <AdminUserActivityCard
-        summary={userActivity}
+        summary={ekiciActivity}
         dayWindow={activityDays}
         onDayWindowChange={setActivityDays}
-        isLoading={usersQuery.isLoading || surveysLoading}
+        isLoading={ekicilerQuery.isLoading || surveysLoading}
       />
 
       <section className="rounded-md border border-[#e8ecf0] bg-white px-4 py-3">

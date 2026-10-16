@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import type { EkiciDefinitionDto } from '@/features/ekici-definitions/types/ekici-definition.types'
 import type { AnketCevapOzetItem } from '@/features/survey-responses/types/survey-response.types'
-import type { UserDto } from '@/features/users/types/user.types'
 import {
   computeAdminFieldFillSummary,
-  computeAdminUserActivity,
+  computeAdminEkiciActivity,
   computeMintikaComparison,
   countStalePartials,
   startOfLocalWeek,
@@ -28,27 +28,39 @@ function makeSurvey(
   }
 }
 
-function makeUser(overrides: Partial<UserDto> & Pick<UserDto, 'id' | 'userName'>): UserDto {
+function makeEkici(
+  overrides: Partial<EkiciDefinitionDto> & Pick<EkiciDefinitionDto, 'id'>,
+): EkiciDefinitionDto {
   return {
-    fullName: 'Test User',
-    userTypeId: 1,
-    userTypeDescription: null,
-    admin: false,
-    aktif: true,
-    lokasyon: null,
-    departmanId: null,
-    departmanAdi: null,
-    mintikaId: null,
-    mintikaIds: [],
-    mintikalar: [],
-    mintikaAdi: null,
-    supervisorUserId: null,
-    insuranceNumber: null,
-    icraOdemeUyari: false,
-    uretimMerkeziYetki: false,
-    email: null,
-    tel: null,
-    fotografUrl: null,
+    yil: 2026,
+    tcKimlikNo: '',
+    menseiId: 1,
+    bolgeId: 1,
+    mintikaId: 1,
+    alimNoktasiId: 1,
+    koyId: 1,
+    menseiAdi: null,
+    bolgeAdi: null,
+    mintikaAdi: 'Mıntıka A',
+    alimNoktasiAdi: null,
+    koyAdi: null,
+    ozKontNo: 0,
+    ad: 'Ali',
+    soyad: 'Yılmaz',
+    babaAdi: '',
+    anaAdi: null,
+    dogumYeri: null,
+    dogumTarihi: '',
+    cinsiyet: null,
+    icralik: false,
+    ekiciDurumId: 1,
+    ekiciDurumAdi: null,
+    aktif: 1,
+    makineKodu: '',
+    uretimMerkeziId: 0,
+    temlik: null,
+    sozlesmeIptal: null,
+    kaynak: 'AppDb',
     ...overrides,
   }
 }
@@ -192,20 +204,20 @@ describe('admin-dashboard-stats', () => {
     })
   })
 
-  it('computes user activity and never-filled users', () => {
+  it('computes ekici activity and never-filled ekiciler', () => {
     const now = new Date(2026, 6, 21)
-    const users = [
-      makeUser({ id: 1, userName: 'ali', fullName: 'Ali' }),
-      makeUser({ id: 2, userName: 'veli', fullName: 'Veli', aktif: false }),
-      makeUser({ id: 3, userName: 'ayse', fullName: 'Ayşe' }),
+    const ekiciler = [
+      makeEkici({ id: 'e1', ad: 'Ali', soyad: 'Yılmaz' }),
+      makeEkici({ id: 'e2', ad: 'Veli', soyad: 'Demir', aktif: 0 }),
+      makeEkici({ id: 'e3', ad: 'Ayşe', soyad: 'Kaya' }),
     ]
 
-    const activity = computeAdminUserActivity(
-      users,
+    const activity = computeAdminEkiciActivity(
+      ekiciler,
       [
         makeSurvey({
           id: '1',
-          kullaniciAdi: 'ali',
+          ekiciId: 'e1',
           sonIslemTarihi: new Date(2026, 6, 20).toISOString(),
         }),
       ],
@@ -213,11 +225,10 @@ describe('admin-dashboard-stats', () => {
       now,
     )
 
-    expect(activity.activeUsers).toBe(2)
-    expect(activity.passiveUsers).toBe(1)
+    expect(activity.activeEkiciler).toBe(2)
+    expect(activity.passiveEkiciler).toBe(1)
     expect(activity.filledInWindow).toBe(1)
     expect(activity.neverFilled).toBe(2)
-    expect(activity.neverFilledUsers.map((u) => u.userName)).toEqual(['ayse', 'veli'])
   })
 
   it('counts stale partials older than 7 days', () => {
