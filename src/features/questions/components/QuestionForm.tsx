@@ -162,10 +162,12 @@ export function QuestionForm({ readOnly = false }: QuestionFormProps) {
 
   const questionOptions = useMemo(
     () =>
-      (questionsBySurveyQuery.data ?? []).map((question) => ({
-        value: String(question.id),
-        label: `[${question.kaynak ?? 'Bilinmiyor'}] #${question.id} - ${question.soruMetni}`,
-      })),
+      (questionsBySurveyQuery.data ?? [])
+        .filter((question) => question.aktif)
+        .map((question) => ({
+          value: String(question.id),
+          label: `[${question.kaynak ?? 'Bilinmiyor'}] #${question.id} - ${question.soruMetni}`,
+        })),
     [questionsBySurveyQuery.data],
   )
 
