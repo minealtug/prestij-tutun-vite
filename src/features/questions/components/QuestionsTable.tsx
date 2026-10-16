@@ -287,7 +287,7 @@ export function QuestionsTable({
   ]
 
   return (
-    <div className="app-table-shell">
+    <div className="app-table-shell !overflow-visible">
       {isError ? (
         <div className="p-4">
           <ErrorState
@@ -308,8 +308,9 @@ export function QuestionsTable({
           tableClassName="min-w-[72rem] app-table-cols"
           variant="plain"
           compact
-          className="!rounded-none !border-0"
-          pagination={{ pageSize: 110, pageSizeOptions: [110, 150, 200] }}
+          stickyHeader
+          fillHeight={false}
+          className="!rounded-none !border-0 !overflow-visible"
           getRowClassName={(row) =>
             row.bagliSoru || (displayMeta.get(String(row.id))?.depth ?? 0) > 0
               ? 'app-table-row--linked'

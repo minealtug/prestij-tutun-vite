@@ -166,12 +166,31 @@
     border-spacing: 0;
   }
 
+  .app-table-sticky-header thead {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background-color: #fff;
+  }
+
+  .app-table-sticky-header thead tr {
+    background-color: #fff;
+  }
+
   .app-table-sticky-header thead th {
     position: sticky;
     top: 0;
-    z-index: 20;
+    z-index: 41;
     background-color: #fff;
-    box-shadow: 0 1px 0 #e5e9ef;
+    background-clip: padding-box;
+    box-shadow:
+      0 1px 0 #e5e9ef,
+      0 -32px 0 0 #fff;
+  }
+
+  .app-table-sticky-header tbody {
+    position: relative;
+    z-index: 0;
   }
 
   .app-table-sticky-col {
@@ -184,7 +203,7 @@
   }
 
   .app-table-sticky-header thead th.app-table-sticky-col {
-    z-index: 30;
+    z-index: 42;
   }
 
   .app-table-sticky-col-last {

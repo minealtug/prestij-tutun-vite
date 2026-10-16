@@ -32,8 +32,10 @@ export interface TableProps<T> {
   compact?: boolean
   /** Tablo öğesine ek sınıflar (ör. min genişlik) */
   tableClassName?: string
-  /** Sayfa kaydırılınca thead görünür kalsın */
+  /** Başlık satırı kaydırınca yerinde kalsın */
   stickyHeader?: boolean
+  /** true: tablo gövdesi kalan yüksekliği doldurur ve içten kayar. false: tüm satırlar sayfada açılır. */
+  fillHeight?: boolean
   pagination?: {
     pageSize: number
     pageSizeOptions?: number[]
@@ -55,9 +57,11 @@ export function Table<T>({
   compact = false,
   tableClassName,
   stickyHeader = false,
+  fillHeight: fillHeightProp,
   pagination,
   onRowDoubleClick,
 }: TableProps<T>) {
+  const fillHeight = fillHeightProp ?? stickyHeader
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedPageSize, setSelectedPageSize] = useState<number | null>(null)
   const tableRef = useRef<HTMLTableElement>(null)
@@ -120,8 +124,9 @@ export function Table<T>({
   }
 
   const shellClassName = cn(
-    'w-full overflow-hidden',
-    stickyHeader && 'flex min-h-0 flex-1 flex-col',
+    'w-full',
+    fillHeight ? 'overflow-hidden' : 'overflow-visible',
+    fillHeight && 'flex min-h-0 flex-1 flex-col',
     variant === 'card' && 'app-table-shell',
     variant === 'plain' && '!p-0',
     className,
@@ -146,11 +151,11 @@ export function Table<T>({
       <div
         className={cn(
           'w-full',
-          stickyHeader
+          fillHeight && stickyHeader
             ? 'min-h-0 flex-1 overflow-auto scrollbar-visible max-md:max-h-[50vh]'
-            : horizontalScroll
+            : fillHeight && horizontalScroll
               ? 'overflow-x-auto scrollbar-visible'
-              : 'overflow-x-hidden',
+              : 'overflow-visible',
         )}
       >
         <table
