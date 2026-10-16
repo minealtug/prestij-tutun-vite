@@ -1,6 +1,8 @@
 import type { SurveyFillSoruView } from '../types/anket-yanit.types'
 import type { AnswerTypeKindLookup } from './build-answer-type-kind-lookup'
 import { isMultiSelectValueAnswered } from './multi-select-value'
+import { getSurveyFillQuestionLabel } from './is-ekici-producer-question'
+import { isQuestionAnswered } from './oturum-questions'
 import { resolveEffectiveQuestionInputKind } from './resolve-question-input-kind'
 import { getQuestionKey } from './question-key'
 
@@ -90,4 +92,38 @@ export function buildRequiredAnswersSubmitError(errorCount: number): string {
     return 'Kaydetmeden önce zorunlu soruyu yanıtlayın.'
   }
   return `Kaydetmeden önce ${errorCount} zorunlu soruyu yanıtlayın.`
+}
+
+export interface UnansweredOptionalQuestion {
+  key: string
+  label: string
+}
+
+export function listUnansweredOptionalQuestions(
+  questions: SurveyFillSoruView[],
+  answers: Record<string, string>,
+  answerTypeLookup?: AnswerTypeKindLookup,
+  manualEntryByKey: Record<string, boolean> = {},
+): UnansweredOptionalQuestion[] {
+  const items: UnansweredOptionalQuestion[] = []
+
+  for (const question of questions) {
+    if (question.zorunlu || isBakmaklaYukumluBireySayisi(question)) continue
+
+    const key = getQuestionKey(question)
+    const answered = isQuestionAnswered(
+      question,
+      answers[key] ?? '',
+      answerTypeLookup,
+      manualEntryByKey[key] ?? false,
+    )
+    if (answered) continue
+
+    items.push({
+      key,
+      label: getSurveyFillQuestionLabel(question),
+    })
+  }
+
+  return items
 }

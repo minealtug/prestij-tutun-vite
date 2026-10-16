@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { SurveyFillSoruView } from '../types/anket-yanit.types'
-import { validateSurveyFillAnswer } from './validate-survey-fill-answers'
+import {
+  listUnansweredOptionalQuestions,
+  validateSurveyFillAnswer,
+} from './validate-survey-fill-answers'
 
 function question(overrides: Partial<SurveyFillSoruView> = {}): SurveyFillSoruView {
   return {
@@ -36,3 +39,31 @@ describe('validateSurveyFillAnswer bakmakla yükümlü sayısı', () => {
     ).toBe('Bakmakla yükümlü olunan birey sayısı en az 1 olmalıdır.')
   })
 })
+
+describe('listUnansweredOptionalQuestions', () => {
+  it('lists empty optional questions and skips required ones', () => {
+    const optionalEmpty = question({
+      soruId: 2,
+      soruMetni: 'Not?',
+      cevapGirdiTipAdi: 'Kısa Metin',
+    })
+    const optionalFilled = question({
+      soruId: 3,
+      soruMetni: 'Açıklama?',
+      cevapGirdiTipAdi: 'Kısa Metin',
+    })
+    const requiredEmpty = question({
+      soruId: 4,
+      soruMetni: 'Ad?',
+      zorunlu: true,
+      cevapGirdiTipAdi: 'Kısa Metin',
+    })
+
+    expect(
+      listUnansweredOptionalQuestions(
+        [optionalEmpty, optionalFilled, requiredEmpty],
+        { 'yanit-3': 'yazıldı' },
+      ),
+    ).toEqual([{ key: 'yanit-2', label: 'Not?' }])
+  })
+}

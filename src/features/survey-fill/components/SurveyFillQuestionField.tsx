@@ -23,6 +23,7 @@ interface SurveyFillQuestionFieldProps {
   displayNumber?: number
   value: string
   error?: string
+  warning?: string
   onChange: (value: string) => void
   ekiciOptions?: SearchableSelectOption[]
   ekiciLoading?: boolean
@@ -210,6 +211,7 @@ export function SurveyFillQuestionField({
   displayNumber,
   value,
   error,
+  warning,
   onChange,
   ekiciOptions = [],
   ekiciLoading = false,
@@ -243,6 +245,7 @@ export function SurveyFillQuestionField({
         'rounded-xl border border-border/80 bg-surface-elevated/60 p-4 sm:p-5',
         question.bagliSoru && 'ml-3 border-l-4 border-l-primary-300/70 sm:ml-4',
         error && 'border-red-300/80 ring-1 ring-red-200',
+        !error && warning && 'border-amber-300/80 ring-1 ring-amber-200',
         fieldDisabled && 'opacity-70',
       )}
     >
@@ -332,6 +335,12 @@ export function SurveyFillQuestionField({
         {(kind === 'checkbox' || kind === 'multiSelect') && error && (
           <p className="mt-1.5 text-xs text-red-600" role="alert">
             {error}
+          </p>
+        )}
+
+        {!error && warning && (
+          <p className="mt-1.5 text-xs text-amber-800" role="status">
+            {warning}
           </p>
         )}
 

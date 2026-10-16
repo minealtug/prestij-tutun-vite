@@ -108,7 +108,7 @@ export function getCurrentOturumQuestion(
   return visible.find((soru) => !soru.yanitlandi) ?? null
 }
 
-function isQuestionAnswered(
+export function isQuestionAnswered(
   question: AnketYanitSoruDto,
   value: string,
   answerTypeLookup?: AnswerTypeKindLookup,

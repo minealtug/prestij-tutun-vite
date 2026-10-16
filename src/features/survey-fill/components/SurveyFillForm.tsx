@@ -41,6 +41,7 @@ import {
   getFormFillProgress,
   getQuestionDisplayNumber,
   getQuestionsToSubmit,
+  isQuestionAnswered,
   sortOturumQuestionsForFill,
 } from '../utils/oturum-questions'
 import { sortSurveyFillQuestions } from '../utils/sort-survey-fill-questions'
@@ -51,6 +52,8 @@ import {
   validateSurveyFillAnswer,
   buildRequiredAnswersSubmitError,
   isBakmaklaYukumluBireySayisi,
+  listUnansweredOptionalQuestions,
+  type UnansweredOptionalQuestion,
 } from '../utils/validate-survey-fill-answers'
 import {
   applyManualEntryInitialAnswers,
@@ -183,6 +186,7 @@ export function SurveyFillForm({
   const [manualEntryByKey, setManualEntryByKey] = useState<Record<string, boolean>>({})
   const [lockedAnswerKeys, setLockedAnswerKeys] = useState<Record<string, boolean>>({})
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [unansweredOptional, setUnansweredOptional] = useState<UnansweredOptionalQuestion[]>([])
   const [submitError, setSubmitError] = useState('')
 
   const templateQuestions = useMemo(
@@ -417,6 +421,7 @@ export function SurveyFillForm({
     setLockedAnswerKeys({})
     kontratSahibiAutofillSignatureRef.current = ''
     setFieldErrors({})
+    setUnansweredOptional([])
     setSubmitError('')
     setSuccessModalOpen(false)
     deepLinkBootstrapKeyRef.current = ''
@@ -471,6 +476,7 @@ export function SurveyFillForm({
     setLockedAnswerKeys({})
     kontratSahibiAutofillSignatureRef.current = ''
     setFieldErrors({})
+    setUnansweredOptional([])
     setSubmitError('')
   }, [geoFilterKey])
 
@@ -489,6 +495,7 @@ export function SurveyFillForm({
       setAnswers(answersWithManual)
       setInitialAnswers(answersWithManual)
       setFieldErrors({})
+      setUnansweredOptional([])
       setSubmitError('')
       return
     }
@@ -504,6 +511,7 @@ export function SurveyFillForm({
     setAnswers(answersWithManual)
     setInitialAnswers(answersWithManual)
     setFieldErrors({})
+    setUnansweredOptional([])
     setSubmitError('')
   }, [
     oturumQuery.dataUpdatedAt,
@@ -605,7 +613,34 @@ export function SurveyFillForm({
     setLockedAnswerKeys({})
     kontratSahibiAutofillSignatureRef.current = ''
     setFieldErrors({})
+    setUnansweredOptional([])
     setSubmitError('')
+  }
+
+  const collectUnansweredOptional = () =>
+    listUnansweredOptionalQuestions(
+      visibleQuestions,
+      answers,
+      answerTypeLookup,
+      manualEntryByKey,
+    ).map((item) => {
+      const question = visibleQuestions.find((entry) => getQuestionKey(entry) === item.key)
+      const displayNumber = question
+        ? getQuestionDisplayNumber(visibleQuestions, question)
+        : undefined
+      return {
+        ...item,
+        label:
+          displayNumber != null ? `Soru ${displayNumber}: ${item.label}` : item.label,
+      }
+    })
+
+  const scrollToQuestion = (key: string) => {
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`survey-fill-question-${key}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
   }
 
   const handleAnswerChange = (key: string, value: string) => {
@@ -628,6 +663,17 @@ export function SurveyFillForm({
       return next
     })
     if (submitError) setSubmitError('')
+    setUnansweredOptional((prev) => {
+      if (!prev.some((item) => item.key === key)) return prev
+      if (!question) return prev.filter((item) => item.key !== key)
+      const answered = isQuestionAnswered(
+        question,
+        value,
+        answerTypeLookup,
+        manualEntryByKey[key] ?? false,
+      )
+      return answered ? prev.filter((item) => item.key !== key) : prev
+    })
   }
 
   const handleEnableManualEntry = (key: string) => {
@@ -690,6 +736,9 @@ export function SurveyFillForm({
       return
     }
 
+    const optionalUnanswered = collectUnansweredOptional()
+    setUnansweredOptional(optionalUnanswered)
+
     if (mode === 'full') {
       const validationErrors = validateSurveyFillAnswers(
         visibleQuestions,
@@ -705,10 +754,7 @@ export function SurveyFillForm({
           (question) => validationErrors[getQuestionKey(question)],
         )
         if (firstInvalidQuestion) {
-          const elementId = `survey-fill-question-${getQuestionKey(firstInvalidQuestion)}`
-          requestAnimationFrame(() => {
-            document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          })
+          scrollToQuestion(getQuestionKey(firstInvalidQuestion))
         }
         return
       }
@@ -877,6 +923,11 @@ export function SurveyFillForm({
             displayNumber={getQuestionDisplayNumber(visibleQuestions, question)}
             value={answers[key] ?? ''}
             error={fieldErrors[key]}
+            warning={
+              unansweredOptional.some((item) => item.key === key)
+                ? 'Bu soru boş bırakıldı (zorunlu değil).'
+                : undefined
+            }
             onChange={(value) => handleAnswerChange(key, value)}
             selectLoading={altSeceneklerQuery.isLoading}
             answerTypeLookup={answerTypeLookup}
@@ -1027,6 +1078,34 @@ export function SurveyFillForm({
             </p>
           )}
 
+          {unansweredOptional.length > 0 && (
+            <div
+              className="mb-3 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+              role="status"
+            >
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
+              <div className="min-w-0 space-y-2">
+                <p>
+                  Zorunlu olmayan {unansweredOptional.length} soru boş bırakıldı.
+                  Kayıt bunlardan etkilenmez; soruya gitmek için listeden seçin.
+                </p>
+                <ul className="max-h-40 space-y-1 overflow-y-auto">
+                  {unansweredOptional.map((item) => (
+                    <li key={item.key}>
+                      <button
+                        type="button"
+                        className="text-left font-medium text-amber-900 underline decoration-amber-400 underline-offset-2 hover:text-amber-950"
+                        onClick={() => scrollToQuestion(item.key)}
+                      >
+                        {item.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap justify-end gap-2">
             <Button
               variant="outline"
@@ -1064,6 +1143,7 @@ export function SurveyFillForm({
         onClose={() => setSuccessModalOpen(false)}
         answeredCount={lastSavedCount}
         variant={successModalVariant}
+        unansweredOptional={unansweredOptional}
       />
     </>
   )
