@@ -20,7 +20,7 @@ function getEkiciFullName(ad: string, soyad: string): string {
 }
 
 export function MySurveyResponsesPage() {
-  const { canRead, loading: permissionLoading } = useRequirePagePermission()
+  const { canRead, canEdit, loading: permissionLoading } = useRequirePagePermission()
   const userId = useAuthStore((state) => state.user?.id)
   const authUser = useAuthStore((state) => state.user)
   const responsesQuery = useMySurveyResponses(userId)
@@ -155,6 +155,8 @@ export function MySurveyResponsesPage() {
           onRefresh={() => void responsesQuery.refetch()}
           columnBorders
           showAnswerCounts
+          canEditRow={canRead || canEdit}
+          editOwnAnswers
         />
       </Card>
     </PageContainer>

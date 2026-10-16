@@ -29,6 +29,8 @@ interface SurveyResponsesTableProps {
   onToggleRow?: (id: string, checked: boolean) => void
   onToggleAll?: (ids: string[], checked: boolean) => void
   canEditRow?: boolean
+  /** Cevapladığım Anketler: kaydı /cevap/kendi ile güncelle */
+  editOwnAnswers?: boolean
 }
 
 function formatAnswerCount(value: number) {
@@ -59,6 +61,7 @@ export function SurveyResponsesTable({
   onToggleRow,
   onToggleAll,
   canEditRow = false,
+  editOwnAnswers = false,
 }: SurveyResponsesTableProps) {
   const navigate = useNavigate()
   const columnCount = (showAnswerCounts ? 7 : 5) + (selectable ? 1 : 0)
@@ -234,6 +237,7 @@ export function SurveyResponsesTable({
                                     ekiciId: row.ekiciId,
                                     mintikaId: row.mintikaId,
                                     duzenle: true,
+                                    kendiCevap: editOwnAnswers,
                                   }),
                                 )
                               }}

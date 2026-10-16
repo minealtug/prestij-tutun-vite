@@ -45,6 +45,7 @@ export function SurveyFillPage() {
     setDeepLink(parsed)
     const nextParams: Record<string, string> = { baslikId: String(parsed.baslikId) }
     if (parsed.duzenle) nextParams.duzenle = '1'
+    if (parsed.kendiCevap) nextParams.kendi = '1'
     setSearchParams(nextParams, { replace: true })
   }, [searchParams, setSearchParams])
 
@@ -53,6 +54,7 @@ export function SurveyFillPage() {
     if (selectedBaslikId <= 0) return
     const nextParams: Record<string, string> = { baslikId: String(selectedBaslikId) }
     if (searchParams.get('duzenle') === '1') nextParams.duzenle = '1'
+    if (searchParams.get('kendi') === '1') nextParams.kendi = '1'
     setSearchParams(nextParams, { replace: true })
   }, [searchParams, selectedBaslikId, setSearchParams])
 
@@ -124,7 +126,9 @@ export function SurveyFillPage() {
 
   const activeDeepLink =
     deepLink && deepLink.baslikId === selectedBaslikId ? deepLink : null
-  const editingAnsweredSurvey = activeDeepLink?.duzenle === true && canEditAnsweredSurveys
+  const editingOwnSurvey = activeDeepLink?.kendiCevap === true
+  const editingAnsweredSurvey =
+    (activeDeepLink?.duzenle === true && canEditAnsweredSurveys) || editingOwnSurvey
 
   if (permissionLoading) {
     return (
@@ -169,6 +173,7 @@ export function SurveyFillPage() {
             initialEkiciId={activeDeepLink?.ekiciId ?? null}
             initialGeoFilters={activeDeepLink}
             allowCompletedEdit={editingAnsweredSurvey}
+            useOwnCevapEndpoint={editingOwnSurvey}
             canSubmit={(editingAnsweredSurvey || canEdit) && selectedSablonId > 0}
             onRefreshSablonlar={() => void sablonlarQuery.refetch()}
           />

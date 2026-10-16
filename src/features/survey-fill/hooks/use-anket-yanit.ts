@@ -41,6 +41,14 @@ export function useSubmitAnketYanitCevap() {
   })
 }
 
+function invalidateAfterCevapSave(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({
+    predicate: (query) =>
+      query.queryKey[0] === 'survey-fill' && query.queryKey[1] === 'oturum',
+  })
+  void queryClient.invalidateQueries({ queryKey: ['survey-responses'] })
+}
+
 export function useSubmitAnketYanitCevapBatch() {
   const queryClient = useQueryClient()
 
@@ -49,12 +57,25 @@ export function useSubmitAnketYanitCevapBatch() {
       const batchRequest = buildAnketYanitCevapBatchRequest(payloads)
       return anketYanitApi.submitCevapBatch(batchRequest)
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        predicate: (query) =>
-          query.queryKey[0] === 'survey-fill' && query.queryKey[1] === 'oturum',
-      })
-      void queryClient.invalidateQueries({ queryKey: ['survey-responses'] })
+    onSuccess: () => invalidateAfterCevapSave(queryClient),
+  })
+}
+
+export function useSubmitOwnAnketYanitCevaplar() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payloads: AnketYanitCevapRequest[]) => {
+      if (payloads.length === 0) {
+        throw new Error('Kaydedilecek cevap bulunamadi.')
+      }
+
+      for (const payload of payloads) {
+        await anketYanitApi.submitOwnCevap(payload)
+      }
+
+      return { savedCount: payloads.length }
     },
+    onSuccess: () => invalidateAfterCevapSave(queryClient),
   })
 }

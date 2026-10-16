@@ -7,6 +7,8 @@ export interface SurveyFillDeepLinkParams extends CografiFiltreQueryParams {
   sablonId?: number
   ekiciId: string
   duzenle?: boolean
+  /** Cevapladığım Anketler’den kendi cevabını düzenleme */
+  kendiCevap?: boolean
 }
 
 function parsePositiveIntParam(value: string | null): number | undefined {
@@ -40,6 +42,9 @@ export function buildSurveyFillDeepLink(params: SurveyFillDeepLinkParams): strin
   if (params.duzenle) {
     search.set('duzenle', '1')
   }
+  if (params.kendiCevap) {
+    search.set('kendi', '1')
+  }
   return `/anket-doldurma?${search.toString()}`
 }
 
@@ -60,6 +65,7 @@ export function parseSurveyFillDeepLink(
     alimNoktasiId: parsePositiveIntParam(searchParams.get('alimNoktasiId')),
     koyId: parsePositiveIntParam(searchParams.get('koyId')),
     duzenle: searchParams.get('duzenle') === '1',
+    kendiCevap: searchParams.get('kendi') === '1',
   }
 }
 

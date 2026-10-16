@@ -13,14 +13,22 @@ export function useRequirePagePermission() {
     usePermissions()
 
   const path = normalizeUrl(location.pathname)
+  const searchParams = new URLSearchParams(location.search)
   const canEditAnsweredSurveys = hasAssignedWrite('/anket-cevaplari')
   const editingAnsweredSurvey =
     path === '/anket-doldurma' &&
-    new URLSearchParams(location.search).get('duzenle') === '1' &&
+    searchParams.get('duzenle') === '1' &&
     canEditAnsweredSurveys
+  const editingOwnSurvey =
+    path === '/anket-doldurma' &&
+    searchParams.get('kendi') === '1' &&
+    hasReadPermission('/cevapladigim-anketler')
   const canRead =
-    (isAdminOnlyPath(path) ? isAdmin : hasReadPermission(path)) || editingAnsweredSurvey
-  const canEdit = hasWritePermission(path) || editingAnsweredSurvey
+    (isAdminOnlyPath(path) ? isAdmin : hasReadPermission(path)) ||
+    editingAnsweredSurvey ||
+    editingOwnSurvey
+  const canEdit =
+    hasWritePermission(path) || editingAnsweredSurvey || editingOwnSurvey
 
   useEffect(() => {
     if (loading) return

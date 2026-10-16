@@ -18,6 +18,7 @@ import { SurveyFillQuestionField } from './SurveyFillQuestionField'
 import {
   useAnketYanitOturum,
   useSubmitAnketYanitCevapBatch,
+  useSubmitOwnAnketYanitCevaplar,
 } from '../hooks/use-anket-yanit'
 import { isAnketCevapNotFoundError } from '../api/anket-yanit-api'
 import { useAltSeceneklerByGrupIds } from '../hooks/use-alt-secenekler'
@@ -82,6 +83,8 @@ interface SurveyFillFormProps {
   > | null
   canSubmit?: boolean
   allowCompletedEdit?: boolean
+  /** Cevapladığım Anketler düzenlemesi: /api/AnketYanit/cevap/kendi */
+  useOwnCevapEndpoint?: boolean
   onRefreshSablonlar?: () => void
 }
 
@@ -94,6 +97,7 @@ export function SurveyFillForm({
   initialGeoFilters = null,
   canSubmit = true,
   allowCompletedEdit = false,
+  useOwnCevapEndpoint = false,
   onRefreshSablonlar,
 }: SurveyFillFormProps) {
   const [sessionEkiciId, setSessionEkiciId] = useState<string | null>(null)
@@ -108,6 +112,8 @@ export function SurveyFillForm({
   )
   const effectiveBaslikId = baslikId
   const submitCevapBatch = useSubmitAnketYanitCevapBatch()
+  const submitOwnCevaplar = useSubmitOwnAnketYanitCevaplar()
+  const submitMutation = useOwnCevapEndpoint ? submitOwnCevaplar : submitCevapBatch
   const answerInputTypesQuery = useAnswerInputTypes()
   const questionDefinitionsQuery = useQuestions(
     effectiveBaslikId > 0 ? effectiveBaslikId : undefined,
@@ -809,7 +815,7 @@ export function SurveyFillForm({
 
     const savedCount = questionsToSubmit.length
 
-    submitCevapBatch.mutate(payloads, {
+    submitMutation.mutate(payloads, {
       onSuccess: () => {
         setLastSavedCount(savedCount)
         setInitialAnswers({ ...answers })
@@ -1121,7 +1127,7 @@ export function SurveyFillForm({
                 surveyEditLocked ||
                 draftQuestionsToSubmit.length === 0
               }
-              loading={submitCevapBatch.isPending || oturumQuery.isFetching}
+              loading={submitMutation.isPending || oturumQuery.isFetching}
             >
               <FilePen className="h-4 w-4" />
               Cevaplanan soruları taslağa kaydet
@@ -1134,7 +1140,7 @@ export function SurveyFillForm({
                 isSelectedEkiciPassive ||
                 surveyEditLocked
               }
-              loading={submitCevapBatch.isPending || oturumQuery.isFetching}
+              loading={submitMutation.isPending || oturumQuery.isFetching}
             >
               <Save className="h-4 w-4" />
               Cevapları Kaydet
