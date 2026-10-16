@@ -159,19 +159,48 @@ function renderAnswerControl(
     )
   }
 
+  const isNumber = kind === 'number'
+
   return (
     <Input
       id={fieldId}
       label={label}
-      type={kind === 'number' ? 'number' : 'text'}
+      type={isNumber ? 'number' : 'text'}
+      inputMode={isNumber ? 'decimal' : undefined}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => {
+        const next = isNumber ? e.target.value.replace(/[eE+]/g, '') : e.target.value
+        onChange(next)
+      }}
+      onKeyDown={
+        isNumber
+          ? (e) => {
+              if (e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault()
+            }
+          : undefined
+      }
+      onBeforeInput={
+        isNumber
+          ? (e) => {
+              const data = (e.nativeEvent as InputEvent).data
+              if (typeof data === 'string' && /[eE+]/.test(data)) e.preventDefault()
+            }
+          : undefined
+      }
+      onPaste={
+        isNumber
+          ? (e) => {
+              const text = e.clipboardData.getData('text')
+              if (/[eE+]/.test(text)) e.preventDefault()
+            }
+          : undefined
+      }
       placeholder={kind === 'date' ? 'GG.AA.YYYY' : 'Cevabınızı girin'}
       error={error}
       hint={hint}
       disabled={disabled}
-      min={kind === 'number' ? min : undefined}
-      step={kind === 'number' ? step : undefined}
+      min={isNumber ? min : undefined}
+      step={isNumber ? step : undefined}
     />
   )
 }
