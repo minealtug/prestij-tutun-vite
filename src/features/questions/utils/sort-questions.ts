@@ -73,6 +73,27 @@ function flattenQuestionTree(nodes: QuestionNode[]): QuestionDto[] {
   return result
 }
 
+export interface QuestionDisplayMeta {
+  depth: number
+  outline: string
+}
+
+export function getQuestionDisplayMeta(questions: QuestionDto[]): Map<string, QuestionDisplayMeta> {
+  const map = new Map<string, QuestionDisplayMeta>()
+  if (questions.length === 0) return map
+
+  const walk = (nodes: QuestionNode[], depth: number, prefix: string) => {
+    nodes.forEach((node, index) => {
+      const outline = prefix ? `${prefix}.${index + 1}` : String(index + 1)
+      map.set(questionKey(node.question), { depth, outline })
+      walk(node.children, depth + 1, outline)
+    })
+  }
+
+  walk(buildQuestionTree(sortQuestionsForSurvey(questions)), 0, '')
+  return map
+}
+
 export function sortQuestionsForSurvey(questions: QuestionDto[]): QuestionDto[] {
   if (questions.length <= 1) return questions
 

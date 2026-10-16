@@ -1,9 +1,10 @@
-import { Pencil, Ban, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
+import { Pencil, Ban, Trash2, ChevronUp, ChevronDown, CornerDownRight } from 'lucide-react'
 import { useMemo } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Table, type TableColumn } from '@/components/ui/Table'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { useAnswerUnits } from '@/features/answer-units/hooks/use-answer-units'
+import { cn } from '@/lib/utils/cn'
 import type { QuestionDto } from '../types/question.types'
 import { getFriendlyAnswerTypeLabel } from '../utils/answer-type-label'
 import { getBagliKosulTipiLabel } from '../utils/bagli-kosul-tipi'
@@ -13,7 +14,10 @@ import {
   resolveCevapGirdiTipAdi,
   resolveCevapGirdiTipId,
 } from '../utils/resolve-question-cevap-girdi-tip'
-import type { QuestionMoveDirection } from '../utils/sort-questions'
+import {
+  getQuestionDisplayMeta,
+  type QuestionMoveDirection,
+} from '../utils/sort-questions'
 
 function resolveBaslikAdi(row: QuestionDto & { baslik?: { adi?: string | null } }) {
   return row.baslikAdi?.trim() || row.baslik?.adi?.trim() || null
@@ -75,6 +79,7 @@ export function QuestionsTable({
     }
     return map
   }, [answerUnitsQuery.data])
+  const displayMeta = useMemo(() => getQuestionDisplayMeta(data), [data])
 
   const columns: TableColumn<QuestionDto>[] = [
     ...(onMove
@@ -82,40 +87,36 @@ export function QuestionsTable({
           {
             key: 'sira',
             header: 'SIRA',
-            className: 'w-28',
+            className: 'w-32',
             render: (row: QuestionDto) => {
               const moveState = getMoveState?.(row) ?? { canMoveUp: false, canMoveDown: false }
-              const showMoveButtons = !row.bagliSoru
+              const outline = displayMeta.get(String(row.id))?.outline ?? (row.siraNo != null ? String(row.siraNo) : '—')
 
               return (
                 <div className="flex items-center gap-1">
-                  <span className="w-6 text-center text-xs font-semibold text-muted">
-                    {row.siraNo ?? '—'}
+                  <span className="min-w-8 text-center text-xs font-semibold tabular-nums text-muted">
+                    {outline}
                   </span>
-                  {showMoveButtons ? (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="!h-7 !w-7 !p-0"
-                        aria-label="Yukarı taşı"
-                        disabled={isUpdating || !moveState.canMoveUp}
-                        onClick={() => onMove(row, 'up')}
-                      >
-                        <ChevronUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="!h-7 !w-7 !p-0"
-                        aria-label="Aşağı taşı"
-                        disabled={isUpdating || !moveState.canMoveDown}
-                        onClick={() => onMove(row, 'down')}
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </>
-                  ) : null}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="!h-7 !w-7 !p-0"
+                    aria-label="Yukarı taşı"
+                    disabled={isUpdating || !moveState.canMoveUp}
+                    onClick={() => onMove(row, 'up')}
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="!h-7 !w-7 !p-0"
+                    aria-label="Aşağı taşı"
+                    disabled={isUpdating || !moveState.canMoveDown}
+                    onClick={() => onMove(row, 'down')}
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
                 </div>
               )
             },
@@ -144,12 +145,32 @@ export function QuestionsTable({
       className: 'min-w-[16rem] whitespace-normal sm:min-w-[20rem] lg:min-w-[24rem]',
       render: (row) => {
         const birimAdi = resolveQuestionBirimAdi(row, unitsById)
+        const depth = displayMeta.get(String(row.id))?.depth ?? (row.bagliSoru ? 1 : 0)
+        const isLinked = row.bagliSoru || depth > 0
 
         return (
-          <span className={row.bagliSoru ? 'whitespace-normal break-words pl-4' : 'whitespace-normal break-words'}>
-            {row.soruMetni}
-            {birimAdi ? <span className="text-muted"> ({birimAdi})</span> : null}
-          </span>
+          <div
+            className={cn(
+              'flex items-start gap-2 whitespace-normal break-words',
+              isLinked && 'border-l-2 border-primary-300 py-0.5 pl-2',
+            )}
+            style={depth > 1 ? { marginLeft: (depth - 1) * 16 } : undefined}
+          >
+            {isLinked ? (
+              <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-700">
+                <CornerDownRight className="h-3 w-3" aria-hidden />
+                {depth > 1 ? 'Alt bağlı' : 'Bağlı'}
+              </span>
+            ) : (
+              <span className="mt-0.5 inline-flex shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                Ana
+              </span>
+            )}
+            <span className={cn('min-w-0', !isLinked && 'font-medium text-foreground')}>
+              {row.soruMetni}
+              {birimAdi ? <span className="text-muted"> ({birimAdi})</span> : null}
+            </span>
+          </div>
         )
       },
     },
@@ -183,7 +204,7 @@ export function QuestionsTable({
       key: 'bagliSoru',
       header: 'BAĞLI',
       className: 'w-24',
-      render: (row) => (row.bagliSoru ? 'Evet' : 'Hayır'),
+      render: (row) => (row.bagliSoru ? 'Bağlı' : 'Ana'),
     },
     {
       key: 'bagliOlduguSoru',
@@ -289,6 +310,11 @@ export function QuestionsTable({
           compact
           className="!rounded-none !border-0"
           pagination={{ pageSize: 110, pageSizeOptions: [110, 150, 200] }}
+          getRowClassName={(row) =>
+            row.bagliSoru || (displayMeta.get(String(row.id))?.depth ?? 0) > 0
+              ? 'app-table-row--linked'
+              : undefined
+          }
         />
       )}
     </div>

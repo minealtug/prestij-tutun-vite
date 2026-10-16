@@ -279,7 +279,7 @@ export function QuestionsPage() {
   const canReorder = canEdit && isDefinitionsPage && selectedSurveyId > 0 && !search.trim()
 
   const handleMove = (question: QuestionDto, direction: QuestionMoveDirection) => {
-    if (!canReorder || reorderQuestions.isPending || question.bagliSoru) return
+    if (!canReorder || reorderQuestions.isPending) return
     const next = moveQuestionInSurvey(currentQuestions, question.id, direction)
     const unchanged = next.every(
       (item, index) => String(item.id) === String(currentQuestions[index]?.id),
@@ -362,7 +362,7 @@ export function QuestionsPage() {
 
       {isDefinitionsPage && canReorder ? (
         <p className="-mt-2 text-xs text-muted">
-          Oklarla anket içindeki soru sırasını değiştirin. Bağlı sorular üst sorunun altında kalır.
+          Oklarla anket içindeki soru sırasını değiştirin. Ana sorular kendi aralarında; bağlı sorular üst sorularının altında kendi içlerinde sıralanır.
         </p>
       ) : null}
 

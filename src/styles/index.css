@@ -149,6 +149,14 @@
     @apply bg-green-100/70;
   }
 
+  .app-table tbody tr.app-table-row--linked {
+    background-color: #f5f8fb;
+  }
+
+  .app-table tbody tr.app-table-row--linked:hover {
+    @apply bg-primary-50;
+  }
+
   .app-table td {
     @apply px-4 py-3 text-sm text-foreground/80;
   }
