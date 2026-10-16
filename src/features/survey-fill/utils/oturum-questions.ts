@@ -1,7 +1,12 @@
 import type { QuestionDto } from '@/features/questions/types/question.types'
 import { resolveQuestionBirimAdi } from '@/features/questions/utils/resolve-question-birim-adi'
 import { normalizeBagliKosulTipi } from '@/features/questions/utils/bagli-kosul-tipi'
-import type { AnketYanitOturumDto, AnketYanitSoruDto } from '../types/anket-yanit.types'
+import type {
+  AnketYanitKayitliCevap,
+  AnketYanitOturumDto,
+  AnketYanitSoruDto,
+  SurveyFillSoruView,
+} from '../types/anket-yanit.types'
 import type { AnswerTypeKindLookup } from './build-answer-type-kind-lookup'
 import { isEkiciProducerQuestion } from './is-ekici-producer-question'
 import {
@@ -10,7 +15,7 @@ import {
 } from './multi-select-value'
 import { formatDisplayDate } from './date-input-value'
 import { parseBagliKosullar } from './bagli-kosullar'
-import { getQuestionKey } from './question-key'
+import { getQuestionKey, listParentIds, usesSeparateParentAnswers } from './question-key'
 import { resolveEffectiveQuestionInputKind } from './resolve-question-input-kind'
 import { sortQuestionsUnderParents } from './sort-survey-fill-questions'
 
@@ -111,7 +116,7 @@ export function getCurrentOturumQuestion(
 }
 
 export function isQuestionAnswered(
-  question: AnketYanitSoruDto,
+  question: SurveyFillSoruView,
   value: string,
   answerTypeLookup?: AnswerTypeKindLookup,
   useManualEntry = false,
@@ -139,6 +144,7 @@ export function isQuestionAnswered(
 }
 
 function hasPersistedAnswer(question: AnketYanitSoruDto): boolean {
+  if (usesSeparateParentAnswers(question)) return false
   if (!question.yanitlandi) return false
   return (
     (question.cevapAltSecenekIds?.length ?? 0) > 0 ||
@@ -148,11 +154,12 @@ function hasPersistedAnswer(question: AnketYanitSoruDto): boolean {
   )
 }
 
-function uniqueQuestionsBySoruId(questions: AnketYanitSoruDto[]): AnketYanitSoruDto[] {
-  const seen = new Set<number>()
+function uniqueQuestionsByAnswerKey(questions: AnketYanitSoruDto[]): AnketYanitSoruDto[] {
+  const seen = new Set<string>()
   return questions.filter((question) => {
-    if (seen.has(question.soruId)) return false
-    seen.add(question.soruId)
+    const key = getQuestionKey(question)
+    if (seen.has(key)) return false
+    seen.add(key)
     return true
   })
 }
@@ -164,7 +171,7 @@ export function getFormFillProgress(
   answerTypeLookup?: AnswerTypeKindLookup,
   manualEntryByKey: Record<string, boolean> = {},
 ) {
-  const uniqueQuestions = uniqueQuestionsBySoruId(questions)
+  const uniqueQuestions = uniqueQuestionsByAnswerKey(questions)
   const total = uniqueQuestions.length
   const answered = uniqueQuestions.filter((question) => {
     const key = getQuestionKey(question)
@@ -225,6 +232,50 @@ export function getInitialAnswerValue(
   return ''
 }
 
+function withStoredAnswer(
+  question: AnketYanitSoruDto,
+  stored: AnketYanitKayitliCevap | null,
+): AnketYanitSoruDto {
+  if (!stored) {
+    return {
+      ...question,
+      yanitlandi: false,
+      cevapText: null,
+      cevapAltSecenekId: null,
+      cevapAltSecenekIds: [],
+      ekiciId: null,
+    }
+  }
+
+  return {
+    ...question,
+    yanitlandi: true,
+    cevapText: stored.cevapText,
+    cevapAltSecenekId: stored.cevapAltSecenekId,
+    cevapAltSecenekIds: stored.cevapAltSecenekIds ?? [],
+    ekiciId: stored.ekiciId,
+  }
+}
+
+function resolveStoredParentAnswer(
+  question: AnketYanitSoruDto,
+  parentId: number,
+  primaryParentId: number,
+): AnketYanitSoruDto {
+  const storedForParent = (question.ustSoruCevaplari ?? []).find(
+    (cevap) => cevap.ustSoruId === parentId,
+  )
+  if (storedForParent) return withStoredAnswer(question, storedForParent)
+
+  if (parentId === primaryParentId) {
+    const unscoped = (question.ustSoruCevaplari ?? []).find((cevap) => cevap.ustSoruId == null)
+    if (unscoped) return withStoredAnswer(question, unscoped)
+    return question
+  }
+
+  return withStoredAnswer(question, null)
+}
+
 export function buildInitialAnswersMap(
   questions: AnketYanitSoruDto[],
   sessionEkiciId?: string | null,
@@ -232,11 +283,29 @@ export function buildInitialAnswersMap(
 ): Record<string, string> {
   const answers: Record<string, string> = {}
   for (const question of questions) {
-    answers[getQuestionKey(question)] = getInitialAnswerValue(
-      question,
-      sessionEkiciId,
-      answerTypeLookup,
-    )
+    if (!usesSeparateParentAnswers(question)) {
+      answers[getQuestionKey(question)] = getInitialAnswerValue(
+        question,
+        sessionEkiciId,
+        answerTypeLookup,
+      )
+      continue
+    }
+
+    const parents = listParentIds(question)
+    const primaryParentId =
+      question.bagliOlduguSoruId != null && parents.includes(question.bagliOlduguSoruId)
+        ? question.bagliOlduguSoruId
+        : parents[0]
+
+    for (const parentId of parents) {
+      const source = resolveStoredParentAnswer(question, parentId, primaryParentId ?? parentId)
+      answers[getQuestionKey({ ...question, bagliOlduguSoruId: parentId })] = getInitialAnswerValue(
+        source,
+        sessionEkiciId,
+        answerTypeLookup,
+      )
+    }
   }
   return answers
 }
@@ -263,13 +332,15 @@ export function getQuestionsToSubmit(
   answers: Record<string, string>,
   initialAnswers: Record<string, string>,
 ): AnketYanitSoruDto[] {
-  return uniqueQuestionsBySoruId(questions).filter((question) => {
+  return uniqueQuestionsByAnswerKey(questions).filter((question) => {
     const key = getQuestionKey(question)
     const value = answers[key] ?? ''
     const initial = initialAnswers[key] ?? ''
 
     if (!value.trim() && !question.zorunlu) return false
-    if (question.yanitlandi && value === initial) return false
+    if (value === initial && (question.yanitlandi || usesSeparateParentAnswers(question))) {
+      return false
+    }
 
     return true
   })
@@ -282,7 +353,7 @@ export function getDraftQuestionsToSubmit(
   answerTypeLookup?: AnswerTypeKindLookup,
   manualEntryByKey: Record<string, boolean> = {},
 ): AnketYanitSoruDto[] {
-  return uniqueQuestionsBySoruId(questions).filter((question) => {
+  return uniqueQuestionsByAnswerKey(questions).filter((question) => {
     const key = getQuestionKey(question)
     const value = answers[key] ?? ''
     const initial = initialAnswers[key] ?? ''

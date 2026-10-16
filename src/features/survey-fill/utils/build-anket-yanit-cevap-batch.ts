@@ -25,6 +25,7 @@ export function buildAnketYanitCevapBatchRequest(
       cevapAltSecenekId: payload.cevapAltSecenekId ?? null,
       cevapAltSecenekIds: payload.cevapAltSecenekIds ?? null,
       birimId: payload.birimId ?? null,
+      ustSoruId: payload.ustSoruId ?? null,
     })),
   }
 }

@@ -107,9 +107,10 @@ describe('filterVisibleQuestionsForFill bagliKosullar', () => {
     })
 
     expect(visible.map((item) => item.soruId)).toEqual([10, 30, 20, 30])
-    expect(visible.filter((item) => item.soruId === 30).map((item) => item.bagliOlduguSoruId)).toEqual([
-      10, 20,
-    ])
+    const copies = visible.filter((item) => item.soruId === 30)
+    expect(copies.map((item) => item.bagliOlduguSoruId)).toEqual([10, 20])
+    expect(getQuestionKey(copies[0]!)).toBe('yanit-30-parent-10')
+    expect(getQuestionKey(copies[1]!)).toBe('yanit-30-parent-20')
   })
 
   it('shows the child when the second parent selects its own Diğer option with a different id', () => {

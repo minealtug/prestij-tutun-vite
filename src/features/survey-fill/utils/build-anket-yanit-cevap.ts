@@ -2,6 +2,7 @@ import type { AnketYanitCevapRequest, AnketYanitSoruDto } from '../types/anket-y
 import type { AnswerTypeKindLookup } from './build-answer-type-kind-lookup'
 import { parseMultiSelectValue } from './multi-select-value'
 import { toDateOnlyApiValue } from './date-input-value'
+import { usesSeparateParentAnswers } from './question-key'
 import { resolveEffectiveQuestionInputKind } from './resolve-question-input-kind'
 
 export function buildAnketYanitCevapRequest(
@@ -20,12 +21,18 @@ export function buildAnketYanitCevapRequest(
   const withBirim = (payload: AnketYanitCevapRequest): AnketYanitCevapRequest =>
     birimId != null ? { ...payload, birimId } : payload
 
+  const ustSoruId =
+    usesSeparateParentAnswers(soru) && soru.bagliOlduguSoruId != null && soru.bagliOlduguSoruId > 0
+      ? soru.bagliOlduguSoruId
+      : null
+
   const base: AnketYanitCevapRequest = {
     baslikId,
     sablonId,
     soruId: soru.soruId,
     ekiciId: sessionEkiciId,
     mintikaId,
+    ...(ustSoruId != null ? { ustSoruId } : {}),
   }
 
   if (kind === 'ekici') {

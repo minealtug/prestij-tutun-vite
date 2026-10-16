@@ -1,6 +1,7 @@
 import { normalizeBagliKosulTipi } from '@/features/questions/utils/bagli-kosul-tipi'
 import type {
   AnketSablonDto,
+  AnketYanitKayitliCevap,
   AnketYanitOturumDto,
   AnketYanitSoruDto,
 } from '../types/anket-yanit.types'
@@ -94,6 +95,25 @@ function readCevapFields(cevapRaw: unknown) {
     cevapAltSecenekIds,
     ekiciId: ekiciRaw != null ? String(ekiciRaw) : null,
   }
+}
+
+function readUstSoruCevaplari(raw: unknown): AnketYanitKayitliCevap[] {
+  if (!Array.isArray(raw)) return []
+
+  return raw.flatMap((item) => {
+    const row = asRecord(item)
+    if (Object.keys(row).length === 0) return []
+    const fields = readCevapFields(row)
+    return [
+      {
+        ustSoruId: readOptionalPositiveId(pick(row, 'ustSoruId', 'UstSoruId')),
+        cevapText: fields.cevapText,
+        cevapAltSecenekId: fields.cevapAltSecenekId,
+        cevapAltSecenekIds: fields.cevapAltSecenekIds,
+        ekiciId: fields.ekiciId,
+      },
+    ]
+  })
 }
 
 function readAltSecenekler(raw: unknown) {
@@ -281,6 +301,7 @@ export function mapAnketYanitSoruFromApi(
     ekiciId:
       cevapFields.ekiciId ??
       (pick(row, 'ekiciId', 'EkiciId') != null ? String(pick(row, 'ekiciId', 'EkiciId')) : null),
+    ustSoruCevaplari: readUstSoruCevaplari(pick(row, 'ustSoruCevaplari', 'UstSoruCevaplari')),
   }
 
   return mergeSoruMetadata(soru, metadataBySoruId?.get(soruId))

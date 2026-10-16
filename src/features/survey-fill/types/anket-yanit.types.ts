@@ -16,6 +16,14 @@ export interface BagliKosul {
   bagliKosulTipi: string | null
 }
 
+export interface AnketYanitKayitliCevap {
+  ustSoruId: number | null
+  cevapText: string | null
+  cevapAltSecenekId: number | null
+  cevapAltSecenekIds?: number[]
+  ekiciId: string | null
+}
+
 export interface AnketYanitSoruDto {
   soruId: number
   sira: number
@@ -40,6 +48,7 @@ export interface AnketYanitSoruDto {
   cevapAltSecenekId: number | null
   cevapAltSecenekIds?: number[]
   ekiciId: string | null
+  ustSoruCevaplari?: AnketYanitKayitliCevap[]
 }
 
 export interface AnketYanitOturumDto {
@@ -73,6 +82,7 @@ export interface AnketYanitCevapRequest {
   cevapAltSecenekId?: number | null
   cevapAltSecenekIds?: number[] | null
   birimId?: number | null
+  ustSoruId?: number | null
 }
 
 export interface AnketYanitCevapBatchRequest {
@@ -91,6 +101,7 @@ export interface AnketYanitCevapBatchItem {
   cevapAltSecenekId?: number | null
   cevapAltSecenekIds?: number[] | null
   birimId?: number | null
+  ustSoruId?: number | null
 }
 
 export interface AnketYanitCevapBatchResponse {
