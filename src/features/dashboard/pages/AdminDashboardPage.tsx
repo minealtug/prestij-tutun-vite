@@ -11,7 +11,6 @@ import { PERMISSION_DENIED_KEY } from '@/features/permissions/hooks/use-require-
 import { useAllSurveyResponses } from '@/features/survey-responses/hooks/use-survey-responses'
 import { useAuthStore } from '@/stores/auth-store'
 import { AdminFieldFillSummarySection } from '../components/AdminFieldFillSummarySection'
-import { AdminGeoComparisonCard } from '../components/AdminGeoComparisonCard'
 import { AdminStalePartialsCard } from '../components/AdminStalePartialsCard'
 import { AdminUserActivityCard } from '../components/AdminUserActivityCard'
 import { enrichSurveysWithEkiciLocations } from '../utils/enrich-survey-location'
@@ -19,8 +18,6 @@ import {
   buildAdminStalePartialRows,
   computeAdminFieldFillSummary,
   computeAdminEkiciActivity,
-  computeBolgeComparison,
-  computeMintikaComparison,
   countStalePartials,
   filterEkicilerByCografi,
   filterSurveysByCografi,
@@ -142,11 +139,6 @@ export function AdminDashboardPage() {
     () => computeMintikaEkiciFillRows(filteredEkiciler, filteredSurveys),
     [filteredEkiciler, filteredSurveys],
   )
-  const mintikaRows = useMemo(
-    () => computeMintikaComparison(filteredSurveys),
-    [filteredSurveys],
-  )
-  const bolgeRows = useMemo(() => computeBolgeComparison(filteredSurveys), [filteredSurveys])
   const ekiciActivity = useMemo(
     () =>
       computeAdminEkiciActivity(
@@ -211,12 +203,6 @@ export function AdminDashboardPage() {
       <AdminFieldFillSummarySection
         summary={fieldFillSummary}
         mintikaRows={mintikaFillRows}
-        isLoading={surveysLoading}
-      />
-
-      <AdminGeoComparisonCard
-        mintikaRows={mintikaRows}
-        bolgeRows={bolgeRows}
         isLoading={surveysLoading}
       />
 
