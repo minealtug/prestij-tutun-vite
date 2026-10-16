@@ -105,8 +105,8 @@ export function AnketCevaplariReportPage() {
   }, [columnFilters, geoRows])
   const soruKolonlari = report?.soruKolonlari ?? []
   const visibleSoruKolonlari = useMemo(
-    () => getVisibleSoruKolonlari(soruKolonlari),
-    [soruKolonlari],
+    () => getVisibleSoruKolonlari(soruKolonlari, questionsQuery.data ?? []),
+    [questionsQuery.data, soruKolonlari],
   )
   const optionNameById = useMemo(() => {
     const map = new Map<number, string>()
@@ -155,10 +155,11 @@ export function AnketCevaplariReportPage() {
         className: 'whitespace-nowrap',
       }
     })
-    const dynamic: TableColumn<AnketCevapRow>[] = soruColumns.map((col) => ({
-      key: `q${col.index}`,
+    const dynamic: TableColumn<AnketCevapRow>[] = soruColumns.map((col, order) => ({
+      key: `q${order}-${col.index}`,
       header: getAnketCevapSoruTableHeader(col),
-      render: (row) => formatAnketCevapCell(col.header, row.cevaplar[col.index]),
+      render: (row) =>
+        formatAnketCevapCell(col.header, col.index >= 0 ? row.cevaplar[col.index] : ''),
       className: 'whitespace-nowrap',
     }))
     return [...fixed, ...dynamic]
