@@ -1,5 +1,3 @@
-import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils/cn'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -191,7 +189,6 @@ export function SurveyFillQuestionField({
   disabled = false,
   locked = false,
   useManualEntry = false,
-  onEnableManualEntry,
   onDisableManualEntry,
   answerUnitsById,
 }: SurveyFillQuestionFieldProps) {
@@ -254,49 +251,24 @@ export function SurveyFillQuestionField({
 
       <div className="mt-4">
         {showSecenekDropdown ? (
-          <div className="space-y-2">
-            <div className="flex items-end gap-2">
-              <div className="min-w-0 flex-1">
-                <Select
-                  label="Cevap"
-                  value={value}
-                  onChange={(e) => onChange(e.target.value)}
-                  options={[
-                    {
-                      value: '',
-                      label: selectLoading
-                        ? 'Seçenekler yükleniyor...'
-                        : selectOptions.length > 0
-                          ? 'Seçenek seçin'
-                          : 'Seçenek bulunamadı',
-                    },
-                    ...selectOptions,
-                  ]}
-                  disabled={fieldDisabled || selectLoading || selectOptions.length === 0}
-                  error={error}
-                />
-              </div>
-              {!locked && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="md"
-                  className="h-10 w-10 shrink-0 px-0"
-                  onClick={onEnableManualEntry}
-                  disabled={fieldDisabled}
-                  title="Listede yoksa manuel giriş yap"
-                  aria-label="Manuel cevap gir"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            {!locked && (
-              <p className="text-xs text-muted">
-                Listede cevabınız yoksa + ile manuel giriş yapabilirsiniz.
-              </p>
-            )}
-          </div>
+          <Select
+            label="Cevap"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            options={[
+              {
+                value: '',
+                label: selectLoading
+                  ? 'Seçenekler yükleniyor...'
+                  : selectOptions.length > 0
+                    ? 'Seçenek seçin'
+                    : 'Seçenek bulunamadı',
+              },
+              ...selectOptions,
+            ]}
+            disabled={fieldDisabled || selectLoading || selectOptions.length === 0}
+            error={error}
+          />
         ) : (
           <>
             {useManualEntry && onDisableManualEntry && !locked ? (
