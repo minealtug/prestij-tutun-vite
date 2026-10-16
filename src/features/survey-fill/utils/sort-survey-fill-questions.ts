@@ -28,7 +28,7 @@ export function sortQuestionsUnderParents<T extends SurveyFillSoruView>(
     }
 
     const siblings = childrenByParent.get(parentId) ?? []
-    if (siblings.some((item) => item.soruId === question.soruId)) continue
+    if (siblings.includes(question)) continue
     siblings.push(question)
     childrenByParent.set(parentId, siblings)
   }
@@ -45,11 +45,11 @@ export function sortQuestionsUnderParents<T extends SurveyFillSoruView>(
   const roots = questions.filter((question) => !childIds.has(question.soruId)).sort(compareFillQuestions)
 
   const result: T[] = []
-  const visited = new Set<number>()
+  const visited = new Set<T>()
 
   function walk(question: T) {
-    if (visited.has(question.soruId)) return
-    visited.add(question.soruId)
+    if (visited.has(question)) return
+    visited.add(question)
     result.push(question)
 
     for (const child of childrenByParent.get(question.soruId) ?? []) {
@@ -60,7 +60,7 @@ export function sortQuestionsUnderParents<T extends SurveyFillSoruView>(
   for (const root of roots) walk(root)
 
   for (const question of questions) {
-    if (!visited.has(question.soruId)) walk(question)
+    if (!visited.has(question)) walk(question)
   }
 
   return result

@@ -81,4 +81,29 @@ describe('enrichOturumQuestionsWithDefinitions bagliKosullar', () => {
 
     expect(enriched[0]?.bagliKosullar).toEqual(fromDefinition)
   })
+
+  it('keeps the definition link when the oturum list only has the first parent', () => {
+    const enriched = enrichOturumQuestionsWithDefinitions(
+      [
+        oturumSoru({
+          soruId: 30,
+          bagliKosullar: [{ parentSoruId: 10, bagliAltSecenekId: 101, bagliKosulTipi: 'esit' }],
+        }),
+      ],
+      [
+        definition({
+          id: 30,
+          bagliKosullar: [
+            { parentSoruId: 10, bagliAltSecenekId: 101, bagliKosulTipi: 'esit' },
+            { parentSoruId: 20, bagliAltSecenekId: 201, bagliKosulTipi: 'esit' },
+          ],
+        }),
+      ],
+    )
+
+    expect(enriched[0]?.bagliKosullar).toEqual([
+      { parentSoruId: 10, bagliAltSecenekId: 101, bagliKosulTipi: 'esit' },
+      { parentSoruId: 20, bagliAltSecenekId: 201, bagliKosulTipi: 'esit' },
+    ])
+  })
 })

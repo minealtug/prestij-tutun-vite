@@ -1,6 +1,28 @@
 import { normalizeBagliKosulTipi } from '@/features/questions/utils/bagli-kosul-tipi'
 import type { BagliKosul, SurveyFillSoruView } from '../types/anket-yanit.types'
 
+function kosulKey(item: BagliKosul): string {
+  return `${item.parentSoruId}:${item.bagliAltSecenekId ?? 0}:${item.bagliKosulTipi ?? ''}`
+}
+
+/** Oturum ve soru tanımındaki bağları tek listede birleştirir. Biri eksik olsa diğeri kalır. */
+export function mergeBagliKosullar(...lists: Array<BagliKosul[] | undefined>): BagliKosul[] {
+  const items: BagliKosul[] = []
+  const seen = new Set<string>()
+
+  for (const list of lists) {
+    for (const item of list ?? []) {
+      if (item.parentSoruId <= 0) continue
+      const key = kosulKey(item)
+      if (seen.has(key)) continue
+      seen.add(key)
+      items.push(item)
+    }
+  }
+
+  return items
+}
+
 function asRecord(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
 }

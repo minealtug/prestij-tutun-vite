@@ -148,6 +148,15 @@ function hasPersistedAnswer(question: AnketYanitSoruDto): boolean {
   )
 }
 
+function uniqueQuestionsBySoruId(questions: AnketYanitSoruDto[]): AnketYanitSoruDto[] {
+  const seen = new Set<number>()
+  return questions.filter((question) => {
+    if (seen.has(question.soruId)) return false
+    seen.add(question.soruId)
+    return true
+  })
+}
+
 /** Ekranda görünen sorular ve formdaki cevaplara göre ilerleme. */
 export function getFormFillProgress(
   questions: AnketYanitSoruDto[],
@@ -155,8 +164,9 @@ export function getFormFillProgress(
   answerTypeLookup?: AnswerTypeKindLookup,
   manualEntryByKey: Record<string, boolean> = {},
 ) {
-  const total = questions.length
-  const answered = questions.filter((question) => {
+  const uniqueQuestions = uniqueQuestionsBySoruId(questions)
+  const total = uniqueQuestions.length
+  const answered = uniqueQuestions.filter((question) => {
     const key = getQuestionKey(question)
     const value = answers[key] ?? ''
     return (
@@ -238,7 +248,7 @@ export function getQuestionDisplayNumber(
 ): number | undefined {
   if (isEkiciProducerQuestion(question)) return undefined
 
-  const index = questions.findIndex((item) => item.soruId === question.soruId)
+  const index = questions.indexOf(question)
   if (index < 0) return undefined
 
   const numberedBefore = questions
@@ -253,7 +263,7 @@ export function getQuestionsToSubmit(
   answers: Record<string, string>,
   initialAnswers: Record<string, string>,
 ): AnketYanitSoruDto[] {
-  return questions.filter((question) => {
+  return uniqueQuestionsBySoruId(questions).filter((question) => {
     const key = getQuestionKey(question)
     const value = answers[key] ?? ''
     const initial = initialAnswers[key] ?? ''
@@ -272,7 +282,7 @@ export function getDraftQuestionsToSubmit(
   answerTypeLookup?: AnswerTypeKindLookup,
   manualEntryByKey: Record<string, boolean> = {},
 ): AnketYanitSoruDto[] {
-  return questions.filter((question) => {
+  return uniqueQuestionsBySoruId(questions).filter((question) => {
     const key = getQuestionKey(question)
     const value = answers[key] ?? ''
     const initial = initialAnswers[key] ?? ''

@@ -106,11 +106,13 @@ export function listUnansweredOptionalQuestions(
   manualEntryByKey: Record<string, boolean> = {},
 ): UnansweredOptionalQuestion[] {
   const items: UnansweredOptionalQuestion[] = []
+  const seen = new Set<string>()
 
   for (const question of questions) {
     if (question.zorunlu || isBakmaklaYukumluBireySayisi(question)) continue
 
     const key = getQuestionKey(question)
+    if (seen.has(key)) continue
     const answered = isQuestionAnswered(
       question,
       answers[key] ?? '',
@@ -119,6 +121,7 @@ export function listUnansweredOptionalQuestions(
     )
     if (answered) continue
 
+    seen.add(key)
     items.push({
       key,
       label: getSurveyFillQuestionLabel(question),

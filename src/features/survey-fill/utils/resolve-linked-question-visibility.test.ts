@@ -99,14 +99,151 @@ describe('filterVisibleQuestionsForFill bagliKosullar', () => {
     expect(visible.map((item) => item.soruId)).toEqual([10, 20])
   })
 
-  it('places the child under the first matching bagliKosullar parent when both match', () => {
+  it('shows the child under every matching parent when both select Diğer', () => {
     const questions = sampleQuestions()
     const visible = filterVisibleQuestionsForFill(questions, {
       [getQuestionKey(questions[0]!)]: String(ANLASMA_DIGER),
       [getQuestionKey(questions[1]!)]: String(ZIRAAT_DIGER),
     })
 
-    expect(visible.map((item) => item.soruId)).toEqual([10, 30, 20])
+    expect(visible.map((item) => item.soruId)).toEqual([10, 30, 20, 30])
+    expect(visible.filter((item) => item.soruId === 30).map((item) => item.bagliOlduguSoruId)).toEqual([
+      10, 20,
+    ])
+  })
+
+  it('shows the child when the second parent selects its own Diğer option with a different id', () => {
+    const questions = sampleQuestions()
+    const aciklayiniz = questions[2]!
+    aciklayiniz.bagliKosullar = [
+      { parentSoruId: 10, bagliAltSecenekId: ANLASMA_DIGER, bagliKosulTipi: 'esit' },
+      { parentSoruId: 20, bagliAltSecenekId: ANLASMA_DIGER, bagliKosulTipi: 'esit' },
+    ]
+
+    const visible = filterVisibleQuestionsForFill(questions, {
+      [getQuestionKey(questions[1]!)]: String(ZIRAAT_DIGER),
+    })
+
+    expect(visible.map((item) => item.soruId)).toEqual([10, 20, 30])
+  })
+
+  it('shows the child under a child parent when only that parent selects Diğer', () => {
+    const root = soru({
+      soruId: 1,
+      soruMetni: 'Genel durum',
+      siraNo: 1,
+      altSecenekler: [{ id: 11, adi: 'Var' }],
+    })
+    const anlasma = soru({
+      soruId: 10,
+      soruMetni: 'Anlaşma Şekli (Genel Durum)',
+      siraNo: 2,
+      bagliSoru: true,
+      bagliOlduguSoruId: 1,
+      bagliAltSecenekId: 11,
+      bagliKosulTipi: 'esit',
+      altSecenekler: [
+        { id: ANLASMA_DIGER, adi: 'Diğer' },
+        { id: ANLASMA_DIGER_DEGIL, adi: 'Sözleşme' },
+      ],
+    })
+    const ziraat = soru({
+      soruId: 20,
+      soruMetni: 'Yapılan ziraat türü?',
+      siraNo: 3,
+      bagliSoru: true,
+      bagliOlduguSoruId: 1,
+      bagliAltSecenekId: 11,
+      bagliKosulTipi: 'esit',
+      altSecenekler: [
+        { id: ZIRAAT_DIGER, adi: 'Diğer' },
+        { id: ZIRAAT_DIGER_DEGIL, adi: 'Tütün' },
+      ],
+    })
+    const aciklayiniz = soru({
+      soruId: 30,
+      soruMetni: 'kullanılacak soru - açıklayınız',
+      siraNo: 4,
+      bagliSoru: true,
+      bagliOlduguSoruId: 10,
+      bagliAltSecenekId: ANLASMA_DIGER,
+      bagliKosulTipi: 'esit',
+      secenekGrupId: null,
+      cevapGirdiTipAdi: 'Metin',
+      bagliKosullar: [
+        { parentSoruId: 10, bagliAltSecenekId: ANLASMA_DIGER, bagliKosulTipi: 'esit' },
+        { parentSoruId: 20, bagliAltSecenekId: ZIRAAT_DIGER, bagliKosulTipi: 'esit' },
+      ],
+    })
+
+    const visible = filterVisibleQuestionsForFill([root, anlasma, ziraat, aciklayiniz], {
+      [getQuestionKey(root)]: '11',
+      [getQuestionKey(ziraat)]: String(ZIRAAT_DIGER),
+    })
+
+    expect(visible.map((item) => item.soruId)).toEqual([1, 10, 20, 30])
+    expect(visible.find((item) => item.soruId === 30)?.bagliOlduguSoruId).toBe(20)
+  })
+
+  it('shows the child under each child parent when both select Diğer', () => {
+    const root = soru({
+      soruId: 1,
+      soruMetni: 'Genel durum',
+      siraNo: 1,
+      altSecenekler: [{ id: 11, adi: 'Var' }],
+    })
+    const anlasma = soru({
+      soruId: 10,
+      soruMetni: 'Anlaşma Şekli (Genel Durum)',
+      siraNo: 2,
+      bagliSoru: true,
+      bagliOlduguSoruId: 1,
+      bagliAltSecenekId: 11,
+      bagliKosulTipi: 'esit',
+      altSecenekler: [
+        { id: ANLASMA_DIGER, adi: 'Diğer' },
+        { id: ANLASMA_DIGER_DEGIL, adi: 'Sözleşme' },
+      ],
+    })
+    const ziraat = soru({
+      soruId: 20,
+      soruMetni: 'Yapılan ziraat türü?',
+      siraNo: 3,
+      bagliSoru: true,
+      bagliOlduguSoruId: 1,
+      bagliAltSecenekId: 11,
+      bagliKosulTipi: 'esit',
+      altSecenekler: [
+        { id: ZIRAAT_DIGER, adi: 'Diğer' },
+        { id: ZIRAAT_DIGER_DEGIL, adi: 'Tütün' },
+      ],
+    })
+    const aciklayiniz = soru({
+      soruId: 30,
+      soruMetni: 'kullanılacak soru - açıklayınız',
+      siraNo: 4,
+      bagliSoru: true,
+      bagliOlduguSoruId: 10,
+      bagliAltSecenekId: ANLASMA_DIGER,
+      bagliKosulTipi: 'esit',
+      secenekGrupId: null,
+      cevapGirdiTipAdi: 'Metin',
+      bagliKosullar: [
+        { parentSoruId: 10, bagliAltSecenekId: ANLASMA_DIGER, bagliKosulTipi: 'esit' },
+        { parentSoruId: 20, bagliAltSecenekId: ZIRAAT_DIGER, bagliKosulTipi: 'esit' },
+      ],
+    })
+
+    const visible = filterVisibleQuestionsForFill([root, anlasma, ziraat, aciklayiniz], {
+      [getQuestionKey(root)]: '11',
+      [getQuestionKey(anlasma)]: String(ANLASMA_DIGER),
+      [getQuestionKey(ziraat)]: String(ZIRAAT_DIGER),
+    })
+
+    expect(visible.map((item) => item.soruId)).toEqual([1, 10, 30, 20, 30])
+    expect(visible.filter((item) => item.soruId === 30).map((item) => item.bagliOlduguSoruId)).toEqual([
+      10, 20,
+    ])
   })
 
   it('keeps single-parent visibility when bagliKosullar is empty', () => {

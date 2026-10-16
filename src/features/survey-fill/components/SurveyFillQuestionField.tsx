@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import type { SurveyFillSoruView } from '../types/anket-yanit.types'
 import type { AnswerTypeKindLookup } from '../utils/build-answer-type-kind-lookup'
 import { getFriendlyAnswerTypeLabel } from '@/features/questions/utils/answer-type-label'
-import { getQuestionKey } from '../utils/question-key'
+import { getQuestionFieldKey } from '../utils/question-key'
 import { getSurveyFillQuestionLabel } from '../utils/is-ekici-producer-question'
 import { resolveSurveyFillBirimAdi } from '../utils/resolve-survey-fill-birim-adi'
 import { parseMultiSelectValue, toggleMultiSelectValue } from '../utils/multi-select-value'
@@ -223,7 +223,7 @@ export function SurveyFillQuestionField({
   onDisableManualEntry,
   answerUnitsById,
 }: SurveyFillQuestionFieldProps) {
-  const fieldId = `survey-fill-${getQuestionKey(question)}`
+  const fieldId = `survey-fill-${getQuestionFieldKey(question)}`
   const fieldDisabled = disabled || locked
   const kind = resolveEffectiveQuestionInputKind(question, answerTypeLookup, useManualEntry)
   const showSecenekDropdown =
@@ -240,7 +240,7 @@ export function SurveyFillQuestionField({
   }))
   return (
     <article
-      id={`survey-fill-question-${getQuestionKey(question)}`}
+      id={`survey-fill-question-${getQuestionFieldKey(question)}`}
       className={cn(
         'rounded-xl border border-border/80 bg-surface-elevated/60 p-4 sm:p-5',
         question.bagliSoru && 'ml-3 border-l-4 border-l-primary-300/70 sm:ml-4',

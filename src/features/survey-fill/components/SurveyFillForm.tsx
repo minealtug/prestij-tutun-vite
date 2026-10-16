@@ -45,7 +45,7 @@ import {
   sortOturumQuestionsForFill,
 } from '../utils/oturum-questions'
 import { sortSurveyFillQuestions } from '../utils/sort-survey-fill-questions'
-import { getQuestionKey } from '../utils/question-key'
+import { getQuestionFieldKey, getQuestionKey } from '../utils/question-key'
 import { resolveSurveyFillMintikaId } from '../utils/resolve-survey-fill-mintika-id'
 import {
   validateSurveyFillAnswers,
@@ -638,9 +638,11 @@ export function SurveyFillForm({
     })
 
   const scrollToQuestion = (key: string) => {
+    const question = visibleQuestions.find((item) => getQuestionKey(item) === key)
+    const fieldKey = question ? getQuestionFieldKey(question) : key
     requestAnimationFrame(() => {
       document
-        .getElementById(`survey-fill-question-${key}`)
+        .getElementById(`survey-fill-question-${fieldKey}`)
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })
   }
@@ -920,7 +922,7 @@ export function SurveyFillForm({
 
         return (
           <SurveyFillQuestionField
-            key={key}
+            key={getQuestionFieldKey(question)}
             question={question}
             displayNumber={getQuestionDisplayNumber(visibleQuestions, question)}
             value={answers[key] ?? ''}

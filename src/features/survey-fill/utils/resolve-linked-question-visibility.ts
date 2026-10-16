@@ -1,3 +1,4 @@
+import { isBuyukEsitKosul } from '@/features/questions/utils/bagli-kosul-tipi'
 import type { AnketYanitSoruDto } from '../types/anket-yanit.types'
 import { getEffectiveBagliKosullar } from './bagli-kosullar'
 import type { AnswerTypeKindLookup } from './build-answer-type-kind-lookup'
@@ -137,12 +138,49 @@ function isBagliKosulSatisfied(
 
   if (parentAltSecenekIds === undefined) return false
 
-  return isBagliKosulMatchedForAny(
+  if (
+    isBagliKosulMatchedForAny(
+      parentAltSecenekIds,
+      kosul.bagliAltSecenekId,
+      kosul.bagliKosulTipi,
+      parent.altSecenekler ?? [],
+    )
+  ) {
+    return true
+  }
+
+  if (isBuyukEsitKosul(kosul.bagliKosulTipi)) return false
+
+  return selectedOptionLabelsMatchTrigger(
+    parent,
     parentAltSecenekIds,
-    kosul.bagliAltSecenekId,
-    kosul.bagliKosulTipi,
-    parent.altSecenekler ?? [],
+    findOptionLabel(allQuestions, kosul.bagliAltSecenekId),
   )
+}
+
+function findOptionLabel(questions: AnketYanitSoruDto[], optionId: number | null): string | null {
+  if (optionId == null || optionId <= 0) return null
+
+  for (const question of questions) {
+    const label = question.altSecenekler?.find((option) => option.id === optionId)?.adi?.trim()
+    if (label) return label
+  }
+
+  return null
+}
+
+function selectedOptionLabelsMatchTrigger(
+  parent: AnketYanitSoruDto,
+  selectedIds: number[],
+  triggerLabel: string | null,
+): boolean {
+  const expected = triggerLabel?.trim().toLocaleLowerCase('tr-TR')
+  if (!expected) return false
+
+  return selectedIds.some((id) => {
+    const label = parent.altSecenekler?.find((option) => option.id === id)?.adi?.trim()
+    return label?.toLocaleLowerCase('tr-TR') === expected
+  })
 }
 
 export function isLinkedQuestionVisible(
@@ -181,24 +219,27 @@ export function isLinkedQuestionVisible(
   return matched
 }
 
-export function resolveLinkedPlacementParentId(
+export function resolveMatchingParentIds(
   question: AnketYanitSoruDto,
   allQuestions: AnketYanitSoruDto[],
   answers: Record<string, string>,
   answerTypeLookup?: AnswerTypeKindLookup,
   manualEntryByKey: Record<string, boolean> = {},
   questionsById = new Map(allQuestions.map((item) => [item.soruId, item])),
-): number | null {
-  if (!question.bagliSoru) return null
+): number[] {
+  if (!question.bagliSoru) return []
 
   const kosullar = getEffectiveBagliKosullar(question)
   const visiting = new Set<number>([question.soruId])
+  const parentIds: number[] = []
+  const seen = new Set<number>()
 
   for (const kosul of kosullar) {
+    if (seen.has(kosul.parentSoruId)) continue
     const parent = questionsById.get(kosul.parentSoruId)
     if (!parent) continue
     if (
-      isBagliKosulSatisfied(
+      !isBagliKosulSatisfied(
         kosul,
         parent,
         allQuestions,
@@ -209,11 +250,14 @@ export function resolveLinkedPlacementParentId(
         visiting,
       )
     ) {
-      return kosul.parentSoruId
+      continue
     }
+
+    seen.add(kosul.parentSoruId)
+    parentIds.push(kosul.parentSoruId)
   }
 
-  return null
+  return parentIds
 }
 
 export function filterVisibleQuestionsForFill(
@@ -224,25 +268,41 @@ export function filterVisibleQuestionsForFill(
 ): AnketYanitSoruDto[] {
   const questionsById = new Map(questions.map((item) => [item.soruId, item]))
 
-  const visible = questions.filter((question) =>
-    isLinkedQuestionVisible(
-      question,
-      questions,
-      answers,
-      answerTypeLookup,
-      manualEntryByKey,
-      questionsById,
-    ),
-  )
+  const visible: AnketYanitSoruDto[] = []
 
-  return sortQuestionsUnderParents(visible, (question) =>
-    resolveLinkedPlacementParentId(
+  for (const question of questions) {
+    if (!question.bagliSoru) {
+      if (
+        isLinkedQuestionVisible(
+          question,
+          questions,
+          answers,
+          answerTypeLookup,
+          manualEntryByKey,
+          questionsById,
+        )
+      ) {
+        visible.push(question)
+      }
+      continue
+    }
+
+    const parentIds = resolveMatchingParentIds(
       question,
       questions,
       answers,
       answerTypeLookup,
       manualEntryByKey,
       questionsById,
-    ),
-  )
+    )
+
+    for (const parentId of parentIds) {
+      visible.push({
+        ...question,
+        bagliOlduguSoruId: parentId,
+      })
+    }
+  }
+
+  return sortQuestionsUnderParents(visible, (question) => question.bagliOlduguSoruId)
 }
