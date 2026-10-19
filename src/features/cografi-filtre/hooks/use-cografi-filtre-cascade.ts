@@ -105,11 +105,11 @@ export function useCografiFiltreCascade(options: CografiFiltreOptionsDto | undef
 
   const selectOptions = useMemo(
     () => ({
-      mensei: toSelectOptions(menseiler, 'Menşei seçin'),
-      bolge: toSelectOptions(bolgeler, 'Bölge seçin'),
-      mintika: toSelectOptions(mintikalar, 'Mıntıka seçin'),
-      alimNoktasi: toSelectOptions(alimNoktalari, 'Alım noktası seçin'),
-      koy: toSelectOptions(koyler, 'Köy seçin'),
+      mensei: toSelectOptions(menseiler, 'Tümü'),
+      bolge: toSelectOptions(bolgeler, 'Tümü'),
+      mintika: toSelectOptions(mintikalar, 'Tümü'),
+      alimNoktasi: toSelectOptions(alimNoktalari, 'Tümü'),
+      koy: toSelectOptions(koyler, 'Tümü'),
     }),
     [menseiler, bolgeler, mintikalar, alimNoktalari, koyler],
   )
