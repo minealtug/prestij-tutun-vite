@@ -9,6 +9,7 @@ export interface AnketCevapSoruColumn {
   subHeader: string
   isChild: boolean
   groupKey: string
+  questionId: string | number | null
 }
 
 export interface AnketCevapSoruGroup {
@@ -56,7 +57,7 @@ function matchQuestion(
 function attachIdenticalRunsToPreviousParent(
   columns: AnketCevapSoruColumn[],
 ): AnketCevapSoruColumn[] {
-  const next = columns.map((column) => ({ ...column }))
+  const next = columns.map((column) => ({ ...column, questionId: column.questionId ?? null }))
   let i = 0
   while (i < next.length) {
     const current = next[i]
@@ -107,6 +108,7 @@ export function resolveAnketCevapSoruColumns(
       groupKey: question
         ? `q-${isLinked ? question.bagliOlduguSoruId : question.id}`
         : `col-${order}`,
+      questionId: question?.id ?? null,
     }
   })
 

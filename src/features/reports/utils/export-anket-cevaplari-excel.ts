@@ -1,29 +1,27 @@
 import * as XLSX from 'xlsx-js-style'
 import type { QuestionDto } from '@/features/questions/types/question.types'
-import type { SecenekGrupDto } from '@/features/option-groups/types/option-group.types'
-import {
-  ANKET_CEVAPLARI_EXCEL_COLUMNS,
-  type AnketCevapExcelColumn,
-} from '../config/anket-cevaplari-excel-columns'
 import {
   ANKET_CEVAPLARI_EXCEL_COL_WIDTHS,
   ANKET_CEVAPLARI_EXCEL_DATE_NUMFMT,
   ANKET_CEVAPLARI_EXCEL_FIXED_TITLE_COUNT,
-  ANKET_CEVAPLARI_EXCEL_MERGES,
   ANKET_CEVAPLARI_EXCEL_ROW_HEIGHT,
   ANKET_CEVAPLARI_EXCEL_SHEET_NAME,
   ANKET_CEVAPLARI_EXCEL_TEXT_NUMFMT,
   excelColumnLetter,
   EXCEL_STYLE_DATA_GRAY,
   EXCEL_STYLE_DATA_WHITE,
-  EXCEL_STYLE_HEADER_DECIMAL,
   EXCEL_STYLE_HEADER_INT,
   EXCEL_STYLE_HEADER_TITLE_FIXED,
   EXCEL_STYLE_HEADER_TITLE_QUESTION,
 } from '../config/anket-cevaplari-excel-template'
 import type { AnketCevapRow } from '../types/anket-cevaplari.types'
-import { buildAnketCevapExcelSources } from './anket-cevap-excel-source'
-import { resolveAnketCevapExcelCell, type ExcelCellValue } from './map-anket-cevap-excel-values'
+import {
+  ANKET_CEVAPLARI_EXCEL_FIXED_COLUMN_COUNT,
+  buildAnketCevapExcelSheetColumns,
+  type AnketCevapExcelSheetColumn,
+} from './build-anket-cevap-excel-columns'
+import { formatAnketCevapCell } from './format-anket-cevap-cell'
+import { formatExcelDateText, resolveAnketCevapExcelCell, type ExcelCellValue } from './map-anket-cevap-excel-values'
 
 function formatExportDate(): string {
   const now = new Date()
@@ -36,23 +34,9 @@ function formatExportDate(): string {
 export interface ExportAnketCevaplariExcelOptions {
   questions?: QuestionDto[]
   optionNameById?: ReadonlyMap<number, string>
-  optionGroups?: SecenekGrupDto[]
 }
 
-function buildOptionOrder(groups: SecenekGrupDto[]): Map<string, number> {
-  const map = new Map<string, number>()
-  for (const group of groups) {
-    for (const option of group.altSecenekler) {
-      const key = option.adi.trim().toLocaleLowerCase('tr-TR')
-      if (!key || map.has(key)) continue
-      map.set(key, option.siraNo)
-    }
-  }
-  return map
-}
-
-function headerStyle(column: AnketCevapExcelColumn) {
-  if (column.row1Kind === 'decimal' || column.row1Kind === 'decimalEmpty') return EXCEL_STYLE_HEADER_DECIMAL
+function headerStyle() {
   return EXCEL_STYLE_HEADER_INT
 }
 
@@ -62,7 +46,7 @@ function titleStyle(colIndex: number) {
     : EXCEL_STYLE_HEADER_TITLE_QUESTION
 }
 
-function dataStyle(column: AnketCevapExcelColumn) {
+function dataStyle(column: AnketCevapExcelSheetColumn) {
   if (column.dataStyle === 'white') return EXCEL_STYLE_DATA_WHITE
   return EXCEL_STYLE_DATA_GRAY
 }
@@ -88,20 +72,41 @@ function setCell(
   worksheet[address] = { t: 's', v: String(value), s: style, z: numFmt }
 }
 
-function writeHeaderRows(worksheet: XLSX.WorkSheet): void {
-  ANKET_CEVAPLARI_EXCEL_COLUMNS.forEach((column, col) => {
-    if (column.row1Kind !== 'none') {
-      const value = column.row1Kind === 'decimalEmpty' ? null : (column.row1Value ?? null)
-      setCell(
-        worksheet,
-        0,
-        col,
-        value,
-        headerStyle(column),
-        undefined,
-        value == null ? 's' : 'n',
-      )
+function questionWidth(title: string): number {
+  return Math.min(60, Math.max(14, Math.ceil(title.length * 1.05)))
+}
+
+function columnWidths(columns: AnketCevapExcelSheetColumn[]): number[] {
+  return columns.map((column, index) => {
+    if (index < ANKET_CEVAPLARI_EXCEL_FIXED_COLUMN_COUNT) {
+      return ANKET_CEVAPLARI_EXCEL_COL_WIDTHS[index] ?? 14
     }
+    return questionWidth(column.title)
+  })
+}
+
+function sheetCellValue(column: AnketCevapExcelSheetColumn, row: AnketCevapRow): ExcelCellValue {
+  if (column.fixed) return resolveAnketCevapExcelCell(column.fixed, row, [])
+  const raw =
+    column.answerIndex != null && column.answerIndex >= 0 ? row.cevaplar[column.answerIndex] : ''
+  const text = formatAnketCevapCell(column.answerHeader ?? column.title, raw)
+  if (!text) return null
+  if (column.valueKind === 'dateText') return formatExcelDateText(text)
+  return text
+}
+
+function writeHeaderRows(worksheet: XLSX.WorkSheet, columns: AnketCevapExcelSheetColumn[]): void {
+  columns.forEach((column, col) => {
+    const numberValue = column.row1
+    setCell(
+      worksheet,
+      0,
+      col,
+      numberValue,
+      headerStyle(),
+      undefined,
+      typeof numberValue === 'number' ? 'n' : 's',
+    )
 
     const titleFmt = col < ANKET_CEVAPLARI_EXCEL_FIXED_TITLE_COUNT ? ANKET_CEVAPLARI_EXCEL_TEXT_NUMFMT : undefined
     setCell(worksheet, 1, col, column.title, titleStyle(col), titleFmt)
@@ -112,15 +117,16 @@ function writeDataRow(
   worksheet: XLSX.WorkSheet,
   excelRow: number,
   row: AnketCevapRow,
-  sources: ReturnType<typeof buildAnketCevapExcelSources>,
-  optionOrder: Map<string, number>,
+  columns: AnketCevapExcelSheetColumn[],
 ): void {
-  ANKET_CEVAPLARI_EXCEL_COLUMNS.forEach((column, col) => {
-    const value = resolveAnketCevapExcelCell(column, row, sources, optionOrder)
+  columns.forEach((column, col) => {
+    const value = sheetCellValue(column, row)
     const numFmt =
       column.valueKind === 'dateExcel'
         ? ANKET_CEVAPLARI_EXCEL_DATE_NUMFMT
-        : column.dataStyle === 'white' || column.letter === 'F' || (col < ANKET_CEVAPLARI_EXCEL_FIXED_TITLE_COUNT && column.valueKind !== 'number')
+        : column.dataStyle === 'white' ||
+            column.fixed?.letter === 'F' ||
+            (col < ANKET_CEVAPLARI_EXCEL_FIXED_TITLE_COUNT && column.valueKind !== 'number')
           ? ANKET_CEVAPLARI_EXCEL_TEXT_NUMFMT
           : undefined
     const type = column.valueKind === 'number' || column.valueKind === 'dateExcel' ? 'n' : 's'
@@ -134,27 +140,24 @@ export function exportAnketCevaplariToExcel(
   {
     questions = [],
     optionNameById = new Map(),
-    optionGroups = [],
   }: ExportAnketCevaplariExcelOptions = {},
 ): void {
-  const sources = buildAnketCevapExcelSources(soruKolonlari, questions, optionNameById)
-  const optionOrder = buildOptionOrder(optionGroups)
-  const colCount = ANKET_CEVAPLARI_EXCEL_COLUMNS.length
+  const columns = buildAnketCevapExcelSheetColumns(soruKolonlari, questions, optionNameById)
+  const colCount = columns.length
   const lastColLetter = excelColumnLetter(colCount - 1)
   const lastRow = 1 + satirlar.length
   const worksheet: XLSX.WorkSheet = {}
 
-  writeHeaderRows(worksheet)
+  writeHeaderRows(worksheet, columns)
   satirlar.forEach((row, index) => {
-    writeDataRow(worksheet, index + 2, row, sources, optionOrder)
+    writeDataRow(worksheet, index + 2, row, columns)
   })
 
   worksheet['!ref'] = XLSX.utils.encode_range({
     s: { r: 0, c: 0 },
     e: { r: lastRow, c: colCount - 1 },
   })
-  worksheet['!merges'] = ANKET_CEVAPLARI_EXCEL_MERGES
-  worksheet['!cols'] = ANKET_CEVAPLARI_EXCEL_COL_WIDTHS.map((wch) => ({ wch }))
+  worksheet['!cols'] = columnWidths(columns).map((wch) => ({ wch }))
   worksheet['!rows'] = Array.from({ length: lastRow + 1 }, () => ({
     hpt: ANKET_CEVAPLARI_EXCEL_ROW_HEIGHT,
   }))
