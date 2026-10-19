@@ -6,10 +6,7 @@ import {
   type ExcelDataStyle,
   type ExcelValueKind,
 } from '../config/anket-cevaplari-excel-columns'
-import {
-  resolveAnketCevapSoruColumns,
-  type AnketCevapSoruColumn,
-} from './anket-cevap-soru-headers'
+import { resolveAnketCevapSoruColumns } from './anket-cevap-soru-headers'
 import { getVisibleSoruKolonlari } from './visible-soru-kolonlari'
 
 /** Anket Adı … Ekici Yaş Aralığı. Soru sütunları bu bloktan sonra gelir. */
@@ -30,15 +27,34 @@ function fixedRow1(column: AnketCevapExcelColumn): number | null {
   return column.row1Value ?? null
 }
 
-function outlineCell(outline: string): number | string | null {
+function outlineCell(outline: string): string | null {
   if (!outline) return null
-  if (/^\d+(\.\d+)?$/.test(outline)) return Number(outline)
-  return outline
+  // 2.20 sayıya çevrilirse 2,2 olur; 20. alt soru ile 2. alt soru karışır.
+  return outline.replaceAll('.', ',')
 }
 
-function excelQuestionTitle(column: AnketCevapSoruColumn): string {
-  if (column.isChild) return column.subHeader || column.header
-  return column.header
+function stripLeadingAnswer(header: string, optionNames: readonly string[]): string {
+  const names = new Set(
+    optionNames.map((name) => name.trim().toLocaleLowerCase('tr-TR')).filter((name) => name.length > 0),
+  )
+  let text = header.trim()
+  while (names.size > 0 && text.includes('—')) {
+    const separator = text.indexOf('—')
+    const prefix = text.slice(0, separator).trim().toLocaleLowerCase('tr-TR')
+    const rest = text.slice(separator + 1).trim()
+    if (!rest || !names.has(prefix)) break
+    text = rest
+  }
+  return text
+}
+
+function excelQuestionTitle(
+  header: string,
+  question: QuestionDto | undefined,
+  optionNames: readonly string[],
+): string {
+  const questionText = question?.soruMetni?.trim()
+  return stripLeadingAnswer(questionText || header, optionNames)
 }
 
 function isDateQuestion(question: QuestionDto | undefined, header: string): boolean {
@@ -68,6 +84,7 @@ export function buildAnketCevapExcelSheetColumns(
   const orderedQuestions = questions.length > 0 ? sortQuestionsForSurvey(questions) : []
   const visible = getVisibleSoruKolonlari(soruKolonlari, orderedQuestions)
   const labeled = resolveAnketCevapSoruColumns(visible, orderedQuestions, optionNameById)
+  const optionNames = [...optionNameById.values()]
   const display = getQuestionDisplayMeta(orderedQuestions)
   const questionById = new Map(orderedQuestions.map((question) => [String(question.id), question]))
 
@@ -79,7 +96,7 @@ export function buildAnketCevapExcelSheetColumns(
     const header = column.header
 
     return {
-      title: excelQuestionTitle(column),
+      title: excelQuestionTitle(column.header, question, optionNames),
       row1: outlineCell(outline),
       valueKind: isDateQuestion(question, header) ? ('dateText' as const) : ('text' as const),
       dataStyle: 'white' as const,

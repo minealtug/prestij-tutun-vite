@@ -104,7 +104,7 @@ function writeHeaderRows(worksheet: XLSX.WorkSheet, columns: AnketCevapExcelShee
       col,
       numberValue,
       headerStyle(),
-      undefined,
+      typeof numberValue === 'string' ? ANKET_CEVAPLARI_EXCEL_TEXT_NUMFMT : undefined,
       typeof numberValue === 'number' ? 'n' : 's',
     )
 

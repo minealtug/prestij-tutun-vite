@@ -44,7 +44,7 @@ describe('buildAnketCevapExcelSheetColumns', () => {
 
     const questions = columns.slice(ANKET_CEVAPLARI_EXCEL_FIXED_COLUMN_COUNT)
     expect(questions.map((column) => column.title)).toEqual(['İkinci soru?', 'Birinci soru?'])
-    expect(questions.map((column) => column.row1)).toEqual([1, 2])
+    expect(questions.map((column) => column.row1)).toEqual(['1', '2'])
     expect(questions.map((column) => column.answerIndex)).toEqual([0, 1])
   })
 
@@ -86,5 +86,80 @@ describe('buildAnketCevapExcelSheetColumns', () => {
       'Ailede bakmakla yükümlü olunan birey sayısı?',
       '1.Bireyin cinsiyeti?',
     ])
+  })
+
+  it('drops any parent answer from the question title, not only Evet', () => {
+    const columns = buildAnketCevapExcelSheetColumns(
+      [
+        'İşçi çalıştırıyor musunuz?',
+        'Evet — Anlaşma Şekli (Genel Durum)',
+        'Günlük — Sezonda çalıştırdığı işçi sayısı?',
+        'Hayır — Göçmen işçi çalıştırıyor mu?',
+      ],
+      [
+        question({ id: 1, soruMetni: 'İşçi çalıştırıyor musunuz?', siraNo: 1 }),
+        question({
+          id: 2,
+          soruMetni: 'Evet — Anlaşma Şekli (Genel Durum)',
+          siraNo: 2,
+          bagliSoru: true,
+          bagliOlduguSoruId: 1,
+          bagliAltSecenekId: 21,
+        }),
+        question({
+          id: 3,
+          soruMetni: 'Günlük — Sezonda çalıştırdığı işçi sayısı?',
+          siraNo: 3,
+          bagliSoru: true,
+          bagliOlduguSoruId: 1,
+          bagliAltSecenekId: 22,
+        }),
+        question({
+          id: 4,
+          soruMetni: 'Hayır — Göçmen işçi çalıştırıyor mu?',
+          siraNo: 4,
+          bagliSoru: true,
+          bagliOlduguSoruId: 1,
+          bagliAltSecenekId: 23,
+        }),
+      ],
+      new Map([
+        [21, 'Evet'],
+        [22, 'Günlük'],
+        [23, 'Hayır'],
+      ]),
+    )
+
+    expect(columns.slice(ANKET_CEVAPLARI_EXCEL_FIXED_COLUMN_COUNT).map((column) => column.title)).toEqual([
+      'İşçi çalıştırıyor musunuz?',
+      'Anlaşma Şekli (Genel Durum)',
+      'Sezonda çalıştırdığı işçi sayısı?',
+      'Göçmen işçi çalıştırıyor mu?',
+    ])
+  })
+
+  it('keeps the 20th child outline as 2,20 instead of collapsing it to 2,2', () => {
+    const children = Array.from({ length: 20 }, (_, index) => {
+      const n = index + 1
+      return question({
+        id: 10 + n,
+        soruMetni: `${n}. bağlı soru?`,
+        siraNo: n,
+        bagliSoru: true,
+        bagliOlduguSoruId: 2,
+      })
+    })
+    const columns = buildAnketCevapExcelSheetColumns(
+      ['İlk ana?', 'Ana soru?', ...children.map((child) => child.soruMetni)],
+      [
+        question({ id: 1, soruMetni: 'İlk ana?', siraNo: 1 }),
+        question({ id: 2, soruMetni: 'Ana soru?', siraNo: 2 }),
+        ...children,
+      ],
+    )
+    const numbers = columns.slice(ANKET_CEVAPLARI_EXCEL_FIXED_COLUMN_COUNT).map((column) => column.row1)
+
+    expect(numbers[3]).toBe('2,2')
+    expect(numbers[21]).toBe('2,20')
   })
 })
