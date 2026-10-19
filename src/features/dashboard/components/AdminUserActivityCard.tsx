@@ -1,39 +1,24 @@
-import { UserRound, UserX, Users } from 'lucide-react'
+import { Ban, UserRound, UserX, Users } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
-import { Select } from '@/components/ui/Select'
-import {
-  ADMIN_ACTIVITY_DAY_OPTIONS,
-  type AdminActivityDayWindow,
-  type AdminEkiciActivitySummary,
-} from '../utils/admin-dashboard-stats'
+import type { AdminEkiciActivitySummary } from '../utils/admin-dashboard-stats'
 
 interface AdminUserActivityCardProps {
   summary: AdminEkiciActivitySummary
-  dayWindow: AdminActivityDayWindow
-  onDayWindowChange: (value: AdminActivityDayWindow) => void
+  withoutTobaccoCount: number
   isLoading?: boolean
+  withoutTobaccoLoading?: boolean
 }
 
 export function AdminUserActivityCard({
   summary,
-  dayWindow,
-  onDayWindowChange,
+  withoutTobaccoCount,
   isLoading = false,
+  withoutTobaccoLoading = false,
 }: AdminUserActivityCardProps) {
   return (
     <Card interactive={false} accent>
       <div className="mb-4">
         <h3 className="text-base font-semibold text-foreground">Ekici aktivitesi</h3>
-        <div className="mt-2 w-full sm:max-w-xs">
-          <Select
-            value={String(dayWindow)}
-            onChange={(e) => onDayWindowChange(Number(e.target.value) as AdminActivityDayWindow)}
-            options={ADMIN_ACTIVITY_DAY_OPTIONS.map((days) => ({
-              value: String(days),
-              label: `Son ${days} gün`,
-            }))}
-          />
-        </div>
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Metric
@@ -44,16 +29,16 @@ export function AdminUserActivityCard({
           isLoading={isLoading}
         />
         <Metric
-          icon={UserX}
-          label="Pasif"
-          value={summary.passiveEkiciler}
-          hint="Kayıt pasif"
-          isLoading={isLoading}
+          icon={Ban}
+          label="Tütünü olmayan"
+          value={withoutTobaccoCount}
+          hint="Kayıtlı ekici"
+          isLoading={withoutTobaccoLoading}
         />
         <Metric
           icon={UserRound}
-          label={`Son ${dayWindow} günde dolduran`}
-          value={summary.filledInWindow}
+          label="Dolduran"
+          value={summary.filledEkiciler}
           hint="En az bir form işlemi"
           isLoading={isLoading}
         />

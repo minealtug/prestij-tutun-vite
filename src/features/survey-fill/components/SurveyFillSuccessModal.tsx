@@ -60,10 +60,10 @@ export function SurveyFillSuccessModal({
           {hasUnansweredOptional && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-950">
               <p className="font-medium">
-                Zorunlu olmayan {unansweredOptional.length} soru boş bırakıldı
+                {unansweredOptional.length} Soru boş bırakıldı
               </p>
               <p className="mt-0.5 text-xs text-amber-800">
-                Kayıt bunlardan etkilenmez. Boş kalan sorular:
+                 Boş kalan sorular:
               </p>
               <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto">
                 {unansweredOptional.map((item) => (

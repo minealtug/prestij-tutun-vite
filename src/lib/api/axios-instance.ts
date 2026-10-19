@@ -3,9 +3,12 @@ import { normalizeApiError } from './api-error'
 import { usePermissionsStore } from '@/features/permissions/stores/permissions-store'
 import { useAuthStore } from '@/stores/auth-store'
 
+const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+
 export const api = axios.create({
-  // Tüm ortamlar: istekler yalnızca .env içindeki VITE_API_BASE_URL'e gider.
-  baseURL: (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, ''),
+  // Geliştirmede istekler Vite vekiline gider; tarayıcı 7096'ya doğrudan çıkmaz.
+  // Aksi halde Authorization başlığı OPTIONS ön kontrolü tetikler ve API bağlantıyı kapatır.
+  baseURL: import.meta.env.DEV ? '' : apiBase,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

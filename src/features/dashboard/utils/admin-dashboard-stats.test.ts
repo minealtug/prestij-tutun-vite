@@ -111,30 +111,28 @@ describe('admin-dashboard-stats', () => {
   })
 
   it('computes ekici activity and never-filled ekiciler', () => {
-    const now = new Date(2026, 6, 21)
     const ekiciler = [
       makeEkici({ id: 'e1', ad: 'Ali', soyad: 'Yılmaz' }),
       makeEkici({ id: 'e2', ad: 'Veli', soyad: 'Demir', aktif: 0 }),
       makeEkici({ id: 'e3', ad: 'Ayşe', soyad: 'Kaya' }),
     ]
 
-    const activity = computeAdminEkiciActivity(
-      ekiciler,
-      [
-        makeSurvey({
-          id: '1',
-          ekiciId: 'e1',
-          sonIslemTarihi: new Date(2026, 6, 20).toISOString(),
-        }),
-      ],
-      7,
-      now,
-    )
+    const activity = computeAdminEkiciActivity(ekiciler, [
+      makeSurvey({
+        id: '1',
+        ekiciId: 'e1',
+        sonIslemTarihi: new Date(2026, 6, 20).toISOString(),
+      }),
+      makeSurvey({
+        id: '2',
+        ekiciId: 'e3',
+        sonIslemTarihi: new Date(2025, 0, 1).toISOString(),
+      }),
+    ])
 
     expect(activity.activeEkiciler).toBe(2)
-    expect(activity.passiveEkiciler).toBe(1)
-    expect(activity.filledInWindow).toBe(1)
-    expect(activity.neverFilled).toBe(2)
+    expect(activity.filledEkiciler).toBe(2)
+    expect(activity.neverFilled).toBe(1)
   })
 
   it('counts stale partials older than 7 days', () => {

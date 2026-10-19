@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { AdminFieldFillSummarySection } from '../components/AdminFieldFillSummarySection'
 import { AdminStalePartialsCard } from '../components/AdminStalePartialsCard'
 import { AdminUserActivityCard } from '../components/AdminUserActivityCard'
+import { useWithoutTobaccoEkiciCount } from '../hooks/use-gezi'
 import { enrichSurveysWithEkiciLocations } from '../utils/enrich-survey-location'
 import {
   buildAdminStalePartialRows,
@@ -21,7 +22,6 @@ import {
   countStalePartials,
   filterEkicilerByCografi,
   filterSurveysByCografi,
-  type AdminActivityDayWindow,
 } from '../utils/admin-dashboard-stats'
 import { computeMintikaEkiciFillRows } from '../utils/compute-ekici-survey-coverage'
 
@@ -34,11 +34,11 @@ function getGreetingByHour(hour: number) {
 export function AdminDashboardPage() {
   const [permissionMessage, setPermissionMessage] = useState<string | null>(null)
   const [now, setNow] = useState(() => new Date())
-  const [activityDays, setActivityDays] = useState<AdminActivityDayWindow>(7)
   const user = useAuthStore((state) => state.user)
 
   const responsesQuery = useAllSurveyResponses()
   const ekicilerQuery = useEkiciDefinitions()
+  const withoutTobaccoQuery = useWithoutTobaccoEkiciCount()
   const cografiFiltreQuery = useCografiFiltreOptions()
   const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
 
@@ -140,14 +140,8 @@ export function AdminDashboardPage() {
     [filteredEkiciler, filteredSurveys],
   )
   const ekiciActivity = useMemo(
-    () =>
-      computeAdminEkiciActivity(
-        ekicilerQuery.data ?? [],
-        enrichedSurveys,
-        activityDays,
-        now,
-      ),
-    [activityDays, ekicilerQuery.data, enrichedSurveys, now],
+    () => computeAdminEkiciActivity(ekicilerQuery.data ?? [], enrichedSurveys),
+    [ekicilerQuery.data, enrichedSurveys],
   )
   const staleRows = useMemo(
     () => buildAdminStalePartialRows(filteredSurveys, 10),
@@ -175,8 +169,8 @@ export function AdminDashboardPage() {
 
       <AdminUserActivityCard
         summary={ekiciActivity}
-        dayWindow={activityDays}
-        onDayWindowChange={setActivityDays}
+        withoutTobaccoCount={withoutTobaccoQuery.data ?? 0}
+        withoutTobaccoLoading={withoutTobaccoQuery.isLoading}
         isLoading={ekicilerQuery.isLoading || surveysLoading}
       />
 

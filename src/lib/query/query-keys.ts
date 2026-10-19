@@ -5,6 +5,7 @@ export const queryKeys = {
   dashboard: {
     summary: ['dashboard', 'summary'] as const,
     activity: ['dashboard', 'activity'] as const,
+    gezi: ['dashboard', 'gezi'] as const,
   },
   users: {
     all: (params?: object) => ['users', params ?? {}] as const,

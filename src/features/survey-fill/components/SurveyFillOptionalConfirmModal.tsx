@@ -47,7 +47,7 @@ export function SurveyFillOptionalConfirmModal({
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
           <p>
-            Zorunlu olmayan {questions.length} soru boş bırakıldı. Kayıt bunlardan etkilenmez.
+           {questions.length} Soru boş bırakıldı.
             Soruyu doldurmak için ilgili soruya gidebilir veya yine de kaydedebilirsiniz.
           </p>
         </div>

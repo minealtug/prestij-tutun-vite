@@ -12,9 +12,6 @@ import {
   sortPartialSurveysByPriority,
 } from './user-dashboard-survey-groups'
 
-export const ADMIN_ACTIVITY_DAY_OPTIONS = [7, 14, 30] as const
-export type AdminActivityDayWindow = (typeof ADMIN_ACTIVITY_DAY_OPTIONS)[number]
-
 export interface PeriodFormCounts {
   completed: number
   partial: number
@@ -29,9 +26,8 @@ export interface AdminFieldFillSummary {
 
 export interface AdminEkiciActivitySummary {
   activeEkiciler: number
-  passiveEkiciler: number
   totalEkiciler: number
-  filledInWindow: number
+  filledEkiciler: number
   neverFilled: number
 }
 
@@ -166,39 +162,28 @@ function normalizeEkiciKey(value: string | null | undefined): string {
 export function computeAdminEkiciActivity(
   ekiciler: EkiciDefinitionDto[],
   surveys: AnketCevapOzetItem[],
-  dayWindow: AdminActivityDayWindow,
-  now = new Date(),
 ): AdminEkiciActivitySummary {
-  const windowStart = now.getTime() - dayWindow * 24 * 60 * 60 * 1000
   const knownIds = new Set(ekiciler.map((ekici) => ekici.id).filter(Boolean))
   const filledKeys = new Set<string>()
-  const filledInWindowKeys = new Set<string>()
 
   for (const item of surveys) {
     const key = normalizeEkiciKey(item.ekiciId)
     if (!key || !knownIds.has(key)) continue
     filledKeys.add(key)
-    if (isInPeriod(item, windowStart, now.getTime())) {
-      filledInWindowKeys.add(key)
-    }
   }
 
   let activeEkiciler = 0
-  let passiveEkiciler = 0
   let neverFilled = 0
 
   for (const ekici of ekiciler) {
     if (ekici.aktif === 1) activeEkiciler += 1
-    else passiveEkiciler += 1
-
     if (!filledKeys.has(ekici.id)) neverFilled += 1
   }
 
   return {
     activeEkiciler,
-    passiveEkiciler,
     totalEkiciler: ekiciler.length,
-    filledInWindow: filledInWindowKeys.size,
+    filledEkiciler: filledKeys.size,
     neverFilled,
   }
 }

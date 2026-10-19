@@ -966,7 +966,7 @@ export function SurveyFillForm({
             error={fieldErrors[key]}
             warning={
               unansweredOptional.some((item) => item.key === key)
-                ? 'Bu soru boş bırakıldı (zorunlu değil).'
+                ? 'Bu soru boş bırakıldı .'
                 : undefined
             }
             onChange={(value) => handleAnswerChange(key, value)}
