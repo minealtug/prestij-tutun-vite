@@ -68,6 +68,7 @@ import {
   isKontratSahibiSelected,
   resolveKontratSahibiFieldKind,
 } from '../utils/kontrat-sahibi-autofill'
+import { SurveyFillOptionalConfirmModal } from './SurveyFillOptionalConfirmModal'
 import { SurveyFillSuccessModal } from './SurveyFillSuccessModal'
 import type { SurveyFillDeepLinkParams } from '../utils/survey-fill-navigation'
 
@@ -194,6 +195,7 @@ export function SurveyFillForm({
   const [lockedAnswerKeys, setLockedAnswerKeys] = useState<Record<string, boolean>>({})
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [unansweredOptional, setUnansweredOptional] = useState<UnansweredOptionalQuestion[]>([])
+  const [optionalConfirmOpen, setOptionalConfirmOpen] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
   const templateQuestions = useMemo(
@@ -430,6 +432,7 @@ export function SurveyFillForm({
     kontratSahibiAutofillSignatureRef.current = ''
     setFieldErrors({})
     setUnansweredOptional([])
+    setOptionalConfirmOpen(false)
     setSubmitError('')
     setSuccessModalOpen(false)
     deepLinkBootstrapKeyRef.current = ''
@@ -485,6 +488,7 @@ export function SurveyFillForm({
     kontratSahibiAutofillSignatureRef.current = ''
     setFieldErrors({})
     setUnansweredOptional([])
+    setOptionalConfirmOpen(false)
     setSubmitError('')
   }, [geoFilterKey])
 
@@ -504,6 +508,7 @@ export function SurveyFillForm({
       setInitialAnswers(answersWithManual)
       setFieldErrors({})
       setUnansweredOptional([])
+      setOptionalConfirmOpen(false)
       setSubmitError('')
       return
     }
@@ -520,6 +525,7 @@ export function SurveyFillForm({
     setInitialAnswers(answersWithManual)
     setFieldErrors({})
     setUnansweredOptional([])
+    setOptionalConfirmOpen(false)
     setSubmitError('')
   }, [
     oturumQuery.dataUpdatedAt,
@@ -622,6 +628,7 @@ export function SurveyFillForm({
     kontratSahibiAutofillSignatureRef.current = ''
     setFieldErrors({})
     setUnansweredOptional([])
+    setOptionalConfirmOpen(false)
     setSubmitError('')
   }
 
@@ -721,7 +728,10 @@ export function SurveyFillForm({
     })
   }
 
-  const handleSaveAnswers = (mode: 'full' | 'draft') => {
+  const handleSaveAnswers = (
+    mode: 'full' | 'draft',
+    options?: { skipOptionalConfirm?: boolean },
+  ) => {
     if (!canSubmit || !sessionEkiciId) {
       setSubmitError('Cevapları kaydetmek için önce ekici seçin.')
       return
@@ -797,8 +807,20 @@ export function SurveyFillForm({
       return
     }
 
+    if (
+      mode === 'full' &&
+      !options?.skipOptionalConfirm &&
+      optionalUnanswered.length > 0
+    ) {
+      setFieldErrors({})
+      setSubmitError('')
+      setOptionalConfirmOpen(true)
+      return
+    }
+
     setFieldErrors({})
     setSubmitError('')
+    setOptionalConfirmOpen(false)
 
     const payloads = questionsToSubmit.map((question) =>
       buildAnketYanitCevapRequest(
@@ -829,6 +851,15 @@ export function SurveyFillForm({
   const handleSubmitAnswers = () => handleSaveAnswers('full')
 
   const handleSaveDraft = () => handleSaveAnswers('draft')
+
+  const handleGoToOptionalQuestion = (key: string) => {
+    setOptionalConfirmOpen(false)
+    scrollToQuestion(key)
+  }
+
+  const handleSaveAnyway = () => {
+    handleSaveAnswers('full', { skipOptionalConfirm: true })
+  }
 
   const renderQuestions = () => {
     if (showQuestionsLoading) {
@@ -1088,34 +1119,6 @@ export function SurveyFillForm({
             </p>
           )}
 
-          {unansweredOptional.length > 0 && (
-            <div
-              className="mb-3 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
-              role="status"
-            >
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
-              <div className="min-w-0 space-y-2">
-                <p>
-                  Zorunlu olmayan {unansweredOptional.length} soru boş bırakıldı.
-                  Kayıt bunlardan etkilenmez; soruya gitmek için listeden seçin.
-                </p>
-                <ul className="max-h-40 space-y-1 overflow-y-auto">
-                  {unansweredOptional.map((item) => (
-                    <li key={item.key}>
-                      <button
-                        type="button"
-                        className="text-left font-medium text-amber-900 underline decoration-amber-400 underline-offset-2 hover:text-amber-950"
-                        onClick={() => scrollToQuestion(item.key)}
-                      >
-                        {item.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
           <div className="flex flex-wrap justify-end gap-2">
             <Button
               variant="outline"
@@ -1148,6 +1151,14 @@ export function SurveyFillForm({
           </div>
         </div>
       </div>
+      <SurveyFillOptionalConfirmModal
+        open={optionalConfirmOpen}
+        questions={unansweredOptional}
+        saving={submitMutation.isPending}
+        onClose={() => setOptionalConfirmOpen(false)}
+        onSaveAnyway={handleSaveAnyway}
+        onGoToQuestion={handleGoToOptionalQuestion}
+      />
       <SurveyFillSuccessModal
         open={successModalOpen}
         onClose={() => setSuccessModalOpen(false)}
