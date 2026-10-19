@@ -97,8 +97,8 @@ export const anketYanitApi = {
     apiClient.post<AnketYanitCevapBatchResponse>('/api/AnketYanit/cevap/batch', payload),
 
   /** Cevapladığım Anketler’den kendi kaydını düzenleme. */
-  submitOwnCevap: (payload: AnketYanitCevapRequest) =>
-    apiClient.post<unknown>('/api/AnketYanit/cevap/kendi', payload),
+  submitOwnCevap: (payload: AnketYanitCevapBatchRequest) =>
+    apiClient.post<AnketYanitCevapBatchResponse>('/api/AnketYanit/cevap/kendi', payload),
 
   getAltSecenekler: async (secenekGrupId: number): Promise<AltSecenekOptionDto[]> => {
     const queryCandidates = [

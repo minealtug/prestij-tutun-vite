@@ -66,15 +66,8 @@ export function useSubmitOwnAnketYanitCevaplar() {
 
   return useMutation({
     mutationFn: async (payloads: AnketYanitCevapRequest[]) => {
-      if (payloads.length === 0) {
-        throw new Error('Kaydedilecek cevap bulunamadi.')
-      }
-
-      for (const payload of payloads) {
-        await anketYanitApi.submitOwnCevap(payload)
-      }
-
-      return { savedCount: payloads.length }
+      const batchRequest = buildAnketYanitCevapBatchRequest(payloads)
+      return anketYanitApi.submitOwnCevap(batchRequest)
     },
     onSuccess: () => invalidateAfterCevapSave(queryClient),
   })
