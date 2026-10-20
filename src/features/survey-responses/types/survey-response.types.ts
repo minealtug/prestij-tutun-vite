@@ -50,6 +50,13 @@ export interface AnketCevapOzetItem {
   yanitlanmayanSoruSayisi: number
 }
 
+export interface AnketGirisDurumuSayilari {
+  tamamlananAnketSayisi: number
+  yarimKalanAnketSayisi: number
+  girisYokSayisi: number
+  toplamEkiciSayisi: number
+}
+
 export interface AnketCevapDetayDto {
   sorular: AnketSoruCevapDto[]
   yanitlanmayanSoruSayisi: number

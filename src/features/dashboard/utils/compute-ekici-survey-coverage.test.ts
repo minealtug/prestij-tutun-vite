@@ -36,7 +36,8 @@ describe('computeEkiciSurveyCoverage', () => {
       makeSurvey('e3', 8, 0, 's3'),
     ]
 
-    expect(computeEkiciSurveyCoverage(ekiciIds, surveys)).toEqual({
+    const coverage = computeEkiciSurveyCoverage(ekiciIds, surveys)
+    expect(coverage).toEqual({
       totalEkiciCount: 4,
       completedEkiciCount: 2,
       partialEkiciCount: 1,
@@ -45,9 +46,12 @@ describe('computeEkiciSurveyCoverage', () => {
       partialPercent: 25,
       untouchedPercent: 25,
     })
+    expect(
+      coverage.completedEkiciCount + coverage.partialEkiciCount + coverage.untouchedEkiciCount,
+    ).toBe(coverage.totalEkiciCount)
   })
 
-  it('counts ekici as both completed and partial when they have mixed surveys', () => {
+  it('counts mixed surveys as partial so statuses stay exclusive', () => {
     const ekiciIds = ['e1']
     const surveys = [
       makeSurvey('e1', 10, 0, 's1'),
@@ -56,10 +60,10 @@ describe('computeEkiciSurveyCoverage', () => {
 
     expect(computeEkiciSurveyCoverage(ekiciIds, surveys)).toEqual({
       totalEkiciCount: 1,
-      completedEkiciCount: 1,
+      completedEkiciCount: 0,
       partialEkiciCount: 1,
       untouchedEkiciCount: 0,
-      completedPercent: 100,
+      completedPercent: 0,
       partialPercent: 100,
       untouchedPercent: 0,
     })
@@ -123,16 +127,16 @@ describe('computeMintikaEkiciFillRows', () => {
         key: 'karacasu',
         label: 'KARACASU',
         totalEkici: 2,
-        completedSurveys: 1,
-        partialSurveys: 0,
+        completedEkici: 1,
+        partialEkici: 0,
         untouchedEkici: 1,
       },
       {
         key: 'tavas',
         label: 'TAVAS',
         totalEkici: 2,
-        completedSurveys: 1,
-        partialSurveys: 1,
+        completedEkici: 0,
+        partialEkici: 1,
         untouchedEkici: 1,
       },
     ])

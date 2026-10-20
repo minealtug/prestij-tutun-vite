@@ -21,15 +21,25 @@ function toPercent(count: number, total: number): number | null {
   return Math.round((count / total) * 100)
 }
 
-export function computeEkiciSurveyCoverage(
-  ekiciIds: string[],
-  surveys: AnketCevapOzetItem[],
-): EkiciSurveyCoverageStats {
-  const normalizedEkiciIds = [
-    ...new Set(ekiciIds.map(normalizeEkiciId).filter(Boolean)),
-  ]
-  const totalEkiciCount = normalizedEkiciIds.length
+export type EkiciFillStatus = 'completed' | 'partial' | 'untouched'
 
+/** Her ekici tek kova: yarım kayıt varsa yarım, hepsi tamamsa tamamlanan, kayıt yoksa giriş yok. */
+export function classifyEkiciFillStatus(rows: AnketCevapOzetItem[]): EkiciFillStatus {
+  if (rows.length === 0) return 'untouched'
+
+  let hasCompleted = false
+  let hasUnfinished = false
+  for (const row of rows) {
+    if (getSurveyResponseStatus(row) === 'completed') hasCompleted = true
+    else hasUnfinished = true
+  }
+
+  if (hasUnfinished) return 'partial'
+  if (hasCompleted) return 'completed'
+  return 'untouched'
+}
+
+function groupSurveysByEkici(surveys: AnketCevapOzetItem[]): Map<string, AnketCevapOzetItem[]> {
   const surveysByEkici = new Map<string, AnketCevapOzetItem[]>()
   for (const survey of surveys) {
     const ekiciId = survey.ekiciId?.trim()
@@ -39,25 +49,29 @@ export function computeEkiciSurveyCoverage(
     bucket.push(survey)
     surveysByEkici.set(key, bucket)
   }
+  return surveysByEkici
+}
 
-  const completedEkicis = new Set<string>()
-  const partialEkicis = new Set<string>()
+export function computeEkiciSurveyCoverage(
+  ekiciIds: string[],
+  surveys: AnketCevapOzetItem[],
+): EkiciSurveyCoverageStats {
+  const normalizedEkiciIds = [
+    ...new Set(ekiciIds.map(normalizeEkiciId).filter(Boolean)),
+  ]
+  const totalEkiciCount = normalizedEkiciIds.length
+  const surveysByEkici = groupSurveysByEkici(surveys)
+
+  let completedEkiciCount = 0
+  let partialEkiciCount = 0
+  let untouchedEkiciCount = 0
 
   for (const ekiciId of normalizedEkiciIds) {
-    const rows = surveysByEkici.get(ekiciId) ?? []
-    if (rows.length === 0) continue
-
-    for (const row of rows) {
-      const status = getSurveyResponseStatus(row)
-      if (status === 'completed') completedEkicis.add(ekiciId)
-      if (status === 'partial') partialEkicis.add(ekiciId)
-    }
+    const status = classifyEkiciFillStatus(surveysByEkici.get(ekiciId) ?? [])
+    if (status === 'completed') completedEkiciCount += 1
+    else if (status === 'partial') partialEkiciCount += 1
+    else untouchedEkiciCount += 1
   }
-
-  const activeEkicis = new Set([...completedEkicis, ...partialEkicis])
-  const completedEkiciCount = completedEkicis.size
-  const partialEkiciCount = partialEkicis.size
-  const untouchedEkiciCount = Math.max(0, totalEkiciCount - activeEkicis.size)
 
   return {
     totalEkiciCount,
@@ -74,8 +88,8 @@ export interface MintikaEkiciFillRow {
   key: string
   label: string
   totalEkici: number
-  completedSurveys: number
-  partialSurveys: number
+  completedEkici: number
+  partialEkici: number
   untouchedEkici: number
 }
 
@@ -98,42 +112,23 @@ export function computeMintikaEkiciFillRows(
       key,
       label,
       totalEkici: 0,
-      completedSurveys: 0,
-      partialSurveys: 0,
+      completedEkici: 0,
+      partialEkici: 0,
       untouchedEkici: 0,
     }
     buckets.set(key, created)
     return created
   }
 
-  const ekiciById = new Map<string, EkiciDefinitionDto>()
-  for (const ekici of ekiciler) {
-    ekiciById.set(normalizeEkiciId(ekici.id), ekici)
-  }
-
-  const surveysByEkici = new Map<string, AnketCevapOzetItem[]>()
-  for (const survey of surveys) {
-    const ekiciId = survey.ekiciId?.trim()
-    if (!ekiciId) continue
-    const key = normalizeEkiciId(ekiciId)
-    const bucket = surveysByEkici.get(key) ?? []
-    bucket.push(survey)
-    surveysByEkici.set(key, bucket)
-  }
+  const surveysByEkici = groupSurveysByEkici(surveys)
 
   for (const ekici of ekiciler) {
     const bucket = getBucket(mintikaLabel(ekici.mintikaAdi))
     bucket.totalEkici += 1
-    const rows = surveysByEkici.get(normalizeEkiciId(ekici.id)) ?? []
-    if (rows.length === 0) bucket.untouchedEkici += 1
-  }
-
-  for (const survey of surveys) {
-    const ekici = ekiciById.get(normalizeEkiciId(survey.ekiciId ?? ''))
-    const bucket = getBucket(mintikaLabel(ekici?.mintikaAdi || survey.mintikaAdi))
-    const status = getSurveyResponseStatus(survey)
-    if (status === 'completed') bucket.completedSurveys += 1
-    else if (status === 'partial') bucket.partialSurveys += 1
+    const status = classifyEkiciFillStatus(surveysByEkici.get(normalizeEkiciId(ekici.id)) ?? [])
+    if (status === 'completed') bucket.completedEkici += 1
+    else if (status === 'partial') bucket.partialEkici += 1
+    else bucket.untouchedEkici += 1
   }
 
   return [...buckets.values()].sort((a, b) => a.label.localeCompare(b.label, 'tr-TR'))

@@ -5,18 +5,18 @@ describe('getVisibleMintikaFillSeries', () => {
   it('returns all series when nothing is focused', () => {
     expect(getVisibleMintikaFillSeries(null).map((series) => series.key)).toEqual([
       'totalEkici',
-      'completedSurveys',
-      'partialSurveys',
+      'completedEkici',
+      'partialEkici',
       'untouchedEkici',
     ])
   })
 
   it('keeps only the focused status bars', () => {
-    expect(getVisibleMintikaFillSeries('completedSurveys').map((series) => series.key)).toEqual([
-      'completedSurveys',
+    expect(getVisibleMintikaFillSeries('completedEkici').map((series) => series.key)).toEqual([
+      'completedEkici',
     ])
-    expect(getVisibleMintikaFillSeries('partialSurveys').map((series) => series.key)).toEqual([
-      'partialSurveys',
+    expect(getVisibleMintikaFillSeries('partialEkici').map((series) => series.key)).toEqual([
+      'partialEkici',
     ])
     expect(getVisibleMintikaFillSeries('untouchedEkici').map((series) => series.key)).toEqual([
       'untouchedEkici',

@@ -13,15 +13,15 @@ import type { MintikaEkiciFillRow } from '../utils/compute-ekici-survey-coverage
 
 const SERIES = [
   { key: 'totalEkici', name: 'Toplam ekici', color: '#1a3d5c' },
-  { key: 'completedSurveys', name: 'Tamamlanan anket', color: '#10b981' },
-  { key: 'partialSurveys', name: 'Yarım kalan', color: '#f59e0b' },
+  { key: 'completedEkici', name: 'Tamamlanan', color: '#10b981' },
+  { key: 'partialEkici', name: 'Yarım kalan', color: '#f59e0b' },
   { key: 'untouchedEkici', name: 'Hiç giriş yok', color: '#94a3b8' },
 ] as const
 
 export type AdminMintikaFillFocus =
   | 'totalEkici'
-  | 'completedSurveys'
-  | 'partialSurveys'
+  | 'completedEkici'
+  | 'partialEkici'
   | 'untouchedEkici'
 
 export function getVisibleMintikaFillSeries(focus: AdminMintikaFillFocus | null) {
@@ -90,8 +90,8 @@ export function AdminMintikaFillBarChart({
         name: row.label.length > 12 ? `${row.label.slice(0, 12)}…` : row.label,
         fullName: row.label,
         totalEkici: row.totalEkici,
-        completedSurveys: row.completedSurveys,
-        partialSurveys: row.partialSurveys,
+        completedEkici: row.completedEkici,
+        partialEkici: row.partialEkici,
         untouchedEkici: row.untouchedEkici,
       })),
     [rows],

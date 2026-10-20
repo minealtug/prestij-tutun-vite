@@ -28,6 +28,14 @@ export function useAllSurveyResponses(enabled = true) {
   })
 }
 
+export function useAnketGirisDurumuSayilari() {
+  return useQuery({
+    queryKey: queryKeys.surveyResponses.girisDurumuSayilari,
+    queryFn: () => surveyResponsesApi.getGirisDurumuSayilari(),
+    staleTime: 60_000,
+  })
+}
+
 export function useMySurveyResponses(kullaniciId?: string) {
   return useQuery({
     queryKey: queryKeys.surveyResponses.mine(kullaniciId ?? ''),
@@ -58,6 +66,7 @@ export function useDeleteSurveyResponses() {
         refetchType: 'none',
       })
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.surveyResponses.girisDurumuSayilari })
       void queryClient.invalidateQueries({ queryKey: queryKeys.ekiciDefinitions.all })
     },
   })

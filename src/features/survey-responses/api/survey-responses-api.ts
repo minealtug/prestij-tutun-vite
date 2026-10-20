@@ -5,6 +5,7 @@ import { devResponsesStore } from '../dev/dev-responses-store'
 import type {
   AnketCevapDetayDto,
   AnketCevapOzetItem,
+  AnketGirisDurumuSayilari,
   CografiFiltreOptionsDto,
   DeleteAnketCevapRequest,
   DeleteAnketCevapResult,
@@ -25,6 +26,7 @@ import { anketYanitApi, isAnketCevapNotFoundError } from '@/features/survey-fill
 import { mapCografiFiltreOptionsFromApi } from '../utils/cografi-filtre'
 import { mapOturumToCevapDetay } from '../utils/map-oturum-to-cevap-detay'
 import { mapDeleteAnketCevapResult } from '../utils/delete-survey-responses'
+import { mapAnketGirisDurumuSayilari } from '../utils/map-giris-durumu-sayilari'
 
 function isNetworkError(error: unknown): boolean {
   return (
@@ -196,6 +198,11 @@ export const surveyResponsesApi = {
       () => fetchAllAnketCevapListFromApi(),
       () => devResponsesStore.getList({}),
     ),
+
+  getGirisDurumuSayilari: async (): Promise<AnketGirisDurumuSayilari> => {
+    const raw = await apiClient.get<unknown>('/api/AnketCevap/giris-durumu-sayilari')
+    return mapAnketGirisDurumuSayilari(raw)
+  },
 
   getMyList: async (kullaniciId: string): Promise<AnketCevapOzetItem[]> =>
     withDevFallback(

@@ -8,7 +8,10 @@ import { getMintikaIdsForCografiFiltre } from '@/features/cografi-filtre/utils/c
 import { useEkiciDefinitions } from '@/features/ekici-definitions/hooks/use-ekici-definitions'
 import type { EkiciDefinitionDto } from '@/features/ekici-definitions/types/ekici-definition.types'
 import { PERMISSION_DENIED_KEY } from '@/features/permissions/hooks/use-require-page-permission'
-import { useAllSurveyResponses } from '@/features/survey-responses/hooks/use-survey-responses'
+import {
+  useAllSurveyResponses,
+  useAnketGirisDurumuSayilari,
+} from '@/features/survey-responses/hooks/use-survey-responses'
 import { useAuthStore } from '@/stores/auth-store'
 import { AdminFieldFillSummarySection } from '../components/AdminFieldFillSummarySection'
 import { AdminStalePartialsCard } from '../components/AdminStalePartialsCard'
@@ -38,6 +41,7 @@ export function AdminDashboardPage() {
 
   const responsesQuery = useAllSurveyResponses()
   const ekicilerQuery = useEkiciDefinitions()
+  const girisDurumuQuery = useAnketGirisDurumuSayilari()
   const withoutTobaccoQuery = useWithoutTobaccoEkiciCount()
   const withTobaccoQuery = useWithTobaccoProducerCount()
   const cografiFiltreQuery = useCografiFiltreOptions()
@@ -200,7 +204,8 @@ export function AdminDashboardPage() {
       <AdminFieldFillSummarySection
         summary={fieldFillSummary}
         mintikaRows={mintikaFillRows}
-        isLoading={surveysLoading}
+        statusCounts={girisDurumuQuery.data}
+        isLoading={surveysLoading || girisDurumuQuery.isLoading}
       />
 
       <AdminStalePartialsCard

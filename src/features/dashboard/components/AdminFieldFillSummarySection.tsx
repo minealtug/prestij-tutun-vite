@@ -6,12 +6,14 @@ import {
   AdminMintikaFillBarChart,
   type AdminMintikaFillFocus,
 } from './AdminMintikaFillBarChart'
+import type { AnketGirisDurumuSayilari } from '@/features/survey-responses/types/survey-response.types'
 import type { AdminFieldFillSummary } from '../utils/admin-dashboard-stats'
 import type { MintikaEkiciFillRow } from '../utils/compute-ekici-survey-coverage'
 
 interface AdminFieldFillSummarySectionProps {
   summary: AdminFieldFillSummary
   mintikaRows: MintikaEkiciFillRow[]
+  statusCounts?: AnketGirisDurumuSayilari
   isLoading?: boolean
 }
 
@@ -23,21 +25,18 @@ function getStatusPercent(count: number, total: number): number | null {
 export function AdminFieldFillSummarySection({
   summary,
   mintikaRows,
+  statusCounts,
   isLoading = false,
 }: AdminFieldFillSummarySectionProps) {
   const [focus, setFocus] = useState<AdminMintikaFillFocus | null>(null)
-  const formTotal = summary.completed + summary.partial
   const coverageTotals = useMemo(
-    () =>
-      mintikaRows.reduce(
-        (acc, row) => {
-          acc.totalEkici += row.totalEkici
-          acc.untouchedEkici += row.untouchedEkici
-          return acc
-        },
-        { totalEkici: 0, untouchedEkici: 0 },
-      ),
-    [mintikaRows],
+    () => ({
+      totalEkici: statusCounts?.toplamEkiciSayisi ?? 0,
+      completedEkici: statusCounts?.tamamlananAnketSayisi ?? 0,
+      partialEkici: statusCounts?.yarimKalanAnketSayisi ?? 0,
+      untouchedEkici: statusCounts?.girisYokSayisi ?? 0,
+    }),
+    [statusCounts],
   )
   const tamamlanmaTrend =
     mintikaRows.length > 0
@@ -67,32 +66,32 @@ export function AdminFieldFillSummarySection({
           percent={getStatusPercent(coverageTotals.totalEkici, coverageTotals.totalEkici)}
           color="#1a3d5c"
           icon={Users}
-          description="Seçili filtredeki toplam ekici sayısı"
+          description="Tamamlanan, yarım kalan ve giriş yok toplamı"
           isLoading={isLoading}
           selected={focus === 'totalEkici'}
           onSelect={() => toggleFocus('totalEkici')}
         />
         <UserSurveyMetricChartCard
           label="Tamamlanan"
-          value={summary.completed}
-          percent={getStatusPercent(summary.completed, formTotal)}
+          value={coverageTotals.completedEkici}
+          percent={getStatusPercent(coverageTotals.completedEkici, coverageTotals.totalEkici)}
           color="#10b981"
           icon={CheckCircle2}
-          description="Sistem genelindeki tamamlanmış formlar"
+          description="Tamamlanan anket sayısı"
           isLoading={isLoading}
-          selected={focus === 'completedSurveys'}
-          onSelect={() => toggleFocus('completedSurveys')}
+          selected={focus === 'completedEkici'}
+          onSelect={() => toggleFocus('completedEkici')}
         />
         <UserSurveyMetricChartCard
           label="Yarım kalan"
-          value={summary.partial}
-          percent={getStatusPercent(summary.partial, formTotal)}
+          value={coverageTotals.partialEkici}
+          percent={getStatusPercent(coverageTotals.partialEkici, coverageTotals.totalEkici)}
           color="#f59e0b"
           icon={CircleAlert}
-          description="Devam edilmesi gereken formlar"
+          description="Yarım kalan anket sayısı"
           isLoading={isLoading}
-          selected={focus === 'partialSurveys'}
-          onSelect={() => toggleFocus('partialSurveys')}
+          selected={focus === 'partialEkici'}
+          onSelect={() => toggleFocus('partialEkici')}
         />
         <UserSurveyMetricChartCard
           label="Giriş yok"
