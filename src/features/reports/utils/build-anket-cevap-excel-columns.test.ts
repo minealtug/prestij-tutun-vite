@@ -138,6 +138,46 @@ describe('buildAnketCevapExcelSheetColumns', () => {
     ])
   })
 
+  it('writes a shared child once under each parent with definition numbers', () => {
+    const columns = buildAnketCevapExcelSheetColumns(
+      [
+        'Yevmiyeli işçi çocuğunu getiriyor mu?',
+        'Hangi işlerle ilgileniyor?',
+        'Üretici çocuğunu getiriyor mu?',
+      ],
+      [
+        question({
+          id: 11,
+          soruMetni: 'Yevmiyeli işçi çocuğunu getiriyor mu?',
+          siraNo: 1,
+        }),
+        question({
+          id: 12,
+          soruMetni: 'Üretici çocuğunu getiriyor mu?',
+          siraNo: 2,
+        }),
+        question({
+          id: 13,
+          soruMetni: 'Hangi işlerle ilgileniyor?',
+          siraNo: 3,
+          bagliSoru: true,
+          bagliOlduguSoruId: 11,
+          bagliKosullar: [{ parentSoruId: 11 }, { parentSoruId: 12 }],
+        }),
+      ],
+    )
+
+    const questions = columns.slice(ANKET_CEVAPLARI_EXCEL_FIXED_COLUMN_COUNT)
+    expect(questions.map((column) => column.row1)).toEqual(['1', '1,1', '2', '2,1'])
+    expect(questions.map((column) => column.title)).toEqual([
+      'Yevmiyeli işçi çocuğunu getiriyor mu?',
+      'Hangi işlerle ilgileniyor?',
+      'Üretici çocuğunu getiriyor mu?',
+      'Hangi işlerle ilgileniyor?',
+    ])
+    expect(questions.map((column) => column.answerIndex)).toEqual([0, 1, 2, 1])
+  })
+
   it('keeps the 20th child outline as 2,20 instead of collapsing it to 2,2', () => {
     const children = Array.from({ length: 20 }, (_, index) => {
       const n = index + 1

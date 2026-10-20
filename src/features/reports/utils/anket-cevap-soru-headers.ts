@@ -10,6 +10,7 @@ export interface AnketCevapSoruColumn {
   isChild: boolean
   groupKey: string
   questionId: string | number | null
+  outline: string
 }
 
 export interface AnketCevapSoruGroup {
@@ -89,7 +90,7 @@ export function resolveAnketCevapSoruColumns(
 ): AnketCevapSoruColumn[] {
   const unused = [...questions]
   const matched = visible.map((column, order) => {
-    const question = matchQuestion(column.header, unused)
+    const question = column.question ?? matchQuestion(column.header, unused)
     const isLinked =
       Boolean(question?.bagliSoru) &&
       question?.bagliOlduguSoruId != null &&
@@ -109,6 +110,7 @@ export function resolveAnketCevapSoruColumns(
         ? `q-${isLinked ? question.bagliOlduguSoruId : question.id}`
         : `col-${order}`,
       questionId: question?.id ?? null,
+      outline: column.outline ?? '',
     }
   })
 
@@ -136,6 +138,8 @@ export function groupAnketCevapSoruColumns(columns: AnketCevapSoruColumn[]): Ank
 }
 
 export function getAnketCevapSoruTableHeader(column: AnketCevapSoruColumn): string {
+  const questionText = column.isChild ? column.subHeader : column.header
+  if (column.outline) return `${column.outline}  ${questionText}`
   if (!column.isChild) return column.header
   if (column.parentHeader && column.parentHeader !== column.header) {
     return `${column.parentHeader} — ${column.subHeader}`

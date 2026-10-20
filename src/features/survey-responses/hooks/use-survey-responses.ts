@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/query-keys'
 import { surveyResponsesApi } from '../api/survey-responses-api'
+import type { CografiFiltreQueryParams } from '@/features/cografi-filtre/types'
+import { hasCografiFiltreSelection } from '@/features/cografi-filtre/types'
 import {
   type DeleteAnketCevapRequest,
   type SurveyResponsesQueryParams,
@@ -36,6 +38,16 @@ export function useAnketGirisDurumuSayilari() {
   })
 }
 
+export function useAnketGirisDurumuSayilariCografi(params: CografiFiltreQueryParams) {
+  const enabled = hasCografiFiltreSelection(params)
+  return useQuery({
+    queryKey: queryKeys.surveyResponses.girisDurumuSayilariCografi(params),
+    queryFn: () => surveyResponsesApi.getGirisDurumuSayilariCografi(params),
+    enabled,
+    staleTime: 60_000,
+  })
+}
+
 export function useMySurveyResponses(kullaniciId?: string) {
   return useQuery({
     queryKey: queryKeys.surveyResponses.mine(kullaniciId ?? ''),
@@ -67,6 +79,9 @@ export function useDeleteSurveyResponses() {
       })
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary })
       void queryClient.invalidateQueries({ queryKey: queryKeys.surveyResponses.girisDurumuSayilari })
+      void queryClient.invalidateQueries({
+        queryKey: ['survey-responses', 'giris-durumu-sayilari', 'cografi'],
+      })
       void queryClient.invalidateQueries({ queryKey: queryKeys.ekiciDefinitions.all })
     },
   })

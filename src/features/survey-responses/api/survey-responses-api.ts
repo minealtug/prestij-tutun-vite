@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/api/api-client'
 import type { AppError } from '@/lib/api/api-error'
 import { isDevAuthEnabled } from '@/features/auth/dev/dev-auth'
 import { devResponsesStore } from '../dev/dev-responses-store'
+import type { CografiFiltreQueryParams } from '@/features/cografi-filtre/types'
 import type {
   AnketCevapDetayDto,
   AnketCevapOzetItem,
@@ -51,6 +52,16 @@ async function withDevFallback<T>(apiCall: () => Promise<T>, devCall: () => T): 
 function toQueryRecord(params: SurveyResponsesQueryParams): Record<string, unknown> {
   const record: Record<string, unknown> = {}
   if (params.baslikId != null) record.baslikId = params.baslikId
+  if (params.menseiId != null) record.menseiId = params.menseiId
+  if (params.bolgeId != null) record.bolgeId = params.bolgeId
+  if (params.mintikaId != null) record.mintikaId = params.mintikaId
+  if (params.alimNoktasiId != null) record.alimNoktasiId = params.alimNoktasiId
+  if (params.koyId != null) record.koyId = params.koyId
+  return record
+}
+
+function toCografiQueryRecord(params: CografiFiltreQueryParams): Record<string, unknown> {
+  const record: Record<string, unknown> = {}
   if (params.menseiId != null) record.menseiId = params.menseiId
   if (params.bolgeId != null) record.bolgeId = params.bolgeId
   if (params.mintikaId != null) record.mintikaId = params.mintikaId
@@ -201,6 +212,16 @@ export const surveyResponsesApi = {
 
   getGirisDurumuSayilari: async (): Promise<AnketGirisDurumuSayilari> => {
     const raw = await apiClient.get<unknown>('/api/AnketCevap/giris-durumu-sayilari')
+    return mapAnketGirisDurumuSayilari(raw)
+  },
+
+  getGirisDurumuSayilariCografi: async (
+    params: CografiFiltreQueryParams,
+  ): Promise<AnketGirisDurumuSayilari> => {
+    const raw = await apiClient.get<unknown>(
+      '/api/AnketCevap/giris-durumu-sayilari/cografi',
+      toCografiQueryRecord(params),
+    )
     return mapAnketGirisDurumuSayilari(raw)
   },
 

@@ -55,6 +55,11 @@ export interface AnketGirisDurumuSayilari {
   yarimKalanAnketSayisi: number
   girisYokSayisi: number
   toplamEkiciSayisi: number
+  menseiEkiciSayisi: number | null
+  bolgeEkiciSayisi: number | null
+  mintikaEkiciSayisi: number | null
+  alimNoktasiEkiciSayisi: number | null
+  koyEkiciSayisi: number | null
 }
 
 export interface AnketCevapDetayDto {

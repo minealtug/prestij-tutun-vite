@@ -4,6 +4,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { CografiFiltreFields } from '@/features/cografi-filtre/components/CografiFiltreFields'
 import { useCografiFiltreCascade } from '@/features/cografi-filtre/hooks/use-cografi-filtre-cascade'
 import { useCografiFiltreOptions } from '@/features/cografi-filtre/hooks/use-cografi-filtre-options'
+import { hasCografiFiltreSelection } from '@/features/cografi-filtre/types'
 import { getMintikaIdsForCografiFiltre } from '@/features/cografi-filtre/utils/cografi-filtre'
 import { useEkiciDefinitions } from '@/features/ekici-definitions/hooks/use-ekici-definitions'
 import type { EkiciDefinitionDto } from '@/features/ekici-definitions/types/ekici-definition.types'
@@ -11,6 +12,7 @@ import { PERMISSION_DENIED_KEY } from '@/features/permissions/hooks/use-require-
 import {
   useAllSurveyResponses,
   useAnketGirisDurumuSayilari,
+  useAnketGirisDurumuSayilariCografi,
 } from '@/features/survey-responses/hooks/use-survey-responses'
 import { useAuthStore } from '@/stores/auth-store'
 import { AdminFieldFillSummarySection } from '../components/AdminFieldFillSummarySection'
@@ -26,6 +28,10 @@ import {
   filterEkicilerByCografi,
   filterSurveysByCografi,
 } from '../utils/admin-dashboard-stats'
+import {
+  buildCografiEkiciFillRows,
+  getCografiFillRowLabels,
+} from '../utils/build-cografi-fill-rows'
 import { computeMintikaEkiciFillRows } from '../utils/compute-ekici-survey-coverage'
 
 function getGreetingByHour(hour: number) {
@@ -46,6 +52,8 @@ export function AdminDashboardPage() {
   const withTobaccoQuery = useWithTobaccoProducerCount()
   const cografiFiltreQuery = useCografiFiltreOptions()
   const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
+  const geoFilterActive = hasCografiFiltreSelection(geoCascade.queryParams)
+  const girisDurumuCografiQuery = useAnketGirisDurumuSayilariCografi(geoCascade.queryParams)
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000)
@@ -144,6 +152,21 @@ export function AdminDashboardPage() {
     () => computeMintikaEkiciFillRows(filteredEkiciler, filteredSurveys),
     [filteredEkiciler, filteredSurveys],
   )
+  const cografiFillRows = useMemo(
+    () =>
+      buildCografiEkiciFillRows(
+        girisDurumuCografiQuery.data,
+        getCografiFillRowLabels(cografiFiltreQuery.data, geoCascade.queryParams),
+      ),
+    [cografiFiltreQuery.data, geoCascade.queryParams, girisDurumuCografiQuery.data],
+  )
+  const fieldFillRows = geoFilterActive ? cografiFillRows : mintikaFillRows
+  const fieldFillStatusCounts = geoFilterActive
+    ? girisDurumuCografiQuery.data
+    : girisDurumuQuery.data
+  const fieldFillLoading = geoFilterActive
+    ? girisDurumuCografiQuery.isLoading || surveysLoading
+    : surveysLoading || girisDurumuQuery.isLoading
   const ekiciActivity = useMemo(
     () => computeAdminEkiciActivity(ekicilerQuery.data ?? [], enrichedSurveys),
     [ekicilerQuery.data, enrichedSurveys],
@@ -174,11 +197,12 @@ export function AdminDashboardPage() {
 
       <AdminUserActivityCard
         summary={ekiciActivity}
+        statusCounts={girisDurumuQuery.data}
         activeCount={withTobaccoQuery.data ?? 0}
         activeLoading={withTobaccoQuery.isLoading}
         withoutTobaccoCount={withoutTobaccoQuery.data ?? 0}
         withoutTobaccoLoading={withoutTobaccoQuery.isLoading}
-        isLoading={ekicilerQuery.isLoading || surveysLoading}
+        isLoading={girisDurumuQuery.isLoading}
       />
 
       <section className="rounded-md border border-[#e8ecf0] bg-white px-4 py-3">
@@ -203,9 +227,10 @@ export function AdminDashboardPage() {
 
       <AdminFieldFillSummarySection
         summary={fieldFillSummary}
-        mintikaRows={mintikaFillRows}
-        statusCounts={girisDurumuQuery.data}
-        isLoading={surveysLoading || girisDurumuQuery.isLoading}
+        mintikaRows={fieldFillRows}
+        statusCounts={fieldFillStatusCounts}
+        isLoading={fieldFillLoading}
+        geoFilterActive={geoFilterActive}
       />
 
       <AdminStalePartialsCard

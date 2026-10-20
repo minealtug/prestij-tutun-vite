@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CheckCircle2, CircleAlert, CircleOff, Users } from 'lucide-react'
+import { CheckCircle2, CircleAlert, CircleOff } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { UserSurveyMetricChartCard } from './UserSurveyMetricChartCard'
 import {
@@ -15,6 +15,7 @@ interface AdminFieldFillSummarySectionProps {
   mintikaRows: MintikaEkiciFillRow[]
   statusCounts?: AnketGirisDurumuSayilari
   isLoading?: boolean
+  geoFilterActive?: boolean
 }
 
 function getStatusPercent(count: number, total: number): number | null {
@@ -27,6 +28,7 @@ export function AdminFieldFillSummarySection({
   mintikaRows,
   statusCounts,
   isLoading = false,
+  geoFilterActive = false,
 }: AdminFieldFillSummarySectionProps) {
   const [focus, setFocus] = useState<AdminMintikaFillFocus | null>(null)
   const coverageTotals = useMemo(
@@ -38,8 +40,9 @@ export function AdminFieldFillSummarySection({
     }),
     [statusCounts],
   )
-  const tamamlanmaTrend =
-    mintikaRows.length > 0
+  const tamamlanmaTrend = geoFilterActive
+    ? 'Seçilen coğrafi filtrelere göre ekici ve anket doluluk sayıları'
+    : mintikaRows.length > 0
       ? 'Mıntıka bazında ekici ve anket doluluk sayıları'
       : 'Henüz form kaydı yok'
 
@@ -60,17 +63,6 @@ export function AdminFieldFillSummarySection({
       </Card>
 
       <div className="flex flex-col gap-4">
-        <UserSurveyMetricChartCard
-          label="Tüm ekiciler"
-          value={coverageTotals.totalEkici}
-          percent={getStatusPercent(coverageTotals.totalEkici, coverageTotals.totalEkici)}
-          color="#1a3d5c"
-          icon={Users}
-          description="Tamamlanan, yarım kalan ve giriş yok toplamı"
-          isLoading={isLoading}
-          selected={focus === 'totalEkici'}
-          onSelect={() => toggleFocus('totalEkici')}
-        />
         <UserSurveyMetricChartCard
           label="Tamamlanan"
           value={coverageTotals.completedEkici}

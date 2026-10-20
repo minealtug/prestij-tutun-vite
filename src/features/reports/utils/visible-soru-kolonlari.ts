@@ -1,9 +1,13 @@
 import type { QuestionDto } from '@/features/questions/types/question.types'
+import { listQuestionDisplayRows } from '@/features/questions/utils/sort-questions'
 
 export interface VisibleSoruKolonu {
   header: string
   /** `cevaplar` dizisindeki indeks. API kolonunda yoksa -1 (hücre boş). */
   index: number
+  question?: QuestionDto
+  outline?: string
+  displayKey?: string
 }
 
 function normalizeSoruHeader(header: string) {
@@ -44,8 +48,8 @@ function apiColumnsFromHeaders(soruKolonlari: string[]): VisibleSoruKolonu[] {
 }
 
 /**
- * Rapor kolonları API `soruKolonlari` listesinden gelir; hiç cevaplanmamış sorular
- * bu listede olmayabilir. Anket tanımındaki aktif soruları da ekler, sırayı tanıma göre kurar.
+ * Rapor kolonları tanımlı sorular listesiyle aynı ağaç ve numaralandırmadır.
+ * Pasif sorular o sırada gizlenir; birden fazla üst soruya bağlı alt soru her ebeveynin yanında durur.
  */
 export function getVisibleSoruKolonlari(
   soruKolonlari: string[],
@@ -62,22 +66,39 @@ export function getVisibleSoruKolonlari(
     else queues.set(key, [column])
   }
 
+  const indexByQuestionId = new Map<string, number>()
   const merged: VisibleSoruKolonu[] = []
 
-  for (const question of questions) {
-    if (question.aktif === false) continue
-    const header = question.soruMetni?.trim() ?? ''
+  for (const row of listQuestionDisplayRows(questions)) {
+    if (row.aktif === false) continue
+    const header = row.soruMetni?.trim() ?? ''
     if (!header) continue
     if (isKontratSahibiDuplicateReportColumn(header)) continue
 
-    const key = normalizeSoruHeader(header)
-    const queue = queues.get(key)
-    const matched = queue?.shift()
-    merged.push(matched ?? { header, index: -1 })
-  }
+    const questionId = String(row.id)
+    const reusedIndex = indexByQuestionId.get(questionId)
+    if (reusedIndex != null) {
+      merged.push({
+        header,
+        index: reusedIndex,
+        question: row,
+        outline: row.displayOutline,
+        displayKey: row.displayKey,
+      })
+      continue
+    }
 
-  for (const leftover of queues.values()) {
-    merged.push(...leftover)
+    const key = normalizeSoruHeader(header)
+    const matched = queues.get(key)?.shift()
+    const index = matched?.index ?? -1
+    indexByQuestionId.set(questionId, index)
+    merged.push({
+      header,
+      index,
+      question: row,
+      outline: row.displayOutline,
+      displayKey: row.displayKey,
+    })
   }
 
   return merged

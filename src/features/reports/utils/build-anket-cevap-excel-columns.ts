@@ -1,5 +1,5 @@
 import type { QuestionDto } from '@/features/questions/types/question.types'
-import { getQuestionDisplayMeta, sortQuestionsForSurvey } from '@/features/questions/utils/sort-questions'
+import { getQuestionDisplayMeta } from '@/features/questions/utils/sort-questions'
 import {
   ANKET_CEVAPLARI_EXCEL_COLUMNS,
   type AnketCevapExcelColumn,
@@ -81,18 +81,18 @@ export function buildAnketCevapExcelSheetColumns(
     }),
   )
 
-  const orderedQuestions = questions.length > 0 ? sortQuestionsForSurvey(questions) : []
-  const visible = getVisibleSoruKolonlari(soruKolonlari, orderedQuestions)
-  const labeled = resolveAnketCevapSoruColumns(visible, orderedQuestions, optionNameById)
+  const visible = getVisibleSoruKolonlari(soruKolonlari, questions)
+  const labeled = resolveAnketCevapSoruColumns(visible, questions, optionNameById)
   const optionNames = [...optionNameById.values()]
-  const display = getQuestionDisplayMeta(orderedQuestions)
-  const questionById = new Map(orderedQuestions.map((question) => [String(question.id), question]))
+  const display = getQuestionDisplayMeta(questions)
+  const questionById = new Map(questions.map((question) => [String(question.id), question]))
 
   const dynamic = labeled.map((column) => {
     const question =
       column.questionId != null ? questionById.get(String(column.questionId)) : undefined
     const outline =
-      column.questionId != null ? (display.get(String(column.questionId))?.outline ?? '') : ''
+      column.outline ||
+      (column.questionId != null ? (display.get(String(column.questionId))?.outline ?? '') : '')
     const header = column.header
 
     return {

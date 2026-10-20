@@ -72,5 +72,6 @@ describe('resolveAnketCevapSoruColumns', () => {
     expect(columns[2]?.subHeader).toBe('Duş — Bireylerin bu koşula erişme imkanı var mı?')
     expect(groupAnketCevapSoruColumns(columns)).toHaveLength(1)
     expect(getAnketCevapSoruTableHeader(columns[1]!)).toContain('Tuvalet')
+    expect(getAnketCevapSoruTableHeader({ ...columns[1]!, outline: '3.12.1' })).toContain('3.12.1')
   })
 })

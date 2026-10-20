@@ -1,9 +1,11 @@
 import { Ban, UserRound, UserX, Users } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
+import type { AnketGirisDurumuSayilari } from '@/features/survey-responses/types/survey-response.types'
 import type { AdminEkiciActivitySummary } from '../utils/admin-dashboard-stats'
 
 interface AdminUserActivityCardProps {
   summary: AdminEkiciActivitySummary
+  statusCounts?: AnketGirisDurumuSayilari
   activeCount: number
   withoutTobaccoCount: number
   isLoading?: boolean
@@ -13,12 +15,18 @@ interface AdminUserActivityCardProps {
 
 export function AdminUserActivityCard({
   summary,
+  statusCounts,
   activeCount,
   withoutTobaccoCount,
   isLoading = false,
   activeLoading = false,
   withoutTobaccoLoading = false,
 }: AdminUserActivityCardProps) {
+  const filledEkiciler =
+    (statusCounts?.tamamlananAnketSayisi ?? 0) + (statusCounts?.yarimKalanAnketSayisi ?? 0)
+  const neverFilled = statusCounts?.girisYokSayisi ?? 0
+  const totalEkiciler = statusCounts?.toplamEkiciSayisi ?? summary.totalEkiciler
+
   return (
     <Card interactive={false} accent>
       <div className="mb-4">
@@ -29,7 +37,7 @@ export function AdminUserActivityCard({
           icon={Users}
           label="Aktif"
           value={activeCount}
-          hint={`Toplam ${summary.totalEkiciler.toLocaleString('tr-TR')}`}
+          hint={`Toplam ${totalEkiciler.toLocaleString('tr-TR')}`}
           isLoading={activeLoading}
         />
         <Metric
@@ -42,14 +50,14 @@ export function AdminUserActivityCard({
         <Metric
           icon={UserRound}
           label="Dolduran"
-          value={summary.filledEkiciler}
+          value={filledEkiciler}
           hint="En az bir form işlemi"
           isLoading={isLoading}
         />
         <Metric
           icon={UserX}
           label="Hiç doldurmayan"
-          value={summary.neverFilled}
+          value={neverFilled}
           hint="Form kaydı yok"
           isLoading={isLoading}
           tone="amber"
