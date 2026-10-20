@@ -4,15 +4,19 @@ import type { AdminEkiciActivitySummary } from '../utils/admin-dashboard-stats'
 
 interface AdminUserActivityCardProps {
   summary: AdminEkiciActivitySummary
+  activeCount: number
   withoutTobaccoCount: number
   isLoading?: boolean
+  activeLoading?: boolean
   withoutTobaccoLoading?: boolean
 }
 
 export function AdminUserActivityCard({
   summary,
+  activeCount,
   withoutTobaccoCount,
   isLoading = false,
+  activeLoading = false,
   withoutTobaccoLoading = false,
 }: AdminUserActivityCardProps) {
   return (
@@ -24,9 +28,9 @@ export function AdminUserActivityCard({
         <Metric
           icon={Users}
           label="Aktif"
-          value={summary.activeEkiciler}
+          value={activeCount}
           hint={`Toplam ${summary.totalEkiciler.toLocaleString('tr-TR')}`}
-          isLoading={isLoading}
+          isLoading={activeLoading}
         />
         <Metric
           icon={Ban}

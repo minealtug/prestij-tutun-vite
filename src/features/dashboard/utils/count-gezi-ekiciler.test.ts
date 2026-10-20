@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countGeziEkiciler } from './count-gezi-ekiciler'
+import { countGeziEkiciler, parseCountNumber } from './count-gezi-ekiciler'
 
 describe('countGeziEkiciler', () => {
   it('counts unique ekici ids from a gezi list', () => {
@@ -18,5 +18,17 @@ describe('countGeziEkiciler', () => {
 
   it('reads a wrapped list', () => {
     expect(countGeziEkiciler({ data: [{ ekiciId: 'a' }] })).toBe(1)
+  })
+})
+
+describe('parseCountNumber', () => {
+  it('reads a raw number', () => {
+    expect(parseCountNumber(42)).toBe(42)
+  })
+
+  it('reads common wrapped count fields', () => {
+    expect(parseCountNumber({ sayi: 12 })).toBe(12)
+    expect(parseCountNumber({ tutunuOlanUreticiSayisi: 8 })).toBe(8)
+    expect(parseCountNumber({ data: 3 })).toBe(3)
   })
 })

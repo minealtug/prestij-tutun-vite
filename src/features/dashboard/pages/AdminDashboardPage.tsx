@@ -13,7 +13,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { AdminFieldFillSummarySection } from '../components/AdminFieldFillSummarySection'
 import { AdminStalePartialsCard } from '../components/AdminStalePartialsCard'
 import { AdminUserActivityCard } from '../components/AdminUserActivityCard'
-import { useWithoutTobaccoEkiciCount } from '../hooks/use-gezi'
+import { useWithoutTobaccoEkiciCount, useWithTobaccoProducerCount } from '../hooks/use-gezi'
 import { enrichSurveysWithEkiciLocations } from '../utils/enrich-survey-location'
 import {
   buildAdminStalePartialRows,
@@ -39,6 +39,7 @@ export function AdminDashboardPage() {
   const responsesQuery = useAllSurveyResponses()
   const ekicilerQuery = useEkiciDefinitions()
   const withoutTobaccoQuery = useWithoutTobaccoEkiciCount()
+  const withTobaccoQuery = useWithTobaccoProducerCount()
   const cografiFiltreQuery = useCografiFiltreOptions()
   const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
 
@@ -169,6 +170,8 @@ export function AdminDashboardPage() {
 
       <AdminUserActivityCard
         summary={ekiciActivity}
+        activeCount={withTobaccoQuery.data ?? 0}
+        activeLoading={withTobaccoQuery.isLoading}
         withoutTobaccoCount={withoutTobaccoQuery.data ?? 0}
         withoutTobaccoLoading={withoutTobaccoQuery.isLoading}
         isLoading={ekicilerQuery.isLoading || surveysLoading}

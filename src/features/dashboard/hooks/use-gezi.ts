@@ -4,7 +4,14 @@ import { geziApi } from '../api/gezi-api'
 
 export function useWithoutTobaccoEkiciCount() {
   return useQuery({
-    queryKey: queryKeys.dashboard.gezi,
+    queryKey: queryKeys.dashboard.geziTutunuOlmayan,
     queryFn: () => geziApi.getWithoutTobaccoCount(),
+  })
+}
+
+export function useWithTobaccoProducerCount() {
+  return useQuery({
+    queryKey: queryKeys.dashboard.geziTutunuOlan,
+    queryFn: () => geziApi.getWithTobaccoProducerCount(),
   })
 }
