@@ -1,0 +1,706 @@
+================================================================================
+PRESTİJ TÜTÜN (prestij-tutun-vite) — SENIOR CODE REVIEW RAPORU
+================================================================================
+Tarih              : 22 Ekim 2026
+İnceleme türü      : Salt okunur kod incelemesi (davranış değiştirilmedi)
+Kapsam             : Bu depo yalnızca SPA ön yüzdür. Kalıcı veri ve iş kuralı
+                     uygulaması ayrı .NET API + AGRIVION SQL Server üzerindedir.
+Kaynak değişikliği : YOK
+Çalıştırılan test  : YOK (Vitest/Jest bağımlılığı ve npm test script’i yok;
+                     test dosyaları derleme dışında bırakılmış)
+Komut              : YOK (riskli test, paket, format, git, DB yazma yok)
+
+Öncelik tanımı
+  P0 Kritik  : Ciddi güvenlik, veri kaybı veya üretim işlevselliği kırılması
+  P1 Yüksek  : Önemli hata, güvenlik zaafı veya ciddi bakım/veri tutarlılığı
+  P2 Orta    : Tekrar, katman, performans ihtimali, sadeleştirme
+  P3 Düşük   : Okunabilirlik, ölü export, isimlendirme
+
+Bulgu sayıları (birleştirilmiş, tekil)
+  P0 : 0
+  P1 : 8   (F-01 … F-08)
+  P2 : 15  (F-09, F-11, F-13, F-16, F-17, F-18, F-19, F-26, F-27, F-28, F-29, F-30, F-33, F-34, F-35)
+  P3 : 12  (F-10, F-12, F-14, F-15, F-20, F-21, F-22, F-23, F-24, F-25, F-31, F-32)
+  Toplam : 35
+
+Kesin / varsayım ayrımı
+  [KESİN]     Statik referans taraması veya doğrudan okunan kod
+  [VARSAYIM]  Ölçülmedi, backend görülmedi veya dinamik kullanım ihtimali
+  [DOĞRULANMALI] Silme önerisi verilmeden önce tekrar taranmalı
+
+
+================================================================================
+1. PROJE GENEL DEĞERLENDİRMESİ
+================================================================================
+
+Prestij Tütün, tütün sözleşmeli ekici anketlerinin tanımlanması, doldurulması,
+cevaplanması, raporlanması ve yetkilendirilmesi için bir kurumsal yönetim
+panelidir.
+
+Teknoloji: React 19, TypeScript (strict), Vite 8, React Router 7, TanStack
+Query 5, Zustand (persist), Axios, Tailwind CSS 4. Excel (xlsx-js-style),
+PDF (jspdf + modern-screenshot), grafik (recharts).
+
+Mimari (SPA):
+  src/app            giriş, router, Query + Permissions sarmalayıcı
+  src/features/*     iş modülleri (api → hooks → pages/components → utils)
+  src/lib/api        Axios örneği, zarf çözme, hata normalizasyonu
+  src/components     layout, UI, routing koruması
+  src/stores         oturum (prestij-auth)
+  src/config         menü ve sayfa başlıkları
+
+Derleme: `tsc -b && vite build`. Geliştirmede `/api` ve `/uploads`
+VITE_API_BASE_URL’e vekillenir (vite.config.ts).
+
+Güçlü yanlar:
+  - Feature klasörleri tutarlı (api/hooks/pages/utils).
+  - HTTP çağrıları axios-instance yerine apiClient üzerinden (DIP).
+  - İş kurallarının bir kısmı saf utils’te (görünürlük, doğrulama, tarih).
+  - ~24 birim test dosyası yazılmış (ancak çalıştırılmıyor).
+
+Zayıf yanlar:
+  - Anket doldurma ve soru formu “tanrı bileşen”.
+  - API PascalCase/camelCase köprüsü her feature’da kopyalanmış.
+  - Seçenek grubu güncellemesi istemcide N+1 orkestrasyon.
+  - Test hattı yok.
+  - Geliştirme kimlik bilgisi kaynakta; örnek env’de dev-auth açık.
+  - Ölü “son kayıtlar” zinciri ve kullanılmayan bileşenler.
+
+Backend bu repoda yoktur. Tablo adları (TBL_D_ANKET_CEVAP, TBL_ANKET_SORU,
+TBL_ANKET_ALT_SECENEK) yalnızca operasyonel bağlamda bilinmektedir; bu rapor
+ön yüz koduna dayanır.
+
+
+================================================================================
+2. KRİTİK VE ÖNCELİKLİ BULGULAR
+================================================================================
+
+P0 bulunamadı. Aşağıdakiler P1’dir. Üretimde en önce bunlar ele alınmalıdır.
+
+--------------------------------------------------------------------------------
+F-01  Kaynakta gömülü geliştirme kimlik bilgisi
+Öncelik        : P1
+Konum          : src/features/auth/dev/dev-auth.ts (DEV_TEST_CREDENTIALS, ~4–7)
+                 src/features/auth/pages/LoginPage.tsx (~12–14, form öntanı)
+                 .env.example (VITE_DEV_AUTH_ENABLED=true)
+Mevcut durum   : Geliştirme kullanıcısı kullanıcı adı ve parola kaynak kodunda.
+                 isDevAuthEnabled() = import.meta.env.DEV && bayrak === 'true'.
+                 Login sayfası bayrak açıkken alanları doldurur.
+Teknik açıklama: Vite üretimde import.meta.env.DEV genelde false olur ve
+                 tryDevLogin erken çıkar; yine de sır repo, yedek ve
+                 kaynak haritasında kalır. .env.example varsayılanı true.
+Senaryo        : Depo erişimi olan kişi geliştirme kimliğini görür. Yanlış
+                 yapılandırılmış preview’de bayrak açık kalırsa (DCE
+                 şüpheliyse) sahte oturum.
+Etki           : Kimlik sızıntısı; üretim etkisi [VARSAYIM] paketleyiciye bağlı.
+Öneri          : Parolayı kaynaktan çıkar; .env.example’da bayrağı false yap;
+                 gerçek kullanıcıyı yalnızca yerel .env’de tut (gitignore).
+Fayda          : Repo sızıntısı kapanır.
+Risk / test    : LoginPage’in DEV ve production build’de boş form / API login.
+Güven          : Yüksek (kodda var). Parolanın production bundle’da kalması
+                 ölçülmedi — [VARSAYIM]. Rapor parolayı kopyalamaz.
+
+--------------------------------------------------------------------------------
+F-02  Düz metin parola CSV dışa aktarımı
+Öncelik        : P1
+Konum          : src/features/users/utils/export-plain-passwords.ts
+                 (~8–24, downloadPlainPasswordsCsv)
+                 src/features/users/hooks/use-migrate-users.ts (~15)
+Mevcut durum   : Kullanıcı göçü başarısında düz parolalar CSV olarak indirilir.
+Teknik açıklama: Hassas sır tarayıcı indirmesine ve kullanıcının diskine yazılır.
+                 Log yok; yine de sırın durduğu yer kontrolsüz.
+Senaryo        : Admin göç çalıştırır; CSV paylaşılır veya yedeklenir.
+Etki           : Hesap ele geçirme yüzeyi.
+Öneri          : Tek kullanımlık parola, ekranda bir kez göster, indirmeyi
+                 kapat veya zorunlu şifre değiştirme; CSV’de parola olmasın.
+Fayda          : Sırın dosyaya yazılması durur.
+Risk / test    : Göç iş akışı bilinçli olarak CSV bekliyorsa iş kuralı değişir.
+                 [Davranış değişikliği riski]
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-03  JWT oturumunun localStorage’da tutulması
+Öncelik        : P1
+Konum          : src/stores/auth-store.ts (persist name: 'prestij-auth', ~33–60)
+                 src/lib/api/axios-instance.ts (Authorization header, ~19–23)
+Mevcut durum   : accessToken Zustand persist ile tarayıcıda saklanır.
+Teknik açıklama: XSS ile token çalınabilir. SPA’da yaygın; HttpOnly cookie
+                 bu repoda yok (backend görülmedi).
+Senaryo        : XSS veya paylaşılan tarayıcı.
+Etki           : Oturum gaspı.
+Öneri          : Backend ile httpOnly+Secure cookie / kısa ömür + refresh;
+                 XSS sıkılaştırma (bu SPA’da kullanıcı HTML’i sınırlı).
+Fayda          : Token XSS ile okunamaz (cookie senaryosu).
+Risk / test    : Auth mimarisi değişir; login/logout/401 tüm akışlar.
+                 [Davranış değişikliği riski]
+Güven          : Yüksek (saklama yeri kesin). Sömürü [VARSAYIM].
+
+--------------------------------------------------------------------------------
+F-04  Seçenek grubu güncellemesinde istemci N+1 ve kısmi kayıt
+Öncelik        : P1
+Konum          : src/features/option-groups/api/option-groups-api.ts
+                 update (~44–83)
+Mevcut durum   : getBySecenekGrupId, silinenler için tek tek DELETE, kalanlar
+                 için PUT/POST, sonra yeniden GET. İşlem sınırı yok.
+Teknik açıklama: İlk silme 400 (ör. “anket cevaplarında kullanılıyor”) olunca
+                 sonraki adımlar çalışmaz veya kısmen kalır. Veri tutarlılığı
+                 transaction’sız. Performans: seçenek sayısı kadar HTTP.
+                 Ölçüm yapılmadı — N+1 [ihtimal, koddan okunuyor].
+Senaryo        : Tarla gibi kullanılan seçenek silinmeye çalışılır.
+Etki           : Yarım güncellenmiş grup; kullanıcı teknik/yanlış mesaj görür.
+Öneri          : Backend tek batch + atomik işlem. İstemcide hata sonrası
+                 refetch. Kullanıcı mesajı (option-group-error-message.ts)
+                 korunmalı.
+Fayda          : Tutarlı kayıt, daha az istek.
+Risk / test    : Seçenek ekle/sil/güncelle, kullanılan seçeneği silme, ağ kesisi.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-05  Aynı alt seçenek kaynağı, iki React Query anahtarı
+Öncelik        : P1
+Konum          : src/lib/query/query-keys.ts (~25–26 ve ~78–79)
+                 src/features/questions/hooks/use-alt-secenekler-by-grup.ts
+                 src/features/survey-fill/hooks/use-alt-secenekler.ts
+Mevcut durum   : getBySecenekGrupId iki farklı queryKey ile çekilir.
+Teknik açıklama: invalidateQueries biri günceller, diğeri bayat kalır.
+Senaryo        : Seçenek tanımla kaydı → doldurma ekranı eski liste.
+Etki           : Yanlış seçenek / kayıp id.
+Öneri          : Tek queryKey (questions.altSeceneklerByGrup).
+Fayda          : Ortak cache.
+Risk / test    : Tanımlama sonrası doldurma dropdown’ı; staleTime 30 dk.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-06  SurveyFillForm tek noktada aşırı sorumluluk (hata üretici)
+Öncelik        : P1
+Konum          : src/features/survey-fill/components/SurveyFillForm.tsx
+                 SurveyFillForm ~92–1200; handleSaveAnswers ~738–856;
+                 6 useEffect ~433–619
+Mevcut durum   : Oturum, geo, ekici, görünürlük, kontrat kilidi, taslak/tam
+                 kayıt, Excel ve UI aynı bileşende.
+Teknik açıklama: Etki alanı belirsiz; eşzamanlı effect’ler (ekici, geo reset,
+                 autofill) yarış riski taşır. Ölçülmedi.
+Senaryo        : Deep link + ekici değişimi + kontrat sahibi seçimi üst üste.
+Etki           : Kayıp cevap, yanlış kilit, çift submit.
+Öneri          : Faz 4: hook’lara ayır (oturum, cevap state, kayıt). Şimdi
+                 dokunma.
+Fayda          : Bakım, test.
+Risk / test    : Doldurma uçtan uca, taslak, tamamlanmış kilit, deep link.
+Güven          : Yüksek (boyut/sorumluluk kesin). Yarış [VARSAYIM].
+
+--------------------------------------------------------------------------------
+F-07  Alt seçenek eşleyicilerinde semantik kayma
+Öncelik        : P1
+Konum          : src/features/questions/utils/normalize-alt-secenek-api.ts
+                 src/features/option-groups/utils/normalize-option-group-api.ts
+                 (~19–37, mapAltSecenekFromApi)
+                 src/features/survey-fill/utils/normalize-alt-secenek-api.ts
+Mevcut durum   : Üç kopya. Fill mapper secenekGrupId zorunlu tutmaz; diğerleri
+                 tutar.
+Teknik açıklama: Aynı API satırı bir yerde düşer, bir yerde geçer.
+Senaryo        : Grup id’si 0/eksik gelen seçenek.
+Etki           : Tanımlamada görünmeyen, doldurmada görünen (veya tersi) seçenek.
+Öneri          : Tek mapper; ortak doğrulama.
+Fayda          : Tek gerçek kaynak.
+Risk / test    : Seçenek listesi, grup filtre, doldurma dropdown.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-08  Birim testleri derleme ve CI’da yok
+Öncelik        : P1
+Konum          : package.json (scripts: test yok; vitest yok)
+                 tsconfig.app.json satır 27: exclude src/**/*.test.ts
+Mevcut durum   : ~24 test dosyası var, çalıştırılmıyor.
+Teknik açıklama: Görünürlük, doğrulama, tarih, Excel eşlemesi için yazılmış
+                 testler güvenlik ağı değil.
+Senaryo        : Refaktör sonrası sessiz regresyon.
+Etki           : Üretim hatası, geç fark edilir.
+Öneri          : Vitest + `npm test`; tsconfig test projesi. Bu incelemede
+                 test çalıştırılmadı.
+Fayda          : Regresyon koruması.
+Risk / test    : Testlerin kendisinin güncel olup olmadığı ayrı iş.
+Güven          : Yüksek.
+
+
+================================================================================
+3. GEREKSİZ VE TEKRAR EDEN KODLAR
+================================================================================
+
+Statik import taraması yapıldı. `import()` dinamik yükleme yok. Router kayıtları
+statik. Reflection yok. Aşağıda “kesin kullanılmıyor” = projede başka dosyadan
+import/çağrı yok.
+
+--------------------------------------------------------------------------------
+F-09  Ölü “son kayıt” zinciri (store + sidebar, yazma yok)
+Öncelik        : P2
+Konum          : src/features/survey-fill/stores/recent-saves-store.ts
+                 (~14, useSurveyFillRecentSavesStore, persist
+                 'prestij-survey-fill-recent')
+                 src/features/survey-fill/stores/survey-fill-recent-store.ts
+                 (~28, aynı persist adı, farklı id formatı : vs -)
+                 src/features/survey-fill/components/SidebarRecentSaves.tsx
+                 src/features/survey-fill/types/recent-save.types.ts
+Doğrulama      : addRecentSave / clearRecentSaves yalnızca store tanımlarında.
+                 SidebarRecentSaves hiçbir layout/router’da import edilmiyor.
+                 recent-saves-store hiçbir dosyadan import edilmiyor.
+Neden          : Yarım bırakılmış özellik. İki store aynı localStorage
+                 anahtarını paylaşır; ikisi yüklenirse çakışır.
+Öneri          : Ya tek store + kayıt sonrası addRecentSave + sidebar’a bağla,
+                 ya da kullanılmayan dosyaları kaldır (Faz 2, grep ile teyit).
+Risk           : Kullanıcı localStorage’da eski JSON varsa hydration.
+                 Silme öncesi [DOĞRULANMALI] tekrar grep.
+Güven          : Yüksek (statik graf).
+
+--------------------------------------------------------------------------------
+F-10  Kullanılmayan başarı modalı
+Öncelik        : P3
+Konum          : src/features/survey-fill/components/SurveyFillSaveSuccessModal.tsx
+                 (~11, SurveyFillSaveSuccessModal)
+Doğrulama      : Yalnızca kendi dosyasında. Form SurveyFillSuccessModal kullanıyor.
+Öneri          : Kullanılmayan dosyayı kaldır.
+Risk           : Düşük. [DOĞRULANMALI] dinamik import yok (tarandı).
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-11  Orphan SurveyFillAnswerFilter
+Öncelik        : P2
+Konum          : src/features/survey-fill/components/SurveyFillAnswerFilter.tsx
+                 (~30)
+                 SurveyFillPage.tsx bu bileşeni import etmiyor (~1–15, ~143–188)
+Doğrulama      : Sayfa yalnızca SurveyFillForm mount ediyor.
+Neden          : Geçici “Tarla ara” UI’si sayfadan kopmuş, dosya kalmış.
+                 İçeriden reports hook’u (ağır /api/Rapor/anket-cevaplari).
+Öneri          : Bilinçli geçici ise sayfaya bağla veya dosyayı kaldır.
+Risk           : Kullanıcı hâlâ bu aramayı bekliyorsa işlev kaybı.
+                 [DOĞRULANMALI] ürün kararı.
+Güven          : Yüksek (sayfa import’u yok).
+
+--------------------------------------------------------------------------------
+F-12  Kullanılmayan export’lar
+Öncelik        : P3
+Konum / doğrulama (yalnızca tanım, dış çağrı yok):
+  - toDeleteAnketCevapRequest
+    survey-responses/utils/delete-survey-responses.ts ~31
+    (çoğul toDeleteAnketCevapRequests SurveyResponsesPage’de kullanılıyor)
+  - hasAnySurveyFilter
+    survey-responses/types/survey-response.types.ts ~115
+  - isYetistiriciOption
+    survey-fill/utils/kontrat-sahibi-autofill.ts ~28
+  - hasEkiciProducerQuestion
+    survey-fill/utils/is-ekici-producer-question.ts ~16
+  - getCurrentOturumQuestion
+    survey-fill/utils/oturum-questions.ts ~111
+  - queryKeys.auth.me
+    src/lib/query/query-keys.ts ~2–4 (queryKeys.auth hiç tüketilmiyor)
+  - queryKeys.surveyResponses.cografiFiltreOptions
+    query-keys.ts ~51
+Öneri          : Kullanılmayan export’ları sil veya tüketen koda bağla.
+Risk           : Dış paket yok; yine de grep. [DOĞRULANMALI] her biri için.
+Güven          : Yüksek (statik).
+
+--------------------------------------------------------------------------------
+F-13  Kullanılmayan bağımlılık: xlsx
+Öncelik        : P2
+Konum          : package.json dependencies "xlsx"
+Doğrulama      : src içinde `from 'xlsx'` yok; tüm Excel `xlsx-js-style`.
+Neden          : Ölü paket, denetim/CVE yüzeyi, kafa karışıklığı.
+Öneri          : Paketi kaldırma turu (bu incelemede paket işlemi yapılmadı).
+Risk           : Düşük. [DOĞRULANMALI] lockfile transitive.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-14  Kullanılmayan barrel: components/feedback/index.ts
+Öncelik        : P3
+Konum          : src/components/feedback/index.ts
+Doğrulama      : `from '@/components/feedback'` import’u yok; doğrudan dosya yolu.
+Öneri          : Barrel’i kaldır veya kullanıma geç.
+Risk           : Düşük.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-15  getQuestionFieldKey boş sarmalayıcı
+Öncelik        : P3
+Konum          : src/features/survey-fill/utils/question-key.ts ~37–39
+                 Kullanım: SurveyFillForm ~662, 969; SurveyFillQuestionField
+                 ~246, 263
+Mevcut durum   : return getQuestionKey(question)
+Öneri          : Tek isim (getQuestionKey).
+Risk           : id/key string’leri aynı kalmalı; doldurma scroll.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-16  İki sıralama fonksiyonu aynı algoritma
+Öncelik        : P2
+Konum          : sortOturumQuestionsForFill
+                 oturum-questions.ts ~105–109
+                 sortSurveyFillQuestions
+                 sort-survey-fill-questions.ts ~70–74
+Mevcut durum   : İkisi de ekici sorusunu başa alıp sortQuestionsUnderParents.
+Öneri          : Tek jenerik sıralayıcı.
+Risk           : Soru sırası değişmesin; doldurma + Excel export.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-17  pick/asRecord 15+ kopya
+Öncelik        : P2
+Konum          : normalize-user-api, normalize-ekici-api, normalize-anket-yanit-api,
+                 normalize-permission-api, cografi-filtre.ts, api-client.ts
+                 (asRecord), option-groups, questions alt-seçenek, vb.
+Neden          : PascalCase köprüsü her feature’da yeniden.
+Öneri          : src/lib/api altında tek pick/asRecord (Faz 3).
+Risk           : Merkezi hata tüm mapper’ları etkiler — birim test şart.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-18  getEkiciFullName üç varyant
+Öncelik        : P2
+Konum          : survey-fill/utils/normalize-ekici-api.ts ~43
+                 ekici-definitions/utils/normalize-ekici-definition-api.ts ~51
+                 MySurveyResponsesPage.tsx yerel fonksiyon ~18
+Öneri          : Ortak ad+soyad birleştirici (alan adları adi/ad farkı yüzünden
+                 ince sarmalayıcı gerekebilir).
+Risk           : Boş ad gösterimi.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-19  “Bakmakla yükümlü” kuralı iki kopya
+Öncelik        : P2
+Konum          : survey-fill/utils/validate-survey-fill-answers.ts
+                 isBakmaklaYukumluBireySayisi ~9
+                 reports/utils/format-anket-cevap-cell.ts
+                 isBakmaklaYukumluKisiSayisiColumn ~2
+Öneri          : Ortak metin eşleştirici.
+Risk           : Excel 0 gizleme vs form min=1 sapması.
+Güven          : Orta-yüksek.
+
+--------------------------------------------------------------------------------
+F-20  Soru metni normalize iki kopya
+Öncelik        : P3
+Konum          : is-ekici-producer-question.ts normalizeQuestionText ~3–8
+                 kontrat-sahibi-autofill.ts normalizeSurveyQuestionText ~7
+Öneri          : Tek TR normalize.
+Risk           : Eşleşme kayması (üretimi yapan kişi).
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-21  Coğrafi filtre re-export şimi
+Öncelik        : P3
+Konum          : survey-responses/utils/cografi-filtre.ts
+                 (`export * from '@/features/cografi-filtre/utils/cografi-filtre'`)
+                 Tüketenler: survey-responses-api, users-api, EkiciDefinitionForm
+                 (doğrudan cografi-filtre de kullanılıyor)
+Öneri          : Hepsi asıl modüle import etsin.
+Risk           : Düşük.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-22  buildSurveyFillDeepLink çift tanım
+Öncelik        : P3
+Konum          : survey-fill-navigation.ts ~20
+                 recent-save.types.ts ~23 (içeride navigation’ı çağırır)
+                 dashboard user-dashboard-survey-groups.ts recent-save.types’tan
+                 import ediyor
+Öneri          : Tek fonksiyon navigation’da; types re-export etmesin.
+Risk           : Deep link query kaybı (duzenle, geo).
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-23  parsePositiveInt kopyası
+Öncelik        : P3
+Konum          : SurveyFillPage.tsx ~17
+                 survey-fill-navigation.ts parsePositiveIntParam ~14
+Öneri          : Navigation’daki parser’ı kullan.
+Risk           : 0 vs undefined semantiği.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-24  effectiveBaslikId gereksiz takma ad
+Öncelik        : P3
+Konum          : SurveyFillForm.tsx ~114 `const effectiveBaslikId = baslikId`
+Öneri          : baslikId kullan.
+Risk           : Yok.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-25  isUretimiYapanQuestion vs isEkiciProducerQuestion
+Öncelik        : P3
+Konum          : kontrat-sahibi-autofill.ts isUretimiYapanQuestion ~19
+                 is-ekici-producer-question.ts ~11
+Mevcut durum   : Biri “üretimi yapan”, diğeri “üretimi yapan kişi” + “ad”.
+Öneri          : Birleştirme [DOĞRULANMALI] — metinler farklı soruları
+                 yakalıyor olabilir. Silme önerisi KESİN DEĞİL.
+Güven          : Orta.
+
+
+================================================================================
+4. MİMARİ VE KOD KALİTESİ İYİLEŞTİRMELERİ
+================================================================================
+
+--------------------------------------------------------------------------------
+F-26  QuestionsPage çift rota, pathname ile dallanma
+Öncelik        : P2
+Konum          : src/features/questions/pages/QuestionsPage.tsx
+                 isDefinitionsPage ~80, 105, 332+
+                 router: /soru-yonetimi ve /tanimlamalar/soru-tanimlamalari
+Mevcut durum   : Tek sayfa, location.pathname.startsWith('/tanimlamalar').
+Öneri          : mode prop veya iki ince sayfa.
+Risk           : Yetki path’i, anket seçici.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-27  QuestionForm tanrı bileşen
+Öncelik        : P2
+Konum          : src/features/questions/components/QuestionForm.tsx
+                 QuestionForm ~61–776
+Öneri          : LinkedChildEditor zaten var; oluşturma/bağlı/seçenek kartlara böl.
+Risk           : Bağlı soru migrate.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-28  survey-fill → reports bağımlılığı
+Öncelik        : P2
+Konum          : kontrat-sahibi-autofill.ts satır 1 parseGenderFromText
+                 (SurveyFillAnswerFilter da reports hook kullanır; şu an sayfada
+                 bağlı değil — F-11)
+Öneri          : Cinsiyet parser ortak lib/domain.
+Risk           : Kontrat sahibi cinsiyet eşlemesi.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-29  Utils katmanında HTTP + POST (departman oluşturma)
+Öncelik        : P2
+Konum          : src/features/users/utils/resolve-departman-id.ts ~12–41
+Mevcut durum   : GET liste, yoksa POST /api/Departman.
+Öneri          : users-api + açık mutation; sessiz catch kaldırılmasın ama
+                 hata yüzeye çıksın.
+Risk           : Kullanıcı oluşturma; yinelenen departman.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-30  Query key’de JSON.stringify(params)
+Öncelik        : P2
+Konum          : query-keys.ts ~42, 67–69, 74
+                 (mintikam, yas-cinsiyet, anket-cevaplari, ekiciler)
+Teknik         : Anahtar sırası değişince ayrı cache.
+Öneri          : Sabit alan sırası veya nesne key (Query eşitliği).
+Risk           : Çift istek veya yanlış hit. Ölçülmedi.
+Güven          : Orta-yüksek.
+
+--------------------------------------------------------------------------------
+F-31  TR/EN isimlendirme karışımı
+Öncelik        : P3
+Konum          : feature klasörleri survey-fill vs anket-yanit-api.ts;
+                 yetkilendirme, cografi-filtre
+Öneri          : Tek kural (yeni dosyalarda). Toplu rename şimdi önerilmez.
+Risk           : Import kırılması.
+Güven          : Yüksek.
+
+--------------------------------------------------------------------------------
+F-32  ModulePage yer tutucu
+Öncelik        : P3
+Konum          : src/pages/ModulePage.tsx; router path tanimlamalar
+Mevcut durum   : “Modül hazırlanıyor”. Route kullanılıyor, ölü değil.
+Öneri          : Alt menüye yönlendir veya gerçek indeks.
+Risk           : Navigasyon.
+Güven          : Yüksek.
+
+
+================================================================================
+5. İŞLEVSELLİK VE HATA RİSKLERİ
+================================================================================
+
+--------------------------------------------------------------------------------
+F-33  401’de tam sayfa yönlendirme
+Öncelik        : P2
+Konum          : axios-instance.ts ~36–41 window.location.assign('/login')
+Senaryo        : Süresi dolmuş token, herhangi bir istek.
+Etki           : SPA state kaybı, yarım form.
+Öneri          : React Router navigate + query iptali; form taslağı korunabilir.
+Risk           : Login döngüsü. Ölçülmedi / E2E yok.
+Güven          : Yüksek (kod). Kullanıcı etkisi [VARSAYIM] senaryoya bağlı.
+
+--------------------------------------------------------------------------------
+F-34  Seçenek silme / cevap FK (iş kuralı, ön yüz yetersiz geri bildirim geçmişi)
+Öncelik        : P2 (iş kuralı doğru; istemci orkestrasyonu F-04)
+Konum          : option-groups update + getFriendlyOptionGroupErrorMessage
+Not            : Backend “cevaplarda kullanılıyor” / “ID= bulunamadı” döner.
+                 Bu bir ön yüz bug’ı değil; F-04 ile birlikte ele alın.
+
+--------------------------------------------------------------------------------
+F-35  Kontrat sahibi autofill / kilit yarışı
+Öncelik        : P2
+Konum          : SurveyFillForm useEffect ~545–619; kontrat-sahibi-autofill.ts
+Senaryo        : allowCompletedEdit, ekici değişimi, imza ref.
+Etki           : Yanlış kilit veya ezilen cevap. Test: validate ve autofill
+                 birim testleri var ama çalıştırılmadı (F-08).
+Öneri          : Effect sadeleştirme Faz 4; mevcut imza ref korunarak.
+Güven          : Orta [VARSAYIM — yarış gözlemlenmedi].
+
+Null / dönüşüm: Mapper’lar Number(pick...) + isFinite ile çoğunlukla korumalı.
+Exception: api-error normalize ediyor; seçenek/soru için friendly mapper var.
+Async: option-groups sıralı await (F-04); useAltSeceneklerByGrupIds useQueries
+paralel (bilinçli). Transaction: yalnızca backend’de; istemci yok.
+
+
+================================================================================
+6. PERFORMANS İNCELEMESİ
+================================================================================
+
+Ölçüm (profiler, Lighthouse, ağ) YAPILMADI. Aşağıdakiler koddan okunan
+ihtimallerdir; kesin darboğaz iddiası yoktur.
+
+F-04  Seçenek sayısı kadar DELETE/PUT/POST — N+1 HTTP [kod].
+F-05  Çift cache — gereksiz ikinci GET [kod].
+F-30  stringify key — cache miss ile tekrar GET [ihtimal].
+F-06  SurveyFillForm geniş render; her cevap handleAnswerChange ile büyük
+      state — [ihtimal, ölçülmedi].
+useAltSeceneklerByGrupIds: grup id kadar paralel GET, staleTime 30 dk —
+bilinçli; anket soru grubu çoksa ilk açılış ağır olabilir [ihtimal].
+
+Bellek: persist store’lar küçük. Excel/PDF büyük DOM (modern-screenshot)
+yalnızca rapor sayfasında; sızıntı iddiası yok.
+
+Kesinleşmiş performans bug’ı raporlanmıyor.
+
+
+================================================================================
+7. GÜVENLİK İNCELEMESİ
+================================================================================
+
+F-01, F-02, F-03 yukarıda.
+
+Hassas log: console.error yalnızca PDF export hatalarında
+(AgeGenderPdfExportButton, DashboardRaporlariPage). Token/parola log’u
+görülmedi.
+
+Yetki: ProtectedRoute isAuthenticated; sayfa useRequirePagePermission ile
+yönlendirir. Bu yalnızca UI. API yetkisi backend’de olmalı — backend
+incelenmedi [VARSAYIM]. Admin-only path isAdminOnlyPath (/yetkilendirme,
+/users).
+
+CORS: Vite dev proxy secure:false, changeOrigin. Üretim CORS’u bu repoda
+yok [incelenemedi].
+
+Girdi: Çoğu alan kontrollü Select. Cevap metinleri API’ye gidiyor;
+XSS için React varsayılan kaçış. dangerouslySetInnerHTML taraması bu
+raporda ayrıntılı yapılmadı [incelenemedi / sınır].
+
+Bağımlılık: npm audit çalıştırılmadı. xlsx ölü (F-13); xlsx bilinen
+zayıf geçmişe sahip — kullanılmıyor olması iyi, lock’ta kalması kötü.
+
+.env.example içinde gerçek API host adı var (yapılandırma, sır değil).
+Parola rapora yazılmadı.
+
+
+================================================================================
+8. TEST VE BAKIM KOLAYLIĞI
+================================================================================
+
+Var olan testler (çalıştırılmadı): görünürlük, doğrulama, tarih, navigasyon,
+Excel kolon, dashboard istatistik, rapor header. Eksik: SurveyFillForm,
+QuestionForm, option-groups update, auth/izin, API mapper’ların çoğu.
+
+Aşırı bağımlı: SurveyFillForm, QuestionForm, QuestionsPage, OptionGroupsPage
+(API orkestrasyonu).
+
+Bakım: pick kopyaları, üç alt-seçenek mapper, tanrı bileşenler.
+
+F-08 çözülmeden Faz 3–4 refaktörü yüksek risklidir.
+
+
+================================================================================
+9. AŞAMALI İYİLEŞTİRME PLANI
+================================================================================
+
+Öneri grupları
+  A) Davranış değiştirmeyen: ölü dosya/export (grep teyit), xlsx kaldırma,
+     barrel, takma adlar, persist anahtar çakışması temizliği.
+  B) Testle korunan refaktör: tek alt-seçenek mapper, tek queryKey, pick
+     merkezi, sıralayıcı birleştirme, deep-link tek fonksiyon.
+  C) Davranış/iş kuralı riski: parola CSV, JWT cookie, seçenek batch API,
+     SurveyFillForm bölme, QuestionsPage ayırma, 401 navigate.
+
+Faz 1 — Kritik riskler (P1 güvenlik / tutarlılık)
+  F-01 kimlik bilgisi kaynaktan çıkar, .env.example bayrak false.
+  F-02 CSV politika kararı (ürün).
+  F-04 hata sonrası refetch; mümkünse backend batch (API işi).
+  F-05 tek alt-seçenek queryKey.
+  Kontroller: login (dev kapalı/açık), seçenek sil/güncelle, doldurma
+  dropdown, göç (CSV değişirse).
+
+Faz 2 — Güvenli küçük düzenlemeler
+  F-09–F-15, F-24, F-12 (grep), F-13 paket kaldırma, F-14.
+  Kontroller: grep + tsc -b; sidebar beklenmiyorsa görsel yok.
+
+Faz 3 — Kod kalitesi ve sadeleştirme
+  F-16, F-17, F-18, F-19, F-20, F-21, F-22, F-23, F-07 mapper birleştirme.
+  Kontroller: ilgili birim testler (önce F-08 ile koşulur hale getir).
+
+Faz 4 — Mimari
+  F-06, F-26, F-27, F-28, F-29, F-33.
+  Yüksek risk. Doldurma ve soru uçtan uca.
+
+Faz 5 — Performans ve testler
+  F-08 Vitest hattı; F-30 key; N+1 ölçümü (ağ paneli); gerekirse
+  seçenek batch. Ölçmeden “optimizasyon” yapılmasın.
+
+Yüksek riskli işler: F-02, F-03, F-04 backend, F-06, F-26/F-27.
+
+
+================================================================================
+10. DOKUNULMAMASI GEREKEN ALANLAR
+================================================================================
+
+- Anket doldurma iş kuralları: bağlı soru görünürlüğü, kontrat sahibi kilit,
+  taslak vs tam kayıt, mintika çözümü — refaktör ancak test + uçtan uca sonra.
+- Cevap silme payload’u (toDeleteAnketCevapRequests) — çoğul fonksiyon canlı.
+- Yetki path eşlemesi (useRequirePagePermission, duzenle/kendi query).
+- API zarf çözme (api-client unwrap) — tüm feature’lar bağlı.
+- Excel kolon şablonu (anket-cevaplari-excel-columns) — rapor çıktısı kırılgan.
+- Bu inceleme sırasında kaynak kodu değiştirilmedi; “otomatik düzeltme”
+  uygulanmamalı.
+
+
+================================================================================
+11. İNCELEME SINIRLARI
+================================================================================
+
+İncelenen (ön yüz):
+  app/router, lib/api, stores/auth, permissions, auth, survey-fill,
+  questions, option-groups, survey-responses, reports (kısmen), users
+  (göç/parola/departman), dashboard (kısmen), cografi-filtre (re-export),
+  package.json, vite.config.ts, tsconfig.app.json, .env.example (değerler
+  kopyalanmadı).
+
+İncelenemeyen:
+  .NET API kaynak kodu, AGRIVION şema/constraint, gerçek CORS, HTTPS,
+  npm audit, bundle analizi, çalışma zamanı profili, E2E, production
+  env, dangerouslySetInnerHTML tam tarama, CSRF (cookie yok varsayımı).
+
+Backend iş kuralları (seçenek-cevap FK) yalnızca ön yüz hata mesajı ve
+daha önceki operasyonel bağlamdan bilinir.
+
+
+================================================================================
+12. SONUÇ VE ÖNERİLEN İŞ SIRASI
+================================================================================
+
+Ön yüz mimarisi anlaşılır bir feature-SPA; asıl borç güvenlik hijyeni
+(kaynakta kimlik, localStorage token, parola CSV), seçenek güncelleme
+tutarlılığı, cache anahtarı, tanrı bileşenler, kopya mapper’lar ve
+çalışmayan test hattıdır.
+
+Önerilen sıra:
+  1) F-01, F-05, F-08 iskeleti (test runner).
+  2) F-04 hata/refetch; F-02 ürün kararı.
+  3) Ölü kod F-09–F-15 (grep teyit).
+  4) Mapper/DRY F-07, F-16–F-23.
+  5) Form bölme ve auth cookie ancak ayrı tasarım + test ile.
+
+P0 yok. 8 P1, 15 P2, 12 P3. P1 üretim öncesi planlanmalı. Performans iddiaları ölçülmedi.
+Kullanılmayan kod silinmeden önce madde 3’teki [DOĞRULANMALI] tekrar
+çalıştırılmalı.
+
+Kaynak kodlarında bu inceleme kapsamında değişiklik YAPILMADI.
+Tek oluşturulan dosya: bu rapor.
+================================================================================
