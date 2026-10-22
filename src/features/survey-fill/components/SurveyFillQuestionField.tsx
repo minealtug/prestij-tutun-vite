@@ -16,6 +16,7 @@ import {
   type QuestionInputKind,
 } from '../utils/resolve-question-input-kind'
 import { isBakmaklaYukumluBireySayisi } from '../utils/validate-survey-fill-answers'
+import { formatTypedDisplayDate } from '../utils/date-input-value'
 
 interface SurveyFillQuestionFieldProps {
   question: SurveyFillSoruView
@@ -160,6 +161,25 @@ function renderAnswerControl(
     )
   }
 
+  if (kind === 'date') {
+    return (
+      <Input
+        id={fieldId}
+        label={label}
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={10}
+        value={formatTypedDisplayDate(value)}
+        onChange={(e) => onChange(formatTypedDisplayDate(e.target.value))}
+        placeholder="GG.AA.YYYY"
+        error={error}
+        hint={hint}
+        disabled={disabled}
+      />
+    )
+  }
+
   const isNumber = kind === 'number'
 
   return (
@@ -196,7 +216,7 @@ function renderAnswerControl(
             }
           : undefined
       }
-      placeholder={kind === 'date' ? 'GG.AA.YYYY' : 'Cevabınızı girin'}
+      placeholder="Cevabınızı girin"
       error={error}
       hint={hint}
       disabled={disabled}

@@ -49,3 +49,19 @@ export function formatDisplayDate(value: string | Date | null | undefined): stri
   if (!date) return ''
   return `${pad2(date.getDate())}.${pad2(date.getMonth() + 1)}.${date.getFullYear()}`
 }
+
+/** Yazarken GG.AA.YYYY noktalarını otomatik ekler (01021990 → 01.02.1990). */
+export function formatTypedDisplayDate(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+    const formatted = formatDisplayDate(trimmed)
+    if (formatted) return formatted
+  }
+
+  const digits = trimmed.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`
+}
