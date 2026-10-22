@@ -142,7 +142,7 @@ export function SurveyFillPage() {
 
   return (
     <PageContainer>
-      <Card className="overflow-hidden !p-0" interactive={false}>
+      <Card className="!p-0" interactive={false}>
         <div className="grid gap-4 p-5">
           <Select
             label="Anket"

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle2, FileSpreadsheet, Info, Save, FilePen } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, FileSpreadsheet, Info, Save, FilePen, User } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
@@ -324,6 +324,13 @@ export function SurveyFillForm({
   const selectedEkici = useMemo(
     () => (ekicilerQuery.data ?? []).find((ekici) => ekici.id === sessionEkiciId) ?? null,
     [ekicilerQuery.data, sessionEkiciId],
+  )
+
+  const selectedEkiciName = selectedEkici
+    ? getEkiciFullName(selectedEkici)
+    : (ekiciOptions.find((option) => option.value === sessionEkiciId)?.label ?? '')
+  const showStickyEkiciBar = Boolean(
+    sessionEkiciId && selectedEkiciName && selectedEkiciName !== '—',
   )
 
   const isSelectedEkiciPassive = selectedEkici != null && !isEkiciActive(selectedEkici)
@@ -1077,8 +1084,33 @@ export function SurveyFillForm({
           )}
         </div>
 
+        {showStickyEkiciBar && (
+          <div
+            className="sticky -top-4 z-30 border-y border-primary-200/80 bg-primary-50 px-5 py-3 shadow-sm md:-top-6 lg:-top-8"
+            aria-live="polite"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700">
+                <User className="h-4 w-4" aria-hidden />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-primary-700">Doldurulan ekici</p>
+                <p className="truncate text-base font-semibold text-foreground">
+                  {selectedEkiciName}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {questionsWithOptions.length > 0 && !surveyEditLocked && (
-          <div className="flex flex-col gap-3 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div
+            className={
+              showStickyEkiciBar
+                ? 'flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between'
+                : 'flex flex-col gap-3 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between'
+            }
+          >
             {sessionEkiciId && !oturumQuery.isError && (
               <p className="text-sm text-muted">
                 Doldurulan:{' '}
@@ -1109,7 +1141,7 @@ export function SurveyFillForm({
 
         <div className="space-y-4 px-5 pb-5">{renderQuestions()}</div>
 
-        <div className="border-t border-border bg-surface/60 px-5 py-4">
+        <div className="rounded-b-xl border-t border-border bg-surface/60 px-5 py-4">
           {submitError && (
             <p
               className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
