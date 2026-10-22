@@ -3,7 +3,7 @@ import { CheckCircle2, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
-import { getErrorMessage } from '@/lib/api/api-error'
+import { getFriendlyOptionGroupErrorMessage } from '../utils/option-group-error-message'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { OptionGroupForm } from '../components/OptionGroupForm'
@@ -116,7 +116,7 @@ export function OptionGroupsPage() {
       },
       {
         onSuccess: () => closeEditModal(),
-        onError: (error) => setEditError(getErrorMessage(error)),
+        onError: (error) => setEditError(getFriendlyOptionGroupErrorMessage(error)),
       },
     )
   }
@@ -180,7 +180,7 @@ export function OptionGroupsPage() {
                   className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
                   role="alert"
                 >
-                  {getErrorMessage(createGroup.error)}
+                  {getFriendlyOptionGroupErrorMessage(createGroup.error)}
                 </p>
               )}
             </div>
