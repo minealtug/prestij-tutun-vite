@@ -153,7 +153,7 @@ export function Table<T>({
           'w-full',
           fillHeight && stickyHeader
             ? 'min-h-0 flex-1 overflow-auto scrollbar-visible max-md:max-h-[50vh]'
-            : fillHeight && horizontalScroll
+            : horizontalScroll
               ? 'overflow-x-auto scrollbar-visible'
               : 'overflow-visible',
         )}
