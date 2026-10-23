@@ -35,6 +35,7 @@ import type { MyEkiciTableRow } from '../components/MyEkicilerTable'
 import { exportMyEkicilerToExcel } from '../utils/export-my-ekiciler-excel'
 
 type AktifFilter = 'all' | 'aktif' | 'pasif'
+type YilFilter = 'all' | string
 type AnketDurumFilter = 'all' | Extract<EkiciAnketDurumu, 'completed' | 'in_progress' | 'not_started'>
 
 const AKTIF_FILTER_OPTIONS = [
@@ -54,6 +55,35 @@ function matchesAktifFilter(ekici: EkiciDefinitionDto, filter: AktifFilter) {
   if (filter === 'aktif') return ekici.aktif === 1
   if (filter === 'pasif') return ekici.aktif !== 1
   return true
+}
+
+function matchesYilFilter(ekici: EkiciDefinitionDto, filter: YilFilter) {
+  if (filter === 'all') return true
+  const year = Number(filter)
+  if (!Number.isFinite(year)) return true
+  return ekici.yil === year
+}
+
+function buildYilFilterOptions(ekiciler: EkiciDefinitionDto[], selected: YilFilter) {
+  const years = new Set<number>()
+  const currentYear = new Date().getFullYear()
+  if (currentYear > 0) years.add(currentYear)
+
+  const selectedYear = Number(selected)
+  if (selected !== 'all' && Number.isFinite(selectedYear) && selectedYear > 0) {
+    years.add(selectedYear)
+  }
+
+  for (const ekici of ekiciler) {
+    if (Number.isFinite(ekici.yil) && ekici.yil > 0) years.add(ekici.yil)
+  }
+
+  return [
+    { value: 'all', label: 'Tümü' },
+    ...[...years]
+      .sort((a, b) => b - a)
+      .map((year) => ({ value: String(year), label: String(year) })),
+  ]
 }
 
 function matchesAnketDurumFilter(row: MyEkiciTableRow, filter: AnketDurumFilter) {
@@ -102,6 +132,7 @@ export function EkicilerimPage() {
   const cevaplarQuery = isAdmin ? allCevaplarQuery : myCevaplarQuery
 
   const [search, setSearch] = useState('')
+  const [yilFilter, setYilFilter] = useState<YilFilter>('all')
   const [aktifFilter, setAktifFilter] = useState<AktifFilter>('all')
   const [anketDurumFilter, setAnketDurumFilter] = useState<AnketDurumFilter>('all')
   const [selectedBaslikId, setSelectedBaslikId] = useState(DEFAULT_EKICILERIM_ANKET_BASLIK_ID)
@@ -124,8 +155,14 @@ export function EkicilerimPage() {
       geoCascade.queryParams.alimNoktasiId ||
       geoCascade.queryParams.koyId,
   )
+  const hasYilFilter = yilFilter !== 'all'
   const hasAktifFilter = aktifFilter !== 'all'
   const hasAnketDurumFilter = anketSelected && anketDurumFilter !== 'all'
+
+  const yilOptions = useMemo(
+    () => buildYilFilterOptions(ekicilerQuery.data ?? [], yilFilter),
+    [ekicilerQuery.data, yilFilter],
+  )
 
   const anketOptions = useMemo(() => {
     const surveys = surveysQuery.data ?? []
@@ -162,6 +199,7 @@ export function EkicilerimPage() {
     const query = search.trim().toLocaleLowerCase('tr-TR')
     const filteredEkiciler = ekiciler
       .filter((ekici) => {
+        if (!matchesYilFilter(ekici, yilFilter)) return false
         if (!matchesAktifFilter(ekici, aktifFilter)) return false
         if (query && !matchesEkiciSearch(ekici, query)) return false
         return true
@@ -197,6 +235,7 @@ export function EkicilerimPage() {
     return rows.filter((row) => matchesAnketDurumFilter(row, anketDurumFilter))
   }, [
     aktifFilter,
+    yilFilter,
     anketDurumFilter,
     anketSelected,
     ekicilerQuery.data,
@@ -207,7 +246,11 @@ export function EkicilerimPage() {
   ])
 
   const tableEmptyMessage =
-    search.trim().length > 0 || hasGeoFilter || hasAktifFilter || hasAnketDurumFilter
+    search.trim().length > 0 ||
+    hasGeoFilter ||
+    hasYilFilter ||
+    hasAktifFilter ||
+    hasAnketDurumFilter
       ? 'Arama kriterlerinize uygun ekici kaydı bulunamadı.'
       : hasMintikaAssignment
         ? 'Mıntıkanızda kayıtlı ekici bulunmuyor.'
@@ -303,6 +346,14 @@ export function EkicilerimPage() {
                   onChange={(e) => setSelectedBaslikId(e.target.value)}
                   options={anketOptions}
                   disabled={surveysQuery.isLoading}
+                />
+              </div>
+              <div className="min-w-0 w-full sm:max-w-[7.5rem]">
+                <Select
+                  label="Yıl"
+                  value={yilFilter}
+                  onChange={(e) => setYilFilter(e.target.value)}
+                  options={yilOptions}
                 />
               </div>
               <div className="min-w-0 w-full sm:max-w-[9.5rem]">
