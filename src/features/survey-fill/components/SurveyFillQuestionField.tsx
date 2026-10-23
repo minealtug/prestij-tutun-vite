@@ -304,6 +304,7 @@ export function SurveyFillQuestionField({
       <div className="mt-4">
         {showSecenekDropdown ? (
           <Select
+            id={fieldId}
             label="Cevap"
             value={value}
             onChange={(e) => onChange(e.target.value)}

@@ -36,13 +36,14 @@ function emitChange(onChange: SelectProps['onChange'], value: string) {
 export const Select = forwardRef<HTMLButtonElement, SelectProps>(
   ({ className, label, error, id, options, value = '', disabled, required, onChange }, ref) => {
     const listId = useId()
+    const generatedId = useId()
     const rootRef = useRef<HTMLDivElement>(null)
     const triggerRef = useRef<HTMLButtonElement>(null)
 
     const [isOpen, setIsOpen] = useState(false)
     const [highlightIndex, setHighlightIndex] = useState(0)
 
-    const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-')
+    const selectId = id || generatedId
     const selectedOption = options.find((o) => o.value === value)
     const displayLabel = selectedOption?.label ?? options[0]?.label ?? 'Seçin'
 
