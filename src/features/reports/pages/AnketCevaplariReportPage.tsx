@@ -14,11 +14,16 @@ import {
   useCografiFiltreOptions,
   useMintikaCografiFiltreOptions,
 } from '@/features/cografi-filtre/hooks/use-cografi-filtre-options'
+import { useEkiciDefinitions } from '@/features/ekici-definitions/hooks/use-ekici-definitions'
 import { usePermissions } from '@/features/permissions/hooks/use-permissions'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { useOptionGroups } from '@/features/option-groups/hooks/use-option-groups'
 import { useQuestions } from '@/features/questions/hooks/use-questions'
 import { useSurveys } from '@/features/surveys/hooks/use-surveys'
+import {
+  buildAnketCevapYilOptions,
+  matchesAnketCevapYil,
+} from '@/features/survey-responses/utils/filter-anket-cevap-list'
 import { userHasMintikaAssignment } from '@/features/users/utils/resolve-mintika-ids'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -59,7 +64,9 @@ export function AnketCevaplariReportPage() {
   const geoCascade = useCografiFiltreCascade(cografiFiltreQuery.data)
   const surveysQuery = useSurveys()
   const optionGroupsQuery = useOptionGroups()
+  const ekicilerQuery = useEkiciDefinitions()
   const [selectedBaslikId, setSelectedBaslikId] = useState('')
+  const [yilFilter, setYilFilter] = useState('all')
   const [columnFilters, setColumnFilters] = useState<ColumnHeaderFilters>({})
   const [openHeaderFilter, setOpenHeaderFilter] = useState<HeaderFilterKey | null>(null)
 
@@ -92,17 +99,38 @@ export function AnketCevaplariReportPage() {
     () => filterAnketCevapRows(report?.satirlar ?? [], geoCascade.queryParams),
     [geoCascade.queryParams, report?.satirlar],
   )
+  const yilByEkiciId = useMemo(() => {
+    const years = new Map<string, number>()
+    for (const ekici of ekicilerQuery.data ?? []) {
+      if (!Number.isFinite(ekici.yil) || ekici.yil <= 0) continue
+      years.set(ekici.id.trim().toLowerCase(), ekici.yil)
+    }
+    return years
+  }, [ekicilerQuery.data])
+  const yilOptions = useMemo(() => {
+    const years: number[] = []
+    for (const row of geoRows) {
+      const year = yilByEkiciId.get(row.ekiciId.trim().toLowerCase())
+      if (year) years.push(year)
+    }
+    return buildAnketCevapYilOptions(years, yilFilter)
+  }, [geoRows, yilByEkiciId, yilFilter])
+  const yearFilterPending = yilFilter !== 'all' && ekicilerQuery.isLoading
+  const yearRows = useMemo(() => {
+    if (yilFilter === 'all' || yearFilterPending) return geoRows
+    return geoRows.filter((row) => matchesAnketCevapYil(row.ekiciId, yilByEkiciId, yilFilter))
+  }, [geoRows, yearFilterPending, yilByEkiciId, yilFilter])
   const rows = useMemo(
-    () => applyColumnHeaderFilters(geoRows, columnFilters),
-    [columnFilters, geoRows],
+    () => applyColumnHeaderFilters(yearRows, columnFilters),
+    [columnFilters, yearRows],
   )
   const uniqueByColumn = useMemo(() => {
     const map = {} as Record<HeaderFilterKey, string[]>
     for (const key of HEADER_FILTER_KEYS) {
-      map[key] = uniqueColumnValues(rowsForColumnOptions(geoRows, columnFilters, key), key)
+      map[key] = uniqueColumnValues(rowsForColumnOptions(yearRows, columnFilters, key), key)
     }
     return map
-  }, [columnFilters, geoRows])
+  }, [columnFilters, yearRows])
   const soruKolonlari = report?.soruKolonlari ?? []
   const visibleSoruKolonlari = useMemo(
     () => getVisibleSoruKolonlari(soruKolonlari, questionsQuery.data ?? []),
@@ -196,14 +224,25 @@ export function AnketCevaplariReportPage() {
       </Link>
 
       <div className="glass-card flex shrink-0 flex-col gap-3 !p-4">
-        <div className="min-w-0 sm:max-w-xs">
-          <Select
-            label="Anket"
-            value={effectiveBaslikId}
-            onChange={(e) => setSelectedBaslikId(e.target.value)}
-            options={anketOptions}
-            disabled={surveysQuery.isLoading || isSingleSurvey}
-          />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="min-w-0 flex-1 sm:max-w-xs">
+            <Select
+              label="Anket"
+              value={effectiveBaslikId}
+              onChange={(e) => setSelectedBaslikId(e.target.value)}
+              options={anketOptions}
+              disabled={surveysQuery.isLoading || isSingleSurvey}
+            />
+          </div>
+          <div className="w-full sm:max-w-[7.5rem]">
+            <Select
+              label="Yıl"
+              value={yilFilter}
+              onChange={(e) => setYilFilter(e.target.value)}
+              options={yilOptions}
+              disabled={!hasBaslik || surveysQuery.isLoading}
+            />
+          </div>
         </div>
 
         {surveysQuery.isError && (
@@ -296,7 +335,7 @@ export function AnketCevaplariReportPage() {
           columns={columns}
           data={rows}
           keyExtractor={(row) => row.rowKey}
-          isLoading={reportQuery.isLoading}
+          isLoading={reportQuery.isLoading || yearFilterPending}
           emptyTitle="Kayıt bulunamadı"
           emptyMessage="Seçtiğiniz filtrelere uygun anket cevabı bulunmuyor."
           compact
