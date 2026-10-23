@@ -31,11 +31,12 @@ function sanitizeFilenamePart(value: string): string {
 export interface ExportMySurveyResponsesExcelOptions {
   anketFilter?: string
   ekiciFilter?: string
+  yilFilter?: string
 }
 
 export function exportMySurveyResponsesToExcel(
   rows: AnketCevapOzetItem[],
-  { anketFilter, ekiciFilter }: ExportMySurveyResponsesExcelOptions = {},
+  { anketFilter, ekiciFilter, yilFilter }: ExportMySurveyResponsesExcelOptions = {},
 ): void {
   const sheetRows = rows.map((row) => ({
     Tarih: formatSonIslemTarihi(row.sonIslemTarihi),
@@ -56,7 +57,7 @@ export function exportMySurveyResponsesToExcel(
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Cevapladığım Anketler')
 
-  const filterParts = [anketFilter, ekiciFilter]
+  const filterParts = [yilFilter, anketFilter, ekiciFilter]
     .map((value) => value?.trim())
     .filter(Boolean)
     .map((value) => sanitizeFilenamePart(value!))

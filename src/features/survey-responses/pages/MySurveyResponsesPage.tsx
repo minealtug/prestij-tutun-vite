@@ -5,11 +5,16 @@ import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { useAuthStore } from '@/stores/auth-store'
+import { useEkiciDefinitions } from '@/features/ekici-definitions/hooks/use-ekici-definitions'
 import { useRequirePagePermission } from '@/features/permissions/hooks/use-require-page-permission'
 import { SurveyResponseStatsCards } from '../components/SurveyResponseStatsCards'
 import { SurveyResponsesTable } from '../components/SurveyResponsesTable'
 import { useMySurveyResponses } from '../hooks/use-survey-responses'
 import { exportMySurveyResponsesToExcel } from '../utils/export-my-survey-responses-excel'
+import {
+  buildAnketCevapYilOptions,
+  matchesAnketCevapYil,
+} from '../utils/filter-anket-cevap-list'
 
 function toSelectOptions(values: string[], placeholder: string) {
   return [{ value: '', label: placeholder }, ...values.map((value) => ({ value, label: value }))]
@@ -24,11 +29,14 @@ export function MySurveyResponsesPage() {
   const userId = useAuthStore((state) => state.user?.id)
   const authUser = useAuthStore((state) => state.user)
   const responsesQuery = useMySurveyResponses(userId)
+  const ekicilerQuery = useEkiciDefinitions()
 
   const [anketAdiDraft, setAnketAdiDraft] = useState('')
   const [ekiciDraft, setEkiciDraft] = useState('')
+  const [yilDraft, setYilDraft] = useState('all')
   const [anketAdiFilter, setAnketAdiFilter] = useState('')
   const [ekiciFilter, setEkiciFilter] = useState('')
+  const [yilFilter, setYilFilter] = useState('all')
 
   const data = useMemo(() => {
     const items = responsesQuery.data ?? []
@@ -56,6 +64,26 @@ export function MySurveyResponsesPage() {
     return toSelectOptions(uniqueNames, 'Tüm ekiciler')
   }, [data])
 
+  const yilByEkiciId = useMemo(() => {
+    const years = new Map<string, number>()
+    for (const ekici of ekicilerQuery.data ?? []) {
+      if (!Number.isFinite(ekici.yil) || ekici.yil <= 0) continue
+      years.set(ekici.id.trim().toLowerCase(), ekici.yil)
+    }
+    return years
+  }, [ekicilerQuery.data])
+
+  const yilOptions = useMemo(() => {
+    const years: number[] = []
+    for (const item of data) {
+      const year = yilByEkiciId.get(item.ekiciId.trim().toLowerCase())
+      if (year) years.push(year)
+    }
+    return buildAnketCevapYilOptions(years, yilDraft)
+  }, [data, yilByEkiciId, yilDraft])
+
+  const yearFilterPending = yilFilter !== 'all' && ekicilerQuery.isLoading
+
   const filteredData = useMemo(
     () =>
       data.filter((item) => {
@@ -64,9 +92,16 @@ export function MySurveyResponsesPage() {
 
         if (anketAdiFilter && surveyName !== anketAdiFilter) return false
         if (ekiciFilter && ekiciFullName !== ekiciFilter) return false
+        if (
+          yilFilter !== 'all' &&
+          !yearFilterPending &&
+          !matchesAnketCevapYil(item.ekiciId, yilByEkiciId, yilFilter)
+        ) {
+          return false
+        }
         return true
       }),
-    [data, anketAdiFilter, ekiciFilter],
+    [data, anketAdiFilter, ekiciFilter, yilFilter, yearFilterPending, yilByEkiciId],
   )
 
   const handleExportExcel = () => {
@@ -75,6 +110,7 @@ export function MySurveyResponsesPage() {
     exportMySurveyResponsesToExcel(filteredData, {
       anketFilter: anketAdiFilter,
       ekiciFilter: ekiciFilter,
+      yilFilter: yilFilter !== 'all' ? yilFilter : undefined,
     })
   }
 
@@ -100,16 +136,23 @@ export function MySurveyResponsesPage() {
     <PageContainer>
       <SurveyResponseStatsCards
         data={filteredData}
-        isLoading={responsesQuery.isLoading}
+        isLoading={responsesQuery.isLoading || yearFilterPending}
       />
 
       <Card className="overflow-hidden !rounded-md !p-0" interactive={false}>
-        <div className="grid w-full grid-cols-1 gap-4 p-5 sm:grid-cols-2">
+        <div className="grid w-full grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
           <Select
             label="Anket"
             value={anketAdiDraft}
             onChange={(e) => setAnketAdiDraft(e.target.value)}
             options={anketOptions}
+            disabled={responsesQuery.isLoading}
+          />
+          <Select
+            label="Yıl"
+            value={yilDraft}
+            onChange={(e) => setYilDraft(e.target.value)}
+            options={yilOptions}
             disabled={responsesQuery.isLoading}
           />
           <Select
@@ -125,6 +168,7 @@ export function MySurveyResponsesPage() {
             onClick={() => {
               setAnketAdiFilter(anketAdiDraft)
               setEkiciFilter(ekiciDraft)
+              setYilFilter(yilDraft)
             }}
             loading={responsesQuery.isFetching}
           >
@@ -141,7 +185,7 @@ export function MySurveyResponsesPage() {
             size="sm"
             className="border-green-600 bg-transparent text-green-700 hover:bg-green-50"
             onClick={handleExportExcel}
-            disabled={responsesQuery.isLoading || filteredData.length === 0}
+            disabled={responsesQuery.isLoading || yearFilterPending || filteredData.length === 0}
           >
             <FileSpreadsheet className="h-4 w-4" aria-hidden />
             Excel'e Aktar
@@ -149,7 +193,7 @@ export function MySurveyResponsesPage() {
         </div>
         <SurveyResponsesTable
           data={filteredData}
-          isLoading={responsesQuery.isLoading}
+          isLoading={responsesQuery.isLoading || yearFilterPending}
           isError={responsesQuery.isError}
           error={responsesQuery.error}
           onRefresh={() => void responsesQuery.refetch()}
