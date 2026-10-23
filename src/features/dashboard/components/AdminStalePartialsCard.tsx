@@ -1,27 +1,29 @@
+import { useState } from 'react'
 import { CheckCircle2, CircleAlert } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/feedback/EmptyState'
-import { getOzetFullName } from '@/features/survey-responses/types/survey-response.types'
-import { useStalePartialUnanswered } from '../hooks/use-stale-partial-unanswered'
+import { ErrorState } from '@/components/feedback/ErrorState'
+import { isAppError } from '@/lib/api/api-error'
+import { useYarimFormUyarisi } from '@/features/survey-responses/hooks/use-survey-responses'
+import type { YarimFormUyarisiKayit } from '@/features/survey-responses/types/yarim-form-uyarisi.types'
 import { UnansweredQuestionsWarning } from './UnansweredQuestionsWarning'
 import { formatRelativeSonIslem } from '../utils/user-dashboard-survey-groups'
-import type { AdminStalePartialRow } from '../utils/admin-dashboard-stats'
 
-interface AdminStalePartialsCardProps {
-  rows: AdminStalePartialRow[]
-  staleCount: number
-  isLoading?: boolean
+const LIST_LIMIT = 10
+
+function ekiciAdi(row: YarimFormUyarisiKayit): string {
+  return [row.ekiciAd, row.ekiciSoyad].filter(Boolean).join(' ').trim() || '—'
 }
 
-export function AdminStalePartialsCard({
-  rows,
-  staleCount,
-  isLoading = false,
-}: AdminStalePartialsCardProps) {
-  const unansweredByRow = useStalePartialUnanswered(
-    rows.map((row) => row.item),
-    !isLoading && rows.length > 0,
-  )
+export function AdminStalePartialsCard() {
+  const [showAll, setShowAll] = useState(false)
+  const uyarisiQuery = useYarimFormUyarisi()
+  const rows = uyarisiQuery.data?.kayitlar ?? []
+  const staleCount = uyarisiQuery.data?.adet ?? 0
+  const hasMore = rows.length > LIST_LIMIT
+  const visibleRows = showAll || !hasMore ? rows : rows.slice(0, LIST_LIMIT)
+  const missingMintika =
+    uyarisiQuery.isError && isAppError(uyarisiQuery.error) && uyarisiQuery.error.status === 400
 
   return (
     <Card
@@ -30,8 +32,22 @@ export function AdminStalePartialsCard({
       description="Bir haftadan uzun süredir güncellenmeyen yarım kayıtlar"
       accent
     >
-      {isLoading ? (
+      {uyarisiQuery.isLoading ? (
         <p className="text-sm text-muted">Yarım formlar yükleniyor…</p>
+      ) : missingMintika ? (
+        <EmptyState
+          compact
+          icon={CircleAlert}
+          title="Yarım form uyarısı gösterilemedi"
+          description="Tanımlı mıntıka bulunamadı."
+        />
+      ) : uyarisiQuery.isError ? (
+        <ErrorState
+          error={uyarisiQuery.error}
+          title="Yarım form uyarısı yüklenemedi"
+          onRetry={() => void uyarisiQuery.refetch()}
+          compact
+        />
       ) : rows.length > 0 ? (
         <div className="space-y-3">
           <div
@@ -45,8 +61,32 @@ export function AdminStalePartialsCard({
             </p>
           </div>
 
-          <div className="-mx-5 overflow-x-auto border-t border-orange-100">
-            <table className="app-table app-table-compact min-w-[56rem]">
+          {hasMore ? (
+            <div className="flex justify-end">
+              <label className="flex items-center gap-2 text-xs text-muted">
+                Göster
+                <select
+                  className="rounded-md border border-orange-200 bg-white px-2 py-1 text-sm text-foreground"
+                  value={showAll ? 'all' : '10'}
+                  onChange={(event) => setShowAll(event.target.value === 'all')}
+                >
+                  <option value="10">İlk 10</option>
+                  <option value="all">Tümü ({rows.length.toLocaleString('tr-TR')})</option>
+                </select>
+              </label>
+            </div>
+          ) : null}
+
+          <div
+            className={`-mx-5 overflow-x-auto border-t border-orange-100 ${
+              showAll && hasMore ? 'max-h-[28rem] overflow-y-auto' : ''
+            }`}
+          >
+            <table
+              className={`app-table app-table-compact min-w-[56rem] ${
+                showAll && hasMore ? 'app-table-sticky-header' : ''
+              }`}
+            >
               <thead>
                 <tr>
                   <th>Kullanıcı</th>
@@ -59,22 +99,22 @@ export function AdminStalePartialsCard({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
-                  <tr key={row.item.id} className="app-table-row--in-progress">
-                    <td className="font-medium">{row.kullaniciAdi}</td>
-                    <td>{getOzetFullName(row.item)}</td>
-                    <td>{row.anketAdi}</td>
-                    <td>{row.item.mintikaAdi?.trim() || '—'}</td>
+                {visibleRows.map((row) => (
+                  <tr key={row.id} className="app-table-row--in-progress">
+                    <td className="font-medium">{row.kullaniciAdi.trim() || '—'}</td>
+                    <td>{ekiciAdi(row)}</td>
+                    <td>{row.anketAdi.trim() || '—'}</td>
+                    <td>{row.mintikaAdi.trim() || '—'}</td>
                     <td>
                       <UnansweredQuestionsWarning
-                        info={unansweredByRow.get(row.item.id)}
-                        unansweredCount={row.item.yanitlanmayanSoruSayisi}
+                        questions={row.eksikSorular}
+                        unansweredCount={row.yanitlanmayanSoruSayisi}
                       />
                     </td>
-                    <td>{formatRelativeSonIslem(row.item.sonIslemTarihi)}</td>
+                    <td>{formatRelativeSonIslem(row.sonIslemTarihi)}</td>
                     <td className="text-center">
                       <span className="inline-flex rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-800">
-                        {row.daysSince != null ? `${row.daysSince}+ gün` : '—'}
+                        {row.beklemeGunu != null ? `${row.beklemeGunu} gün` : '—'}
                       </span>
                     </td>
                   </tr>

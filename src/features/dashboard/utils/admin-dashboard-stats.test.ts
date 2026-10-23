@@ -4,7 +4,7 @@ import type { AnketCevapOzetItem } from '@/features/survey-responses/types/surve
 import {
   computeAdminFieldFillSummary,
   computeAdminEkiciActivity,
-  countStalePartials,
+  filterSurveysByCografi,
   startOfLocalWeek,
 } from './admin-dashboard-stats'
 
@@ -135,25 +135,44 @@ describe('admin-dashboard-stats', () => {
     expect(activity.neverFilled).toBe(1)
   })
 
-  it('counts stale partials older than 7 days', () => {
-    const staleIso = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
-    const freshIso = new Date().toISOString()
+  it('keeps a survey whose mintika matches even if the ekici mensei id does not', () => {
+    const ekiciler = new Map([
+      [
+        'E1',
+        makeEkici({
+          id: 'E1',
+          menseiId: 99,
+          bolgeId: 99,
+          mintikaId: 7,
+        }),
+      ],
+    ])
+    const survey = makeSurvey({
+      id: 'stale-1',
+      ekiciId: 'e1',
+      mintikaId: 7,
+      yanitlananSoruSayisi: 2,
+      yanitlanmayanSoruSayisi: 3,
+    })
+
+    const filtered = filterSurveysByCografi(
+      [survey],
+      ekiciler,
+      { menseiId: 1, bolgeId: 2, mintikaId: 7 },
+      [7],
+    )
+
+    expect(filtered.map((item) => item.id)).toEqual(['stale-1'])
+  })
+
+  it('drops a survey outside the selected mintika', () => {
+    const ekiciler = new Map([
+      ['e1', makeEkici({ id: 'e1', menseiId: 1, bolgeId: 2, mintikaId: 8 })],
+    ])
+    const survey = makeSurvey({ id: 'other', ekiciId: 'e1', mintikaId: 8 })
 
     expect(
-      countStalePartials([
-        makeSurvey({
-          id: '1',
-          sonIslemTarihi: staleIso,
-          yanitlananSoruSayisi: 1,
-          yanitlanmayanSoruSayisi: 2,
-        }),
-        makeSurvey({
-          id: '2',
-          sonIslemTarihi: freshIso,
-          yanitlananSoruSayisi: 1,
-          yanitlanmayanSoruSayisi: 2,
-        }),
-      ]),
-    ).toBe(1)
+      filterSurveysByCografi([survey], ekiciler, { menseiId: 1, bolgeId: 2, mintikaId: 7 }, [7]),
+    ).toEqual([])
   })
 })

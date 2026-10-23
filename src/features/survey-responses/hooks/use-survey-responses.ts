@@ -48,6 +48,14 @@ export function useAnketGirisDurumuSayilariCografi(params: CografiFiltreQueryPar
   })
 }
 
+export function useYarimFormUyarisi() {
+  return useQuery({
+    queryKey: queryKeys.surveyResponses.yarimFormUyarisi,
+    queryFn: () => surveyResponsesApi.getYarimFormUyarisi(),
+    staleTime: 60_000,
+  })
+}
+
 export function useMySurveyResponses(kullaniciId?: string) {
   return useQuery({
     queryKey: queryKeys.surveyResponses.mine(kullaniciId ?? ''),
@@ -79,6 +87,7 @@ export function useDeleteSurveyResponses() {
       })
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary })
       void queryClient.invalidateQueries({ queryKey: queryKeys.surveyResponses.girisDurumuSayilari })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.surveyResponses.yarimFormUyarisi })
       void queryClient.invalidateQueries({
         queryKey: ['survey-responses', 'giris-durumu-sayilari', 'cografi'],
       })

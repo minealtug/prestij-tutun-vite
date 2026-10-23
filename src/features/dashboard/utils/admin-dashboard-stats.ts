@@ -1,16 +1,7 @@
 import type { CografiFiltreQueryParams } from '@/features/cografi-filtre/types'
 import type { EkiciDefinitionDto } from '@/features/ekici-definitions/types/ekici-definition.types'
 import type { AnketCevapOzetItem } from '@/features/survey-responses/types/survey-response.types'
-import {
-  getOzetKullaniciAdi,
-  getOzetSurveyName,
-} from '@/features/survey-responses/types/survey-response.types'
-import {
-  getDaysSinceSonIslem,
-  getSurveyResponseStatus,
-  isStalePartialSurvey,
-  sortPartialSurveysByPriority,
-} from './user-dashboard-survey-groups'
+import { getSurveyResponseStatus } from './user-dashboard-survey-groups'
 
 export interface PeriodFormCounts {
   completed: number
@@ -29,13 +20,6 @@ export interface AdminEkiciActivitySummary {
   totalEkiciler: number
   filledEkiciler: number
   neverFilled: number
-}
-
-export interface AdminStalePartialRow {
-  item: AnketCevapOzetItem
-  kullaniciAdi: string
-  anketAdi: string
-  daysSince: number | null
 }
 
 function startOfLocalDay(date: Date): number {
@@ -97,6 +81,24 @@ export function filterEkicilerByCografi(
   return ekiciler.filter((ekici) => matchesEkiciCografiFiltre(ekici, params))
 }
 
+function indexEkicilerById(
+  ekiciById: Map<string, EkiciDefinitionDto>,
+): Map<string, EkiciDefinitionDto> {
+  const byLowerId = new Map<string, EkiciDefinitionDto>()
+  for (const [id, ekici] of ekiciById) {
+    const key = id.trim().toLowerCase()
+    if (key) byLowerId.set(key, ekici)
+  }
+  return byLowerId
+}
+
+function mintikaIsSelected(
+  mintikaId: number | null | undefined,
+  mintikaIdSet: Set<number> | null,
+): boolean {
+  return mintikaIdSet != null && mintikaId != null && mintikaId > 0 && mintikaIdSet.has(mintikaId)
+}
+
 export function filterSurveysByCografi(
   items: AnketCevapOzetItem[],
   ekiciById: Map<string, EkiciDefinitionDto>,
@@ -113,16 +115,24 @@ export function filterSurveysByCografi(
   if (!hasParams) return items
 
   const mintikaIdSet = mintikaIds ? new Set(mintikaIds) : null
+  const ekiciByLowerId = indexEkicilerById(ekiciById)
+  const strictPlace = params.alimNoktasiId != null || params.koyId != null
 
   return items.filter((item) => {
-    const ekici = ekiciById.get(item.ekiciId)
-    if (ekici) return matchesEkiciCografiFiltre(ekici, params)
+    const ekici = ekiciByLowerId.get(item.ekiciId.trim().toLowerCase())
 
-    if (mintikaIdSet) {
-      const mid = item.mintikaId
-      return mid != null && mintikaIdSet.has(mid)
+    if (strictPlace) {
+      if (ekici) return matchesEkiciCografiFiltre(ekici, params)
+      return mintikaIsSelected(item.mintikaId, mintikaIdSet)
     }
-    return true
+
+    if (ekici && matchesEkiciCografiFiltre(ekici, params)) return true
+    // Cevabın kendi mıntıkası da geçerli. Ekici kartındaki menşei/bölge kimliği
+    // seçilen filtreyle uyuşmasa bile form o mıntıkada görünür.
+    if (mintikaIsSelected(item.mintikaId, mintikaIdSet)) return true
+    if (mintikaIsSelected(ekici?.mintikaId, mintikaIdSet)) return true
+    if (!mintikaIdSet && !ekici) return true
+    return false
   })
 }
 
@@ -186,27 +196,4 @@ export function computeAdminEkiciActivity(
     filledEkiciler: filledKeys.size,
     neverFilled,
   }
-}
-
-export function countStalePartials(items: AnketCevapOzetItem[]): number {
-  return items.filter(
-    (item) => getSurveyResponseStatus(item) === 'partial' && isStalePartialSurvey(item),
-  ).length
-}
-
-export function buildAdminStalePartialRows(
-  items: AnketCevapOzetItem[],
-  limit = 10,
-): AdminStalePartialRow[] {
-  const partial = sortPartialSurveysByPriority(
-    items.filter((item) => getSurveyResponseStatus(item) === 'partial'),
-  )
-  const stale = partial.filter((item) => isStalePartialSurvey(item))
-
-  return stale.slice(0, limit).map((item) => ({
-    item,
-    kullaniciAdi: getOzetKullaniciAdi(item),
-    anketAdi: getOzetSurveyName(item),
-    daysSince: getDaysSinceSonIslem(item.sonIslemTarihi),
-  }))
 }

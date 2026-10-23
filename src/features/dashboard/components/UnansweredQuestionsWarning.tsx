@@ -3,19 +3,23 @@ import type { StalePartialUnansweredInfo } from '../hooks/use-stale-partial-unan
 const PREVIEW_QUESTION_COUNT = 2
 
 interface UnansweredQuestionsWarningProps {
-  info: StalePartialUnansweredInfo | undefined
+  info?: StalePartialUnansweredInfo
+  questions?: string[]
+  loading?: boolean
   unansweredCount: number
 }
 
 export function UnansweredQuestionsWarning({
   info,
+  questions: questionsProp,
+  loading = false,
   unansweredCount,
 }: UnansweredQuestionsWarningProps) {
-  if (info?.loading) {
+  if (loading || info?.loading) {
     return <span className="text-xs text-muted">Eksik sorular yükleniyor…</span>
   }
 
-  const questions = info?.questions ?? []
+  const questions = questionsProp ?? info?.questions ?? []
   if (questions.length === 0) {
     const count = Math.max(0, unansweredCount)
     if (count <= 0) {

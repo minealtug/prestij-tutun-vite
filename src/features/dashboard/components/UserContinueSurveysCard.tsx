@@ -1,29 +1,22 @@
 import { Link } from 'react-router-dom'
-import { CheckCircle2, ChevronRight, CircleAlert } from 'lucide-react'
+import { CheckCircle2, ChevronRight } from 'lucide-react'
 import type { AnketCevapOzetItem } from '@/features/survey-responses/types/survey-response.types'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { UserContinueSurveyRow } from './UserContinueSurveyRow'
-import { useStalePartialUnanswered } from '../hooks/use-stale-partial-unanswered'
 import { CONTINUE_SURVEY_LIST_LIMIT } from '../utils/user-dashboard-survey-groups'
 
 interface UserContinueSurveysCardProps {
   partialSurveys: AnketCevapOzetItem[]
-  stalePartialCount: number
-  isLoading?: boolean
+  isLoading: boolean
 }
 
 export function UserContinueSurveysCard({
   partialSurveys,
-  stalePartialCount,
-  isLoading = false,
+  isLoading,
 }: UserContinueSurveysCardProps) {
   const visibleSurveys = partialSurveys.slice(0, CONTINUE_SURVEY_LIST_LIMIT)
   const hasMore = partialSurveys.length > CONTINUE_SURVEY_LIST_LIMIT
-  const unansweredByRow = useStalePartialUnanswered(
-    visibleSurveys,
-    !isLoading && visibleSurveys.length > 0,
-  )
 
   return (
     <Card
@@ -47,19 +40,6 @@ export function UserContinueSurveysCard({
         <p className="text-sm text-muted">Formlarınız yükleniyor…</p>
       ) : partialSurveys.length > 0 ? (
         <div className="space-y-3">
-          {stalePartialCount > 0 ? (
-            <div
-              className="flex items-start gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2.5 text-sm text-orange-900"
-              role="status"
-            >
-              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              <p>
-                <span className="font-semibold">{stalePartialCount} ekici formu</span> bir haftadan uzun
-                süredir yarım — hangi soruların boş kaldığı aşağıda.
-              </p>
-            </div>
-          ) : null}
-
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">Öncelikli formlar</p>
             <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
@@ -69,12 +49,7 @@ export function UserContinueSurveysCard({
 
           <ul className="space-y-3">
             {visibleSurveys.map((item, index) => (
-              <UserContinueSurveyRow
-                key={item.id}
-                item={item}
-                rank={index + 1}
-                unansweredInfo={unansweredByRow.get(item.id)}
-              />
+              <UserContinueSurveyRow key={item.id} item={item} rank={index + 1} />
             ))}
           </ul>
         </div>

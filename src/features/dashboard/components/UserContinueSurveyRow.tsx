@@ -4,26 +4,20 @@ import { ChevronRight } from 'lucide-react'
 import type { AnketCevapOzetItem } from '@/features/survey-responses/types/survey-response.types'
 import { Button } from '@/components/ui/Button'
 import { UserSurveyProgressBar } from './UserSurveyProgressBar'
-import { UnansweredQuestionsWarning } from './UnansweredQuestionsWarning'
-import type { StalePartialUnansweredInfo } from '../hooks/use-stale-partial-unanswered'
 import {
   buildSurveyFillLinkFromOzet,
   formatRelativeSonIslem,
-  getDaysSinceSonIslem,
   getItemProgressPercent,
   getSurveyListSubtitle,
   getSurveyListTitle,
-  isStalePartialSurvey,
 } from '../utils/user-dashboard-survey-groups'
 
 interface UserContinueSurveyRowProps {
   item: AnketCevapOzetItem
   rank?: number
-  unansweredInfo?: StalePartialUnansweredInfo
 }
 
-function MiniProgressRing({ percent, stale }: { percent: number; stale: boolean }) {
-  const color = stale ? '#ea580c' : '#f59e0b'
+function MiniProgressRing({ percent }: { percent: number }) {
   const chartData = [
     { name: 'value', value: percent },
     { name: 'rest', value: Math.max(0, 100 - percent) },
@@ -44,7 +38,7 @@ function MiniProgressRing({ percent, stale }: { percent: number; stale: boolean 
             endAngle={-270}
             stroke="none"
           >
-            <Cell fill={color} />
+            <Cell fill="#f59e0b" />
             <Cell fill="#e8edf2" />
           </Pie>
         </PieChart>
@@ -56,22 +50,16 @@ function MiniProgressRing({ percent, stale }: { percent: number; stale: boolean 
   )
 }
 
-export function UserContinueSurveyRow({ item, rank, unansweredInfo }: UserContinueSurveyRowProps) {
+export function UserContinueSurveyRow({ item, rank }: UserContinueSurveyRowProps) {
   const navigate = useNavigate()
   const title = getSurveyListTitle(item)
   const subtitle = getSurveyListSubtitle(item)
   const progress = getItemProgressPercent(item)
   const unanswered = Math.max(0, item.yanitlanmayanSoruSayisi)
   const fillLink = buildSurveyFillLinkFromOzet(item)
-  const stale = isStalePartialSurvey(item)
-  const daysSince = getDaysSinceSonIslem(item.sonIslemTarihi)
 
   return (
-    <li
-      className={`rounded-lg border bg-white/80 px-4 py-3 ${
-        stale ? 'border-orange-200/90 shadow-sm' : 'border-amber-200/70'
-      }`}
-    >
+    <li className="rounded-lg border border-amber-200/70 bg-white/80 px-4 py-3">
       <div className="flex items-start gap-3">
         {rank != null ? (
           <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-xs font-semibold text-amber-800">
@@ -79,7 +67,7 @@ export function UserContinueSurveyRow({ item, rank, unansweredInfo }: UserContin
           </span>
         ) : null}
 
-        <MiniProgressRing percent={progress} stale={stale} />
+        <MiniProgressRing percent={progress} />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -94,7 +82,7 @@ export function UserContinueSurveyRow({ item, rank, unansweredInfo }: UserContin
           </div>
 
           <div className="mt-2 space-y-1.5">
-            <UserSurveyProgressBar percent={progress} barClassName={stale ? 'bg-orange-500' : 'bg-amber-500'} />
+            <UserSurveyProgressBar percent={progress} barClassName="bg-amber-500" />
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
               <span>
                 {unanswered > 0
@@ -103,17 +91,6 @@ export function UserContinueSurveyRow({ item, rank, unansweredInfo }: UserContin
               </span>
               <span aria-hidden>·</span>
               <span>Son işlem: {formatRelativeSonIslem(item.sonIslemTarihi)}</span>
-              {stale && daysSince != null ? (
-                <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-800">
-                  {daysSince}+ gündür bekliyor
-                </span>
-              ) : null}
-            </div>
-            <div className="rounded-md border border-orange-200/80 bg-orange-50/70 px-2.5 py-2">
-              <UnansweredQuestionsWarning
-                info={unansweredInfo}
-                unansweredCount={unanswered}
-              />
             </div>
           </div>
         </div>

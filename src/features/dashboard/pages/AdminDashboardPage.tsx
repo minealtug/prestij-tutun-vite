@@ -21,10 +21,8 @@ import { AdminUserActivityCard } from '../components/AdminUserActivityCard'
 import { useWithoutTobaccoEkiciCount, useWithTobaccoProducerCount } from '../hooks/use-gezi'
 import { enrichSurveysWithEkiciLocations } from '../utils/enrich-survey-location'
 import {
-  buildAdminStalePartialRows,
   computeAdminFieldFillSummary,
   computeAdminEkiciActivity,
-  countStalePartials,
   filterEkicilerByCografi,
   filterSurveysByCografi,
 } from '../utils/admin-dashboard-stats'
@@ -107,20 +105,11 @@ export function AdminDashboardPage() {
       ]),
     )
 
-    const enriched = enrichSurveysWithEkiciLocations(
+    return enrichSurveysWithEkiciLocations(
       responsesQuery.data ?? [],
       locationById,
       mintikaById,
     )
-
-    return enriched.map((item) => {
-      const ekici = ekiciById.get(item.ekiciId)
-      if (!ekici) return item
-      return {
-        ...item,
-        mintikaId: ekici.mintikaId > 0 ? ekici.mintikaId : item.mintikaId,
-      }
-    })
   }, [ekiciById, ekicilerQuery.data, responsesQuery.data])
 
   const filteredSurveys = useMemo(() => {
@@ -171,12 +160,6 @@ export function AdminDashboardPage() {
     () => computeAdminEkiciActivity(ekicilerQuery.data ?? [], enrichedSurveys),
     [ekicilerQuery.data, enrichedSurveys],
   )
-  const staleRows = useMemo(
-    () => buildAdminStalePartialRows(filteredSurveys, 10),
-    [filteredSurveys],
-  )
-  const staleCount = useMemo(() => countStalePartials(filteredSurveys), [filteredSurveys])
-
   return (
     <PageContainer>
       {permissionMessage && (
@@ -233,11 +216,7 @@ export function AdminDashboardPage() {
         geoFilterActive={geoFilterActive}
       />
 
-      <AdminStalePartialsCard
-        rows={staleRows}
-        staleCount={staleCount}
-        isLoading={surveysLoading}
-      />
+      <AdminStalePartialsCard />
     </PageContainer>
   )
 }

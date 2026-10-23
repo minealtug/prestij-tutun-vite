@@ -53,6 +53,7 @@ export const queryKeys = {
     girisDurumuSayilari: ['survey-responses', 'giris-durumu-sayilari'] as const,
     girisDurumuSayilariCografi: (params?: object) =>
       ['survey-responses', 'giris-durumu-sayilari', 'cografi', params ?? {}] as const,
+    yarimFormUyarisi: ['survey-responses', 'yarim-form-uyarisi'] as const,
     all: (params?: object) => ['survey-responses', params ?? {}] as const,
     mine: (kullaniciId: string) => ['survey-responses', 'mine', kullaniciId] as const,
     detail: (ekiciId: string, sablonId: number, baslikId?: number) =>

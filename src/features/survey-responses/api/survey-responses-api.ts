@@ -28,6 +28,8 @@ import { mapCografiFiltreOptionsFromApi } from '../utils/cografi-filtre'
 import { mapOturumToCevapDetay } from '../utils/map-oturum-to-cevap-detay'
 import { mapDeleteAnketCevapResult } from '../utils/delete-survey-responses'
 import { mapAnketGirisDurumuSayilari } from '../utils/map-giris-durumu-sayilari'
+import { emptyYarimFormUyarisi, mapYarimFormUyarisi } from '../utils/map-yarim-form-uyarisi'
+import type { YarimFormUyarisi } from '../types/yarim-form-uyarisi.types'
 
 function isNetworkError(error: unknown): boolean {
   return (
@@ -224,6 +226,16 @@ export const surveyResponsesApi = {
     )
     return mapAnketGirisDurumuSayilari(raw)
   },
+
+  /** Admin tüm mıntıkalar, diğer kullanıcılar kendi mıntıkaları. Sunucu ayırır. */
+  getYarimFormUyarisi: (): Promise<YarimFormUyarisi> =>
+    withDevFallback(
+      async () => {
+        const raw = await apiClient.get<unknown>('/api/AnketCevap/yarim-form-uyarisi')
+        return mapYarimFormUyarisi(raw)
+      },
+      () => emptyYarimFormUyarisi(),
+    ),
 
   getMyList: async (kullaniciId: string): Promise<AnketCevapOzetItem[]> =>
     withDevFallback(

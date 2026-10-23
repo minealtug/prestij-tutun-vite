@@ -17,6 +17,7 @@ import { userHasMintikaAssignment } from '@/features/users/utils/resolve-mintika
 import { computeSurveyResponseStats } from '@/features/survey-responses/utils/compute-survey-response-stats'
 import { UserSurveyStatusPieChart } from '../components/UserSurveyStatusPieChart'
 import { UserSurveyMetricChartCard } from '../components/UserSurveyMetricChartCard'
+import { AdminStalePartialsCard } from '../components/AdminStalePartialsCard'
 import { UserContinueSurveysCard } from '../components/UserContinueSurveysCard'
 import { UserFilledEkiciCard } from '../components/UserFilledEkiciCard'
 import { UserFormStatusTableCard } from '../components/UserFormStatusTableCard'
@@ -175,9 +176,10 @@ export function UserDashboardPage() {
         </div>
       </section>
 
+      <AdminStalePartialsCard />
+
       <UserContinueSurveysCard
         partialSurveys={groups.partial}
-        stalePartialCount={groups.stalePartialCount}
         isLoading={responsesQuery.isLoading}
       />
 

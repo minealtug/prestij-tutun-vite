@@ -6,7 +6,7 @@ import type {
 } from '../types/survey-response.types'
 import { getAnketCevapRowId } from '../types/survey-response.types'
 
-function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
+export function pick<T>(obj: Record<string, unknown>, ...keys: string[]): T | undefined {
   for (const key of keys) {
     const value = obj[key]
     if (value !== undefined && value !== null) return value as T
