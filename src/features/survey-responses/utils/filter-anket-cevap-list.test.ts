@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { matchesEkiciAdSoyadSearch } from './filter-anket-cevap-list'
+import { matchesAnketCevapYil, matchesEkiciAdSoyadSearch } from './filter-anket-cevap-list'
 
 describe('matchesEkiciAdSoyadSearch', () => {
   const ali = { ekiciAd: 'Ali', ekiciSoyad: 'Yılmaz' }
@@ -26,5 +26,20 @@ describe('matchesEkiciAdSoyadSearch', () => {
   it('rejects a different name and keeps every row when the query is empty', () => {
     expect(matchesEkiciAdSoyadSearch(ali, 'Ayşe')).toBe(false)
     expect(matchesEkiciAdSoyadSearch(ali, '   ')).toBe(true)
+  })
+})
+
+describe('matchesAnketCevapYil', () => {
+  const years = new Map<string, number>([['ekici-1', 2026]])
+
+  it('keeps every row when no year is selected', () => {
+    expect(matchesAnketCevapYil('ekici-1', years, 'all')).toBe(true)
+    expect(matchesAnketCevapYil('ekici-2', years, '')).toBe(true)
+  })
+
+  it('matches the ekici year without regard to id casing', () => {
+    expect(matchesAnketCevapYil('EKICI-1', years, '2026')).toBe(true)
+    expect(matchesAnketCevapYil('ekici-1', years, '2025')).toBe(false)
+    expect(matchesAnketCevapYil('ekici-2', years, '2026')).toBe(false)
   })
 })

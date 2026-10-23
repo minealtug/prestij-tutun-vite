@@ -27,6 +27,39 @@ function normalizeSearchText(value: string): string {
   return value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('tr-TR')
 }
 
+export function matchesAnketCevapYil(
+  ekiciId: string,
+  yilByEkiciId: ReadonlyMap<string, number>,
+  yilFilter: string,
+): boolean {
+  if (!yilFilter || yilFilter === 'all') return true
+  const year = Number(yilFilter)
+  if (!Number.isFinite(year)) return true
+  return yilByEkiciId.get(ekiciId.trim().toLowerCase()) === year
+}
+
+export function buildAnketCevapYilOptions(years: Iterable<number>, selected: string) {
+  const uniqueYears = new Set<number>()
+  const currentYear = new Date().getFullYear()
+  if (currentYear > 0) uniqueYears.add(currentYear)
+
+  const selectedYear = Number(selected)
+  if (selected && selected !== 'all' && Number.isFinite(selectedYear) && selectedYear > 0) {
+    uniqueYears.add(selectedYear)
+  }
+
+  for (const year of years) {
+    if (Number.isFinite(year) && year > 0) uniqueYears.add(year)
+  }
+
+  return [
+    { value: 'all', label: 'Tümü' },
+    ...[...uniqueYears]
+      .sort((a, b) => b - a)
+      .map((year) => ({ value: String(year), label: String(year) })),
+  ]
+}
+
 /** API'den gelen ekiciAd + ekiciSoyad birleşiminde parça eşleşmesi. */
 export function matchesEkiciAdSoyadSearch(
   item: Pick<AnketCevapOzetItem, 'ekiciAd' | 'ekiciSoyad'>,

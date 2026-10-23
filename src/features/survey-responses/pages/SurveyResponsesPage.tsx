@@ -3,6 +3,7 @@ import { Filter, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { Snackbar } from '@/components/feedback/Snackbar'
 import { CografiFiltreFields } from '@/features/cografi-filtre/components/CografiFiltreFields'
 import { useCografiFiltreCascade } from '@/features/cografi-filtre/hooks/use-cografi-filtre-cascade'
@@ -32,7 +33,12 @@ import { getErrorMessage } from '@/lib/api/api-error'
 import { useAuthStore } from '@/stores/auth-store'
 import type { AnketCevapOzetItem, SurveyResponsesQueryParams } from '../types/survey-response.types'
 import { hasGeoSurveyFilter } from '../types/survey-response.types'
-import { matchesEkiciAdSoyadSearch } from '../utils/filter-anket-cevap-list'
+import { useEkiciDefinitions } from '@/features/ekici-definitions/hooks/use-ekici-definitions'
+import {
+  buildAnketCevapYilOptions,
+  matchesAnketCevapYil,
+  matchesEkiciAdSoyadSearch,
+} from '../utils/filter-anket-cevap-list'
 import { formatAppliedFilterSummary } from '../utils/format-applied-filter-summary'
 import {
   formatDeleteAnketCevapSuccessText,
@@ -59,6 +65,7 @@ export function SurveyResponsesPage() {
 
   const [appliedFilters, setAppliedFilters] = useState<SurveyResponsesQueryParams | null>(null)
   const [appliedFilterSummary, setAppliedFilterSummary] = useState('')
+  const [yilFilter, setYilFilter] = useState('all')
   const [ekiciSearch, setEkiciSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const [confirmStep, setConfirmStep] = useState<1 | 2 | null>(null)
@@ -93,6 +100,7 @@ export function SurveyResponsesPage() {
 
   const draftFiltersReady = hasGeoSurveyFilter(geoCascade.queryParams)
 
+  const ekicilerQuery = useEkiciDefinitions()
   const responsesQuery = useSurveyResponses(appliedFilters ?? undefined)
   const deleteMutation = useDeleteSurveyResponses()
   const filtersReady = isAdmin
@@ -104,14 +112,35 @@ export function SurveyResponsesPage() {
   const showList = filtersReady || unfilteredSearch
   const activeQuery = filtersReady ? responsesQuery : allResponsesQuery
   const sourceData = showList ? (activeQuery.data ?? EMPTY_ROWS) : EMPTY_ROWS
+  const yilByEkiciId = useMemo(() => {
+    const years = new Map<string, number>()
+    for (const ekici of ekicilerQuery.data ?? []) {
+      if (!Number.isFinite(ekici.yil) || ekici.yil <= 0) continue
+      years.set(ekici.id.trim().toLowerCase(), ekici.yil)
+    }
+    return years
+  }, [ekicilerQuery.data])
+  const yilOptions = useMemo(() => {
+    const years: number[] = []
+    for (const item of sourceData) {
+      const year = yilByEkiciId.get(item.ekiciId.trim().toLowerCase())
+      if (year) years.push(year)
+    }
+    return buildAnketCevapYilOptions(years, yilFilter)
+  }, [sourceData, yilByEkiciId, yilFilter])
+  const yearFilterPending = yilFilter !== 'all' && ekicilerQuery.isLoading
   const listData = useMemo(() => {
-    if (!ekiciSearchQuery) return sourceData
-    return sourceData.filter((item) => matchesEkiciAdSoyadSearch(item, ekiciSearchQuery))
-  }, [ekiciSearchQuery, sourceData])
+    const searched = ekiciSearchQuery
+      ? sourceData.filter((item) => matchesEkiciAdSoyadSearch(item, ekiciSearchQuery))
+      : sourceData
+    if (yilFilter === 'all' || yearFilterPending) return searched
+    return searched.filter((item) => matchesAnketCevapYil(item.ekiciId, yilByEkiciId, yilFilter))
+  }, [ekiciSearchQuery, sourceData, yearFilterPending, yilByEkiciId, yilFilter])
   const statsFilterSummary = useMemo(() => {
     const searchSummary = ekiciSearchQuery ? `Ekici: ${ekiciSearchQuery}` : ''
-    return [appliedFilterSummary, searchSummary].filter(Boolean).join(' · ')
-  }, [appliedFilterSummary, ekiciSearchQuery])
+    const yearSummary = yilFilter !== 'all' ? `Yıl: ${yilFilter}` : ''
+    return [appliedFilterSummary, yearSummary, searchSummary].filter(Boolean).join(' · ')
+  }, [appliedFilterSummary, ekiciSearchQuery, yilFilter])
 
   const selectedRows = useMemo(
     () => (listData ?? []).filter((row) => selectedIds.has(row.id)),
@@ -236,7 +265,7 @@ export function SurveyResponsesPage() {
         <SurveyResponseStatsCards
           data={listData}
           filterSummary={statsFilterSummary}
-          isLoading={activeQuery.isLoading}
+          isLoading={activeQuery.isLoading || yearFilterPending}
         />
       )}
 
@@ -255,17 +284,27 @@ export function SurveyResponsesPage() {
           />
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-[#ececec] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative min-w-0 w-full sm:max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <Input
-              type="search"
-              className="!h-9 pl-9"
-              placeholder="Ekici ara"
-              value={ekiciSearch}
-              onChange={(event) => setEkiciSearch(event.target.value)}
-              aria-label="Ekici ara"
-            />
+        <div className="flex flex-col gap-3 border-t border-[#ececec] px-4 py-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="w-full sm:max-w-[7.5rem]">
+              <Select
+                label="Yıl"
+                value={yilFilter}
+                onChange={(event) => setYilFilter(event.target.value)}
+                options={yilOptions}
+              />
+            </div>
+            <div className="relative min-w-0 w-full sm:max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <Input
+                type="search"
+                className="!h-10 pl-9"
+                placeholder="Ekici ara"
+                value={ekiciSearch}
+                onChange={(event) => setEkiciSearch(event.target.value)}
+                aria-label="Ekici ara"
+              />
+            </div>
           </div>
           {isAdmin && (
             <Button
@@ -310,7 +349,7 @@ export function SurveyResponsesPage() {
             )}
             <SurveyResponsesTable
               data={listData}
-              isLoading={activeQuery.isLoading}
+              isLoading={activeQuery.isLoading || yearFilterPending}
               isError={activeQuery.isError}
               error={activeQuery.error}
               onRefresh={() => void activeQuery.refetch()}
